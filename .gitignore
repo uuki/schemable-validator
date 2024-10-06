@@ -1,0 +1,11 @@
+# node
+node_modules/
+
+# wp-now development files.
+database/
+db.php/
+mu-plugins/
+uploads/
+
+# local development files
+ignore.*.php

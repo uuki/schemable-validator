@@ -1,0 +1,14 @@
+{
+  "name": "wp-schemable-validator",
+  "version": "0.0.1",
+  "description": "",
+  "private": true,
+  "main": "",
+  "scripts": {
+    "dev": "wp-now start --blueprint=blueprint.config.json"
+  },
+  "author": "uuki<uuki.dev@gmail.com>",
+  "devDependencies": {
+    "@wp-now/wp-now": "^0.1.74"
+  }
+}

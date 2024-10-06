@@ -1,0 +1,10 @@
+{
+  "name": "schemable-validator",
+  "description": "Schema based validation plugin.",
+  "type": "package",
+  "version": "0.1.0",
+  "require": {
+    "php": ">=7.4",
+    "respect/validation": "2.2.4"
+  }
+}
