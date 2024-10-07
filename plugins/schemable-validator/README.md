@@ -15,6 +15,8 @@ https://packagist.org/packages/respect/validation#2.2.4
 - Persist data controller
 
 ## Futures
+- nonce for wordpress
 - Check binary
 - Some options
   - reCAPTCHA
+- i18n
