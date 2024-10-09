@@ -4,5 +4,13 @@
     "php": "8.0",
     "wp": "6.6.2"
   },
-  "steps": []
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEFAULT_THEME": "example"
+      },
+      "method": "define-before-run"
+    }
+  ]
 }
