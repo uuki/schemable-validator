@@ -72,8 +72,8 @@
     <!-- 本文 -->
     <div>
       <label class="block text-gray-700 font-medium mb-2">本文</label>
-      <textarea name="message" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
-      <button type="button" onclick="fillValue('message', 'これはダミーの本文です。')" class="mt-2 bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">自動入力</button>
+      <textarea name="body" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
+      <button type="button" onclick="fillValue('body', 'これはダミーの本文です。')" class="mt-2 bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">自動入力</button>
     </div>
 
     <!-- 用途 (ビジネス、個人) -->
@@ -120,7 +120,7 @@
       fillValue('phone', '090-1234-5678');
       fillValue('url', 'https://example.com');
       fillValue('address', '1‐1, Chiyoda, Chiyoda-ku, Tokyo');
-      fillValue('message', 'これはダミーの本文です。\<script\>console.log(\'test\')\</script\>');
+      fillValue('body', 'これはダミーの本文です。\<script\>console.log(\'test\')\</script\>');
       fillValue('usage', 'for_business');
       fillValue('agreement', true);
     }

@@ -13,7 +13,8 @@
   $form_controller = new FormController();
   $form_data = $form_controller->get();
 
-  $format = $template->get();
+  $format_admin = $template->get('admin');
+  $format_user = $template->get('user');
 ?>
 
 <div class="p-[30px]">
@@ -27,7 +28,9 @@
 
     echo '<pre><code class="language-php">';
     echo '&lt;?php' . PHP_EOL;
-    var_dump($format);
+    var_dump($format_admin);
+    echo '---' . PHP_EOL;
+    var_dump($format_user);
     echo PHP_EOL . '?&gt;</code></pre>';
   ?>
 </div>
