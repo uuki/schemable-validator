@@ -2,7 +2,7 @@
 namespace SchemableValidator\Interface\Wordpress;
 
 require_once SV_ROOT_DIR . '/interfaces/wordpress/constants.php';
-require_once SV_ROOT_DIR . '/interfaces/wordpress/edit-body.php';
+require_once SV_ROOT_DIR . '/interfaces/wordpress/edit_body.php';
 
 class Admin {
 

@@ -1,7 +1,7 @@
 <?php
 namespace SchemableValidator;
 
-require SV_ROOT_DIR . "/vendor/autoload.php";
+require SV_VENDOR_DIR . "/autoload.php";
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 

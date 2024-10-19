@@ -1,6 +1,9 @@
 # node
 node_modules/
 
+# composer
+vendor/
+
 # wp-now development files.
 database/
 db.php/
@@ -8,4 +11,5 @@ mu-plugins/
 uploads/
 
 # local development files
-ignore.*.php
+src/models/
+src/**/ignore.*.php

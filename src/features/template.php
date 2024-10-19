@@ -4,6 +4,8 @@ namespace SchemableValidator;
 use SchemableValidator\FormController;
 use SchemableValidator\Interface\Wordpress\Admin as WordpressInterface;
 
+require_once __DIR__ . '/../helpers.php';
+
 /**
  * Class Template
  *
@@ -26,14 +28,15 @@ class Template {
    * @param array<string, mixed> $options An associative array of options for the template. This will merge with default options.
    */
   function __construct(array $options = []) {
-    global $SV_INTERFACE_TARGET;
     $form_controller = new FormController();
     $this->options = array_merge($this->defaultOptions, $options);
 
     $this->interface = null;
     $this->data = $form_controller->get();
 
-    if ($SV_INTERFACE_TARGET === 'wordpress') {
+    $env_name = sv_get_environment();
+
+    if ($env_name === 'wordpress') {
       $this->interface = new WordpressInterface($this->options['templates']);
     }
   }
@@ -46,7 +49,7 @@ class Template {
    * @return string The formatted template with data replacements based on defined aliases.
    */
   function get(string $template_name) {
-    $format = isset($this->interface) ? $this->interface->get_template(template_name: $template_name) : $this->options['templates'][$template_name];
+    $format = isset($this->interface) ? $this->interface->get_template($template_name) : $this->options['templates'][$template_name];
     $body = $format;
 
     foreach ($this->options['aliases'] as $key => $value) {

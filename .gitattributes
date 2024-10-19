@@ -1,3 +1,4 @@
+/plugins/ export-ignore
 /themes/ export-ignore
 blueprint.config.json export-ignore
 package.json export-ignore

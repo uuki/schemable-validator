@@ -1,0 +1,8 @@
+{
+  "name": "example/example",
+  "description": "",
+  "require": {
+    "php": ">=7.4",
+    "uuki/schemable-validator": "0.x@dev"
+  }
+}
