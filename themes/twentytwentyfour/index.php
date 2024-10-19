@@ -5,7 +5,7 @@
 <div class="p-[30px]">
   <h1 class="font-bold text-[30px]">サンプルフォーム</h1>
 
-  <form method="POST" class="max-w-lg mx-auto p-6 bg-white rounded-md shadow-md space-y-6">
+  <form method="POST" class="max-w-lg mx-auto p-6 bg-white rounded-md shadow-md space-y-6" enctype="multipart/form-data">
     <!-- 全項目にダミー値を入力するボタン -->
     <div class="text-right mb-4">
       <button type="button" onclick="fillAll()" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">自動入力（デバッグ用）</button>
@@ -91,6 +91,12 @@
       <input type="checkbox" name="agreement" class="form-checkbox text-blue-600">
       <label class="ml-2 text-gray-700">規約に同意します</label>
       <button type="button" onclick="fillValue('agreement', true)" class="ml-4 bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">自動チェック</button>
+    </div>
+
+    <!-- ファイル -->
+    <div>
+      <label class="block text-gray-700 font-medium mb-2">ファイル</label>
+      <input type="file" name="docs" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
     </div>
 
     <!-- 送信ボタン -->

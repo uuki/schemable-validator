@@ -9,6 +9,7 @@
 
 require_once "constants.php";
 
+require_once SV_ROOT_DIR . "/features/rules/index.php";
 require_once SV_ROOT_DIR . "/features/core.php";
 require_once SV_ROOT_DIR . "/features/template.php";
 require_once SV_ROOT_DIR . "/controllers/form.php";

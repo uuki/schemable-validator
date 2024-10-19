@@ -29,6 +29,7 @@ $forms_submit_handler = function () use ($get_schema) {
   }
 
   $result = $validator->validate($_POST);
+  $result = $validator->validateFiles($_FILES);
 
   if ($result) {
     $form_controller->save($result);
