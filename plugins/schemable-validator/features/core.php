@@ -5,6 +5,11 @@ require SV_ROOT_DIR . "/vendor/autoload.php";
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 
+/**
+ * Class Validator
+ *
+ * Provide methods related to validation according to the defined schema.
+ */
 class Validator {
   /**
    * @var array<string, v> $schema
@@ -12,7 +17,9 @@ class Validator {
   private array $schema;
 
   /**
-   * @param array<string, v> $schema
+   * Validator constructor.
+   *
+   * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances. Validation rules can be found here https://github.com/Respect/Validation/blob/2.2/docs/list-of-rules.md
    */
   function __construct(array $schema = []) {
     $this->schema = $schema;
@@ -25,6 +32,13 @@ class Validator {
     );
   }
 
+  /**
+   * Validate the provided $_POST against the defined schema.
+   *
+   * @param array<string, mixed> $data The data to be validated, where keys correspond to schema field names.
+   *
+   * @return array<string, array<string, mixed>> Array of validation results.
+   */
   function validate(array $data) {
     foreach($this->schema as $name => $validator) {
       $value = isset($data[$name]) ? $this->sanitize($data[$name]) : null;
@@ -36,6 +50,21 @@ class Validator {
     return $this->state;
   }
 
+  /**
+   * Validates file uploads against the defined schema.
+   *
+   * @param array<string, array{
+   *     name: string,
+   *     type: string,
+   *     tmp_name: string,
+   *     error: int,
+   *     size: int
+   * }> $data The file data to be validated, Or, type $_FILES.
+   *
+   * @param array<string, mixed> $options An optional array of options for file validation. Default is ['native_files' => true]. When passing data from an array other than $_FILES, use false.
+   *
+   * @return array<string, array<string, mixed>> Array of validation results.
+   */
   function validateFiles(array $data, array $options = []) {
     $options = array_merge([
       'native_files' => true,
@@ -84,9 +113,6 @@ class Validator {
     return $newState;
   }
 
-  /**
-   * Unify $_FILES data structures for multiple and single files since they are different.
-   */
   private function normalizeFile(array $file) {
     $result = [];
 

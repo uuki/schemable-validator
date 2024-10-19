@@ -4,6 +4,11 @@ namespace SchemableValidator;
 use SchemableValidator\FormController;
 use SchemableValidator\Interface\Wordpress\Admin as WordpressInterface;
 
+/**
+ * Class Template
+ *
+ * For handling email reply formats.
+ */
 class Template {
   private array $options;
   private array $defaultOptions = [
@@ -14,6 +19,12 @@ class Template {
     ],
     'templates' => [],
   ];
+
+  /**
+   * Template constructor.
+   *
+   * @param array<string, mixed> $options An associative array of options for the template. This will merge with default options.
+   */
   function __construct(array $options = []) {
     global $SV_INTERFACE_TARGET;
     $form_controller = new FormController();
@@ -27,6 +38,13 @@ class Template {
     }
   }
 
+  /**
+   * Retrieves a formatted template by name.
+   *
+   * @param string $template_name The name of the template to retrieve.
+   *
+   * @return string The formatted template with data replacements based on defined aliases.
+   */
   function get(string $template_name) {
     $format = isset($this->interface) ? $this->interface->get_template(template_name: $template_name) : $this->options['templates'][$template_name];
     $body = $format;
