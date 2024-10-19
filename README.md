@@ -35,8 +35,8 @@ use Respect\Validation\Validator as v;
 
 $schema = [
   'type' => v::notEmpty()
-              ->setTemplate('Please select an item')
-              ->in(['option1', 'option2', 'option3']),
+    ->setTemplate('Please select an item')
+    ->in(['option1', 'option2', 'option3']),
   'name' => v::stringType()->length(1, 50),
   'email' => v::email(),
   'phone' => v::phone()->length(10, 15),
@@ -75,32 +75,10 @@ $result = $validator->validate($_POST);
 
 [docs](docs)
 
-## Require
-
-| name | versions |
-|:--|:--|
-| PHP | ^7.4 \|\| ^8.0 \|\| ^8.1 \|\| ^8.2 |
-
 ## Dependencies
-https://packagist.org/packages/respect/validation#2.2.4
+- [Respect/Validation](https://packagist.org/packages/respect/validation#2.2.4)
 
 ## Futures
 - Some options
   - reCAPTCHA
   - i18n
-
-## ⛏️Plugin Development
-
-## Require
-- [wp-now](https://github.com/WordPress/playground-tools/tree/trunk/packages/wp-now)
-
-## Setup
-
-```sh
-pnpm install
-pnpm dev # start wp-content mode
-```
-
-## Docs
-
-https://github.com/WordPress/playground-tools/tree/trunk/packages/wp-now#automatic-modes
