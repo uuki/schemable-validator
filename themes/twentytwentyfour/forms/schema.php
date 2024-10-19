@@ -19,8 +19,8 @@ $get_schema = function ($data) {
       ->key('name', v::oneOf(
         v::extension('jpg'),
         v::extension('png'),
-      ))
-      ->key('tmp_name', v::fileSize('3MB')),
+      )),
+      // ->key('tmp_name', v::fileSize('3MB')),
     'agreement' => v::trueVal()
   ];
 };
