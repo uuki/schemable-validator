@@ -2,7 +2,13 @@
   "name": "schemable-validator",
   "description": "Schema based validation plugin.",
   "type": "package",
+  "license": "MIT",
   "version": "0.1.0",
+  "autoload": {
+    "psr-4": {
+      "Vendor\\SchemableValidator\\": "plugins/schemable-validator/"
+    }
+  },
   "require": {
     "php": ">=7.4",
     "respect/validation": "2.2.4"
