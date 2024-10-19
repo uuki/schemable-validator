@@ -1,4 +1,23 @@
 
+# Schemable Validator
+
+The Schemable Validator was developed to streamline the validation processing involved in form submissions.
+
+## ✨ Features
+
+- 🍨 **Vanilla PHP Based**: Designed to be independent of specific systems such as CMS platforms.
+- ✅ **Validation**: Built on flexible and powerful validation processing using Respect/Validation, with sanitization features.
+- 📂 **Data Store**: Equipped with a controller that allows for easy storage of validated data for reuse across different pages and processes.
+- ⚙️ **Customizability**: Supports replaceable reply templates through aliases.
+
+## 📦 Install
+
+```shell
+```
+
+## 🐣 Usage
+
+
 ## Require
 
 | name | versions |
@@ -8,15 +27,7 @@
 ## Dependencies
 https://packagist.org/packages/respect/validation#2.2.4
 
-## Features
-- Schema-based validation
-- Editable reply format
-- Auto sanitization
-- Persist data controller
-
 ## Futures
-- nonce for wordpress
-- Check binary
 - Some options
   - reCAPTCHA
-- i18n
+  - i18n
