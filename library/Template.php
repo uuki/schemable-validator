@@ -1,17 +1,17 @@
 <?php
 namespace SchemableValidator;
 
-use SchemableValidator\FormController;
-use SchemableValidator\Interface\Wordpress\Admin as WordpressInterface;
-
-require_once __DIR__ . '/../helpers.php';
+use SchemableValidator\Controllers\FormController;
+use SchemableValidator\Interfaces\WordPress\Admin as WordpressInterface;
 
 /**
  * Class Template
  *
  * For handling email reply formats.
  */
-class Template {
+final class Template {
+  use Helpers\Environment;
+
   private array $options;
   private array $defaultOptions = [
     'aliases' => [
@@ -34,7 +34,7 @@ class Template {
     $this->interface = null;
     $this->data = $form_controller->get();
 
-    $env_name = sv_get_environment();
+    $env_name = $this->getEnvironment();
 
     if ($env_name === 'wordpress') {
       $this->interface = new WordpressInterface($this->options['templates']);

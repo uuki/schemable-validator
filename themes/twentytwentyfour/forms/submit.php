@@ -1,8 +1,14 @@
 <?php
 require_once "schema.php";
 
+require_once get_template_directory() . '/vendor/autoload.php';
+
 use SchemableValidator\Validator;
-use SchemableValidator\FormController;
+use SchemableValidator\Controllers\FormController;
+
+$a = new Validator();
+
+exit(var_dump($a));
 
 global $get_schema;
 

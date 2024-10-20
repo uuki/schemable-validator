@@ -1,7 +1,9 @@
-<?php 
+<?php
 
-if (!function_exists('sv_get_environment')) {
-  function sv_get_environment() {
+namespace SchemableValidator\Helpers;
+
+trait Environment {
+  private function getEnvironment() {
     $result = 'unknown';
 
     if (defined('ABSPATH') && function_exists('wp')) {

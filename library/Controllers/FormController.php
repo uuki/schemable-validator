@@ -1,5 +1,7 @@
 <?php
-namespace SchemableValidator;
+namespace SchemableValidator\Controllers;
+
+require_once __DIR__ . "/../constants.php";
 
 session_start();
 
@@ -8,7 +10,7 @@ session_start();
  *
  * Manages form data validation and storage within the session.
  */
-class FormController {
+final class FormController {
 
   /**
    * Saves validated form data to the session.

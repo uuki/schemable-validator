@@ -1,7 +1,17 @@
 <?php
+/**
+ * Plugin Name: schemable-validator
+ * Plugin URI: None
+ * Description: Respect/Validation based, schema-based validation library
+ * Version: 0.1.0
+ * Author: uuki<uuki.dev@gmail.com>
+ */
+
 namespace SchemableValidator;
 
 require SV_VENDOR_DIR . "/autoload.php";
+require_once "constants.php";
+
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 
@@ -10,7 +20,7 @@ use Respect\Validation\Validator as v;
  *
  * Provide methods related to validation according to the defined schema.
  */
-class Validator {
+final class Validator {
   /**
    * @var array<string, v> $schema
    */

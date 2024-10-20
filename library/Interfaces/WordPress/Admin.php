@@ -1,10 +1,10 @@
 <?php
-namespace SchemableValidator\Interface\Wordpress;
+namespace SchemableValidator\Interfaces\Wordpress;
 
-require_once SV_ROOT_DIR . '/interfaces/wordpress/constants.php';
-require_once SV_ROOT_DIR . '/interfaces/wordpress/edit_body.php';
+require_once __DIR__ . '/constants.php';
+require_once __DIR__ . '/EditBody.php';
 
-class Admin {
+final class Admin {
 
   function __construct($options) {
     $this->templates = array_merge([
