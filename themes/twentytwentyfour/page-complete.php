@@ -5,7 +5,7 @@
   /**
    * Example
    */
-  require_once SCHEMABLE_VALIDATOR_PATH . '/Controllers/FormController.php';
+  // require_once SCHEMABLE_VALIDATOR_PATH . '/Controllers/FormController.php';
   use SchemableValidator\FormController;
   $form_controller = new FormController();
   $form_controller->clear();

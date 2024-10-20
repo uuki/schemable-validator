@@ -1,7 +1,7 @@
 <?php
 require_once "schema.php";
-require_once SCHEMABLE_VALIDATOR_PATH . '/Validator.php';
-require_once SCHEMABLE_VALIDATOR_PATH . '/Controllers/FormController.php';
+// require_once SCHEMABLE_VALIDATOR_PATH . '/Validator.php';
+// require_once SCHEMABLE_VALIDATOR_PATH . '/Controllers/FormController.php';
 
 use SchemableValidator\Validator as Validator;
 use SchemableValidator\Controllers\FormController;

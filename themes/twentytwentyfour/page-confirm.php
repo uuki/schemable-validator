@@ -2,8 +2,8 @@
 /* Template Name: form-confirm */
   get_header();
 
-  require_once SCHEMABLE_VALIDATOR_PATH . '/Template.php';
-  require_once SCHEMABLE_VALIDATOR_PATH . '/Controllers/FormController.php';
+  // require_once SCHEMABLE_VALIDATOR_PATH . '/Template.php';
+  // require_once SCHEMABLE_VALIDATOR_PATH . '/Controllers/FormController.php';
   use SchemableValidator\Template;
   use SchemableValidator\FormController;
 

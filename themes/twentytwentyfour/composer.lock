@@ -213,12 +213,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/uuki/schemable-validator.git",
-                "reference": "70c4e1d1f95b0a918fc92ecdb630c2679a807392"
+                "reference": "07e0b21613f8812e2198aa5f2aff57a46946279c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/uuki/schemable-validator/zipball/70c4e1d1f95b0a918fc92ecdb630c2679a807392",
-                "reference": "70c4e1d1f95b0a918fc92ecdb630c2679a807392",
+                "url": "https://api.github.com/repos/uuki/schemable-validator/zipball/07e0b21613f8812e2198aa5f2aff57a46946279c",
+                "reference": "07e0b21613f8812e2198aa5f2aff57a46946279c",
                 "shasum": ""
             },
             "require": {
@@ -240,7 +240,7 @@
                 "issues": "https://github.com/uuki/schemable-validator/issues",
                 "source": "https://github.com/uuki/schemable-validator/tree/0.x"
             },
-            "time": "2024-10-19T12:37:14+00:00"
+            "time": "2024-10-19T16:50:06+00:00"
         }
     ],
     "packages-dev": [],
