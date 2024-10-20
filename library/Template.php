@@ -1,5 +1,6 @@
 <?php
 namespace SchemableValidator;
+require SV_VENDOR_DIR . "/autoload.php";
 
 use SchemableValidator\Controllers\FormController;
 use SchemableValidator\Interfaces\WordPress\Admin as WordpressInterface;
