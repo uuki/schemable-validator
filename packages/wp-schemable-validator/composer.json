@@ -4,10 +4,18 @@
   "require": {
     "uuki/schemable-validator": "*"
   },
+  "autoload": {
+    "psr-4": {
+      "SchemableValidator\\Interfaces\\WordPress\\": "src/Interfaces/WordPress/"
+    },
+    "files": [
+      "src/Interfaces/WordPress/constants.php"
+    ]
+  },
   "repositories": [
     {
       "type": "path",
-      "url": "../..",
+      "url": "../../..",
       "options": {
         "symlink": false
       }

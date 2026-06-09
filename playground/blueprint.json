@@ -17,7 +17,7 @@
     },
     {
       "step": "activatePlugin",
-      "pluginPath": "schemable-validator/index.php"
+      "pluginPath": "wp-schemable-validator/index.php"
     },
     {
       "step": "setSiteOptions",

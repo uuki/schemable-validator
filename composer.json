@@ -6,12 +6,12 @@
   "version": "0.1.0",
   "autoload": {
     "psr-4": {
-      "SchemableValidator\\": "library/"
+      "SchemableValidator\\": "packages/core/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "SchemableValidator\\Tests\\": "tests/"
+      "SchemableValidator\\Tests\\": "packages/core/tests/"
     }
   },
   "require": {

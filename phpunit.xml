@@ -5,12 +5,12 @@
          colors="true">
   <testsuites>
     <testsuite name="Unit">
-      <directory>tests/Unit</directory>
+      <directory>packages/core/tests/Unit</directory>
     </testsuite>
   </testsuites>
   <coverage>
     <include>
-      <directory suffix=".php">library</directory>
+      <directory suffix=".php">packages/core</directory>
     </include>
   </coverage>
 </phpunit>

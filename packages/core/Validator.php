@@ -9,8 +9,8 @@
 
 namespace SchemableValidator;
 
-require_once "constants.php";
-require SV_VENDOR_DIR . "/autoload.php";
+require_once __DIR__ . '/constants.php';
+require_once SV_VENDOR_DIR . '/autoload.php';
 
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
