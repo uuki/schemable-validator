@@ -3,6 +3,7 @@ node_modules/
 
 # composer
 vendor/
+plugins/schemable-validator/vendor/
 
 # wp-now development files.
 database/
@@ -13,3 +14,6 @@ uploads/
 # local development files
 library/Models/
 library/**/ignore.*.php
+
+# cache
+.phpunit.result.cache

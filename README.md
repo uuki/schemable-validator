@@ -23,7 +23,7 @@ composer require uuki/schemable-validator:0.x@dev
 Include plugin.
 
 ```php
-require_once __DIR__ . '/path/to/vendor/uuki/schemable-validator/src/index.php';
+require_once '/path/to/vendor/autoload.php';
 ```
 
 ### Step 2.
@@ -79,6 +79,4 @@ $result = $validator->validate($_POST);
 - [Respect/Validation](https://packagist.org/packages/respect/validation#2.2.4)
 
 ## Futures
-- Some options
-  - reCAPTCHA
   - i18n

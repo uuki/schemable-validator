@@ -14,6 +14,7 @@ require SV_VENDOR_DIR . "/autoload.php";
 
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
+use SchemableValidator\Controllers\CurlController;
 
 /**
  * Class Validator
@@ -21,25 +22,31 @@ use Respect\Validation\Validator as v;
  * Provide methods related to validation according to the defined schema.
  */
 final class Validator {
+  use Helpers\Security;
+
   /**
    * @var array<string, v> $schema
    */
   private array $schema;
+
+  /** @var array<string, mixed> */
+  private array $options;
+
+  /** @var array<string, mixed> */
+  private array $state;
 
   /**
    * Validator constructor.
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances. Validation rules can be found here https://github.com/Respect/Validation/blob/2.2/docs/list-of-rules.md
    */
-  function __construct(array $schema = [], $options = []) {
+  function __construct(array $schema = [], array $options = []) {
     $this->schema = $schema;
-
     $this->options = array_merge([
       'recaptcha_provider' => 'https://www.google.com/recaptcha/api/siteverify',
       'recaptcha_secret' => '',
       'recaptcha_valid_score' => 0.5,
     ], $options);
-
     $this->state = [
       'result' => [],
       'token' => null,
@@ -58,22 +65,19 @@ final class Validator {
    *
    * @param array<string, mixed> $data The data to be validated, where keys correspond to schema field names.
    *
-   * @return array<string, array<string, mixed>> Array of validation results.
+   * @return static
    */
-  function validate(array $data) {
-    if ($data['recaptcha_token']) {
+  public function validate(array $data): self {
+    if (!empty($data['recaptcha_token'])) {
       $this->state['recaptcha_token'] = $data['recaptcha_token'];
-      $this->state['recaptcha_action'] = $data['recaptcha_action'];
     }
 
     foreach($this->schema as $name => $validator) {
       $value = isset($data[$name]) ? $this->sanitize($data[$name]) : null;
-      $newState = $this->assertByValidator($value, $validator);
-
-      $this->state['result'][$name] = $newState;
+      $this->state['result'][$name] = $this->assert($value, $validator);
     }
 
-    return $this->state['result'];
+    return $this;
   }
 
   /**
@@ -89,9 +93,9 @@ final class Validator {
    *
    * @param array<string, mixed> $options An optional array of options for file validation. Default is ['native_files' => true]. When passing data from an array other than $_FILES, use false.
    *
-   * @return array<string, array<string, mixed>> Array of validation results.
+   * @return static
    */
-  function validateFiles(array $data, array $options = []) {
+  public function validateFiles(array $data, array $options = []): self {
     $options = array_merge([
       'native_files' => true,
     ], $options);
@@ -110,15 +114,83 @@ final class Validator {
       $validator = $this->schema[$name];
       $this->state['result'][$name] = [];
 
-      foreach ($files as $index => $file_data) {
-        $newState = $this->assertByValidator($file_data, $validator);
-        array_push($this->state['result'][$name], $newState);
+      foreach ($files as $file_data) {
+        $this->state['result'][$name][] = $this->assert($file_data, $validator);
       }
     }
+
+    return $this;
+  }
+
+  /**
+   * @param array<string, mixed> $options
+   * @return static
+   */
+  public function validateReCaptcha(array $options = []): self {
+    $curl = new CurlController();
+    $options = array_merge([
+      'action' => null,
+    ], $options);
+
+    $newState = $this->createState();
+    $params = [
+      'secret' => $this->options['recaptcha_secret'],
+      'response' => $this->state['recaptcha_token'],
+    ];
+
+    $recaptcha_result = null;
+
+    try {
+      $result = $curl->post($this->options['recaptcha_provider'], $params);
+      $recaptcha_result = json_decode($result['response']);
+
+      $newState['value'] = $recaptcha_result->score;
+      $newState['is_valid'] = $recaptcha_result->success &&
+        $recaptcha_result->score >= $this->options['recaptcha_valid_score'];
+
+      if ($options['action']) {
+        $newState['is_valid'] = $options['action'] === $recaptcha_result->action;
+      }
+    } catch(\Exception $e) {
+      $newState['errors'] = [
+        'message' => $e->getMessage(),
+        'result' => [
+          'success' => $recaptcha_result->success ?? null,
+          'action' => $recaptcha_result->action ?? null,
+        ],
+      ];
+    }
+
+    $this->state['result']['recaptcha'] = $newState;
+
+    return $this;
+  }
+
+  public function getResult(): array {
     return $this->state['result'];
   }
 
-  private function createState() {
+  public function createToken(): string {
+    $new_token = bin2hex(random_bytes(32));
+    $this->startSession();
+    $_SESSION['schv_csrf_token'] = $new_token;
+    $this->state['token'] = $new_token;
+
+    return $new_token;
+  }
+
+  public function checkToken(string $token): bool {
+    $this->startSession();
+    return isset($_SESSION['schv_csrf_token']) && hash_equals($_SESSION['schv_csrf_token'], $token);
+  }
+
+  private function startSession(): void {
+    if (session_status() === PHP_SESSION_NONE) {
+      session_start();
+    }
+  }
+
+  private function createState(): array {
     return [
       'value' => null,
       'errors' => null,
@@ -126,9 +198,8 @@ final class Validator {
     ];
   }
 
-  private function assertByValidator($data, $validator) {
+  private function assert($data, $validator): array {
     $newState = $this->createState();
-
     $newState['value'] = $data;
 
     try {
@@ -140,10 +211,11 @@ final class Validator {
     if (!isset($newState['errors'])) {
       $newState['is_valid'] = true;
     }
+
     return $newState;
   }
 
-  private function normalizeFile(array $file) {
+  private function normalizeFile(array $file): array {
     $result = [];
 
     if (isset($file['name']) && is_array($file['name'])) {
@@ -165,59 +237,6 @@ final class Validator {
         'size' => $file['size'] ?? 0,
       ];
     }
-    return $result;
-  }
-
-  private function sanitize(string $str) {
-    $result = '';
-    // Remove html tags
-    $result = strip_tags($str);
-    // Convert special characters to HTML entities
-    $result = htmlspecialchars($result, ENT_QUOTES, 'UTF-8');
-    // Remove newlines, tabs, and other control characters and whitespace
-    $result = trim(preg_replace('/[\r\n\t]/', '', $result));
-    return $result;
-  }
-
-  function createToken() {
-    $new_token = bin2hex(random_bytes(32));
-    $this->state['token'] = $new_token;
-
-    return $new_token;
-  }
-
-  function checkToken($token){
-    return $token === $this->state['token'];
-  }
-
-  function withReCaptcha($result) {
-    $newState = $this->createState();
-    $c = curl_init();
-    $params = [
-      'secret' => $this->options['recaptcha_secret'],
-      'response' => $this->state['recaptcha_token'],
-    ];
-
-    curl_setopt($c, CURLOPT_URL, $this->options['recaptcha_provider']);
-    curl_setopt($c, CURLOPT_POST, true);
-    curl_setopt($c, CURLOPT_POSTFIELDS, http_build_query($params));
-    curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-
-    try {
-      $response = curl_exec($c);
-      curl_close($c);
-
-      $recaptcha_result = json_decode($response);
-
-      $newState['value'] = $recaptcha_result->score;
-      $newState['is_valid'] = $recaptcha_result->success &&
-        $recaptcha_result->action === $this->state['recaptcha_action'] &&
-        $recaptcha_result->score >= $this->options['recaptcha_valid_score'];
-    } catch(\Exception $e) {
-      $newState['errors'] = $e;
-    }
-
-    $result['recaptcha'] = $newState;
 
     return $result;
   }

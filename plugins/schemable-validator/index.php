@@ -2,17 +2,13 @@
 /**
  * Plugin Name: Schemable Validator
  * Description: Schema based validation plugin.
- * Version: 0.1.0
- * Author: uuki<uuki.dev@gmail.com>
  */
-// require __DIR__ . '/../../themes/twentytwentyfour/vendor/uuki/schemable-validator/library/Interfaces/WordPress/Plugin.php';
 
-// // require PATH_AUTOLOADER;
-// use SchemableValidator\Interfaces\Wordpress\Plugin;
-// $plugin = new Plugin();
+require_once __DIR__ . '/vendor/autoload.php';
 
-// require $plugin->getPluginPath();
+use SchemableValidator\Interfaces\WordPress\Plugin;
+new Plugin();
 
-if (file_exists(__DIR__ . '/../../themes/twentytwentyfour/vendor/uuki/schemable-validator/src/interfaces/wordpress/install.php')) {
-  require_once __DIR__ . '/../../themes/twentytwentyfour/vendor/uuki/schemable-validator/src/interfaces/wordpress/install.php';
+if (defined('WP_ENVIRONMENT_TYPE') && WP_ENVIRONMENT_TYPE === 'local') {
+  require_once __DIR__ . '/examples/loader.php';
 }

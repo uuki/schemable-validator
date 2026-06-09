@@ -5,10 +5,7 @@
   "private": true,
   "main": "",
   "scripts": {
-    "dev": "wp-now start --blueprint=blueprint.config.json"
+    "dev": "pnpm --filter playground dev"
   },
-  "author": "uuki<uuki.dev@gmail.com>",
-  "devDependencies": {
-    "@wp-now/wp-now": "^0.1.74"
-  }
+  "author": "uuki<uuki.dev@gmail.com>"
 }

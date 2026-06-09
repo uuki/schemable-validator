@@ -1,0 +1,17 @@
+{
+  "name": "uuki/schemable-validator-plugin",
+  "type": "wordpress-plugin",
+  "require": {
+    "uuki/schemable-validator": "*"
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../..",
+      "options": {
+        "symlink": false
+      }
+    }
+  ],
+  "minimum-stability": "dev"
+}

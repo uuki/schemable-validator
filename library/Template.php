@@ -1,9 +1,11 @@
 <?php
 namespace SchemableValidator;
+
+require_once "constants.php";
 require SV_VENDOR_DIR . "/autoload.php";
 
 use SchemableValidator\Controllers\FormController;
-use SchemableValidator\Interfaces\WordPress\Admin as WordpressInterface;
+use SchemableValidator\Interfaces\WordPress as WordpressInterface;
 
 /**
  * Class Template
@@ -14,6 +16,13 @@ final class Template {
   use Helpers\Environment;
 
   private array $options;
+
+  /** @var \SchemableValidator\Interfaces\AbstractInterface|null */
+  private $interface;
+
+  /** @var array<string, mixed>|null */
+  private $data;
+
   private array $defaultOptions = [
     'aliases' => [
       'name' => 'name',
@@ -28,7 +37,11 @@ final class Template {
    *
    * @param array<string, mixed> $options An associative array of options for the template. This will merge with default options.
    */
-  function __construct(array $options = []) {
+  function __construct(array $options = [
+      'aliases' => [],
+      'templates' => []
+    ]) {
+
     $form_controller = new FormController();
     $this->options = array_merge($this->defaultOptions, $options);
 
@@ -49,17 +62,21 @@ final class Template {
    *
    * @return string The formatted template with data replacements based on defined aliases.
    */
-  function get(string $template_name) {
-    $format = isset($this->interface) ? $this->interface->get_template($template_name) : $this->options['templates'][$template_name];
+  function get(string $template_name): string {
+    $format = isset($this->interface) ? $this->interface->getTemplate($template_name) : $this->options['templates'][$template_name];
     $body = $format;
 
     foreach ($this->options['aliases'] as $key => $value) {
-      $field = $this->data[$this->options['aliases'][$value]] ?? null;
+      $field = $this->data[$value] ?? null;
 
       if (isset($field)) {
         $body = str_replace('{'.$key.'}', $field['value'], $body);
       }
     }
     return $body;
+  }
+
+  function getAll(): array {
+    return $this->interface->getAll();
   }
 }

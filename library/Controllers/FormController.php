@@ -3,8 +3,6 @@ namespace SchemableValidator\Controllers;
 
 require_once __DIR__ . "/../constants.php";
 
-session_start();
-
 /**
  * Class FormController
  *
@@ -12,30 +10,30 @@ session_start();
  */
 final class FormController {
 
+  private function startSession(): void {
+    if (session_status() === PHP_SESSION_NONE) {
+      session_start();
+    }
+  }
+
   /**
-   * Saves validated form data to the session.
-   *
-   * @param array<string, mixed> $data Array of validation results to be stored in the session. The data will be saved under the key SV_SESSION_VALIDATED_DATA.
+   * @param array<string, mixed> $data
    */
-  public function save(array $data) {
+  public function save(array $data): void {
+    $this->startSession();
     $_SESSION[SV_SESSION_VALIDATED_DATA] = $data;
   }
 
   /**
-   * Retrieves validated form data from the session.
-   *
-   * @return array<string, mixed>|null The validation results from the session, or null if no data is found.
+   * @return array<string, mixed>|null
    */
-  public function get() {
+  public function get(): ?array {
+    $this->startSession();
     return $_SESSION[SV_SESSION_VALIDATED_DATA] ?? null;
   }
 
-  /**
-   * Clears the validation results from the session.
-   *
-   * This method will remove the data stored under the key SV_SESSION_VALIDATED_DATA.
-   */
-  public function clear() {
+  public function clear(): void {
+    $this->startSession();
     unset($_SESSION[SV_SESSION_VALIDATED_DATA]);
   }
 }

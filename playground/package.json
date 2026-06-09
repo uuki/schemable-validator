@@ -1,0 +1,12 @@
+{
+  "name": "playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "composer install --no-dev --working-dir=../plugins/schemable-validator",
+    "dev": "wp-playground-cli start --path=../plugins/schemable-validator --port=9400 --blueprint=blueprint.json"
+  },
+  "devDependencies": {
+    "@wp-playground/cli": "*"
+  }
+}
