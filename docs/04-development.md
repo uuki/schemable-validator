@@ -71,8 +71,8 @@ pnpm dev   # http://127.0.0.1:9400 で起動
 
 ### Playground でカスタム Constraint を試す
 
-`/schv-schema-sdk/` の Zod スキーマに `superRefine()` を追加することで、`x-unmapped-fields` のカスタム検証を Playground 上で動作確認できる。  
-`schema-sdk.php` の `buildZodSchema()` 呼び出し直後に以下を挿入する。
+`/schv-schema-client/` の Zod スキーマに `superRefine()` を追加することで、`x-unmapped-fields` のカスタム検証を Playground 上で動作確認できる。  
+`schema-client.php` の `buildZodSchema()` 呼び出し直後に以下を挿入する。
 
 ```javascript
 // esm.sh import を script タグ先頭に追加:

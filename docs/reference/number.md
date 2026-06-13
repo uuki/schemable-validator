@@ -125,4 +125,4 @@ $schema = SV::object([
 }
 ```
 
-> SDK の `validateObject` はフォーム入力の文字列を `Number()` で数値に変換してから検証する。`z.coerce.number()` を使う Zod 統合でも同様。
+> クライアントの `validateObject` はフォーム入力の文字列を `Number()` で数値に変換してから検証する。`z.coerce.number()` を使う Zod 統合でも同様。

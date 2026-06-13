@@ -93,7 +93,7 @@ SV::string()->email()
 { "type": "string", "format": "email" }
 ```
 
-> SDK の `checkFormat` は `^[^\s@]+@[^\s@]+\.[^\s@]+$` で事前検証する。より厳密な検証はサーバー側（Respect `v::email()`）で行われる。
+> クライアントの `checkFormat` は `^[^\s@]+@[^\s@]+\.[^\s@]+$` で事前検証する。より厳密な検証はサーバー側（Respect `v::email()`）で行われる。
 
 ---
 

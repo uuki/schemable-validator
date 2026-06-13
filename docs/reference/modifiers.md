@@ -14,7 +14,7 @@ SV::string()->optional()
 
 **効果:**
 - `required` 配列に含まれなくなる
-- SDK の `validateObject` は空文字のとき制約チェックをスキップする
+- クライアントの `validateObject` は空文字のとき制約チェックをスキップする
 - Zod 統合では `z.preprocess(v => v === '' ? undefined : v, zType.optional())` として扱われる
 
 **用途:** 電話番号・会社名・コメントなど、入力しなくてもよいフィールド。
@@ -72,7 +72,7 @@ SV::string()->url()->nullable()
 |:--|:--|:--|
 | 意味 | 入力しなくてよい（省略可） | `null` を値として送れる |
 | `required` への影響 | `required` から除外 | 影響しない |
-| 空文字の扱い | SDK がスキップ | `null` に変換されうる |
+| 空文字の扱い | クライアントがスキップ | `null` に変換されうる |
 | JSON Schema | `required` から除外 | `type: ["...", "null"]` |
 
 ### 両方付ける場合

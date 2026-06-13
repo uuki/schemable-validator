@@ -3,7 +3,7 @@
 これらの型は Respect/Validation でサーバー側検証を行うが、JSON Schema に変換できない。
 `toJsonSchema()` の出力では `properties` に含まれず、`x-unmapped-fields` にフィールド名が記録される。
 
-SDK の `validateObject` はこれらのフィールドを自動的にスキップし、サーバー側に委譲する。
+クライアントの `validateObject` はこれらのフィールドを自動的にスキップし、サーバー側に委譲する。
 
 ---
 
@@ -188,10 +188,10 @@ $schema = SV::object([
 
 ## x-unmapped-fields の扱い
 
-クライアント側で `x-unmapped-fields` を追加検証するには、SDK の `Constraint` または Zod の `.superRefine()` を使う。
+クライアント側で `x-unmapped-fields` を追加検証するには、クライアントの `Constraint` または Zod の `.superRefine()` を使う。
 
 ```typescript
-// SDK: 手動で追加検証
+// client: 手動で追加検証
 const result = validateObject(data, schema)
 const unmapped = schema['x-unmapped-fields'] ?? []
 

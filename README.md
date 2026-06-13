@@ -21,7 +21,7 @@ SV::object([...])          ← PHP: single source of truth
                      Zod / any JS validator
 ```
 
-Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and delegated to the server automatically by the SDK.
+Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and delegated to the server automatically by the client library.
 
 ---
 
@@ -31,7 +31,7 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 |:--|:--|
 | `uuki/schemable-validator` | PHP core library (framework-agnostic) |
 | `wp-schemable-validator` | WordPress plugin — REST endpoint, helpers, admin UI |
-| `@schemable-validator/client` | TypeScript SDK — validates against JSON Schema output |
+| `@schemable-validator/client` | TypeScript client — validates against JSON Schema output |
 
 ---
 
@@ -65,7 +65,7 @@ $result = $schema->toValidator()->validate($_POST)->getResult();
 schv_register_schema('/schema/contact', $schema);
 ```
 
-### 4. Client-side validation (TypeScript SDK)
+### 4. Client-side validation (TypeScript client)
 
 ```typescript
 import { validateObject, isAllValid, extractErrors } from '@schemable-validator/client'
@@ -122,7 +122,7 @@ composer require uuki/schemable-validator:0.x@dev
 # WordPress plugin
 cd packages/wp-schemable-validator && composer install --no-dev
 
-# TypeScript SDK
+# TypeScript client
 npm install @schemable-validator/client
 ```
 

@@ -21,19 +21,19 @@ schv_register_schema('/schema/contact', $schema);
 
 // Store for shortcode display
 add_action('init', function () use ($schema) {
-  $GLOBALS['schv_registered_schema_sdk'] = $schema;
+  $GLOBALS['schv_registered_schema_client'] = $schema;
 });
 
 // 3. Server-side POST handler (same schema — no duplication)
 add_action('template_redirect', function () use ($schema) {
-  if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'schema-sdk') {
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'schema-client') {
     return;
   }
-  $GLOBALS['schv_ex_schema_sdk'] = $schema->toValidator()->validate($_POST)->getResult();
+  $GLOBALS['schv_ex_schema_client'] = $schema->toValidator()->validate($_POST)->getResult();
 });
 
-add_shortcode('schv_example_schema_sdk', function (): string {
-  $r          = $GLOBALS['schv_ex_schema_sdk'] ?? [];
+add_shortcode('schv_example_schema_client', function (): string {
+  $r          = $GLOBALS['schv_ex_schema_client'] ?? [];
   $schema_url = schv_schema_url('/schema/contact');
 
   ob_start(); ?>
@@ -47,7 +47,7 @@ add_shortcode('schv_example_schema_sdk', function (): string {
     <details style="margin-bottom:1rem">
       <summary style="cursor:pointer;font-weight:bold">JSON Schema (<code><?php echo esc_html($schema_url); ?></code>)</summary>
       <pre style="background:#f5f5f5;padding:1rem;overflow:auto;font-size:.8em;margin-top:.5rem"><?php
-        $json = $GLOBALS['schv_registered_schema_sdk']->toJson();
+        $json = $GLOBALS['schv_registered_schema_client']->toJson();
         echo esc_html(json_encode(
           json_decode($json),
           JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
@@ -67,8 +67,8 @@ add_shortcode('schv_example_schema_sdk', function (): string {
       </div>
     <?php endif; ?>
 
-    <form id="schv-sdk-form" method="post" novalidate>
-      <input type="hidden" name="schv_action" value="schema-sdk">
+    <form id="schv-client-form" method="post" novalidate>
+      <input type="hidden" name="schv_action" value="schema-client">
 
       <?php
       $fields = [
@@ -201,7 +201,7 @@ add_shortcode('schv_example_schema_sdk', function (): string {
     // Errors are only shown for dirty fields so the form starts clean.
 
     const dirty   = new Set()
-    const form    = document.getElementById('schv-sdk-form')
+    const form    = document.getElementById('schv-client-form')
     let zodSchema = null
     let jsonSchema = null
 

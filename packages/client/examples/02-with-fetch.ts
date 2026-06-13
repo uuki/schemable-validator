@@ -1,12 +1,12 @@
-// Combining the SDK with a fetch call.
+// Combining the client library with a fetch call.
 //
-// The SDK has no opinion on transport. Here we use the browser's fetch API,
+// The client library has no opinion on transport. Here we use the browser's fetch API,
 // but any HTTP client (axios, ky, wretch, …) works the same way.
 
 import { validateObject, isAllValid, extractErrors } from '../src/index.js'
 import type { ObjectSchema } from '../src/index.js'
 
-// Fetch the schema once, cache it yourself — the SDK does not own this concern.
+// Fetch the schema once, cache it yourself — the client library does not own this concern.
 async function fetchSchema(url: string): Promise<ObjectSchema> {
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error(`schema fetch failed: ${res.status}`)

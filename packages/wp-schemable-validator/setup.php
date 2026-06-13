@@ -20,7 +20,7 @@ add_action('init', function () {
         . '<li><a href="/schv-csrf/">CSRF Token</a></li>'
         . '<li><a href="/schv-template/">Template</a></li>'
         . '<li><a href="/schv-form-input/">Multi-step Form</a></li>'
-        . '<li><a href="/schv-schema-sdk/">SchemaBuilder + SDK</a></li>'
+        . '<li><a href="/schv-schema-client/">SchemaBuilder + Client</a></li>'
         . '</ul>',
     ],
     ['schv-validate',     'Validate Example',        '[schv_example_validate]'],
@@ -31,7 +31,7 @@ add_action('init', function () {
     ['schv-form-input',   'Form: Input',             '[schv_example_form_input]'],
     ['schv-form-confirm', 'Form: Confirm',           '[schv_example_form_confirm]'],
     ['schv-form-complete','Form: Complete',          '[schv_example_form_complete]'],
-    ['schv-schema-sdk',   'SchemaBuilder + SDK',     '[schv_example_schema_sdk]'],
+    ['schv-schema-client',   'SchemaBuilder + Client',     '[schv_example_schema_client]'],
   ];
 
   foreach ($pages as [$slug, $title, $content]) {

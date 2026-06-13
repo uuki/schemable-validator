@@ -18,7 +18,7 @@ features:
     details: Define all constraints with SV::object() in PHP. Server-side validation and JSON Schema output share the same definition — no duplication.
   - title: JSON Schema draft 2020-12
     details: toJson() exports a standards-compliant schema. Any JSON Schema-aware tool — validators, editors, code generators — can consume it.
-  - title: Framework-agnostic SDK
+  - title: Framework-agnostic client library
     details: '@schemable-validator/client provides a TypeScript ROP-based validation pipeline. Works with Zod, React, Vue, or plain JavaScript.'
   - title: WordPress ready
     details: REST endpoint with ETag caching, schv_register_schema() helper, and admin UI included. Drop in as a WordPress plugin.
