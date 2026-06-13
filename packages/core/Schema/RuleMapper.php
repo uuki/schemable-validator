@@ -58,6 +58,24 @@ final class RuleMapper {
           ['pattern' => $args[0]],
         );
 
+      // --- String formats ---
+      case 'date':
+        return new RuleMapping(v::date('Y-m-d'), ['format' => 'date']);
+      case 'dateTime':
+        return new RuleMapping(v::dateTime(), ['format' => 'date-time']);
+      case 'time':
+        return new RuleMapping(v::time('H:i:s'), ['format' => 'time']);
+      case 'uuid':
+        return new RuleMapping(v::uuid(), ['format' => 'uuid']);
+      case 'ipv4':
+        return new RuleMapping(v::ip('*', FILTER_FLAG_IPV4), ['format' => 'ipv4']);
+      case 'ipv6':
+        return new RuleMapping(v::ip('*', FILTER_FLAG_IPV6), ['format' => 'ipv6']);
+      case 'slug':
+        return new RuleMapping(v::slug(), ['pattern' => '^[a-z0-9]+(?:-[a-z0-9]+)*$']);
+      case 'domain':
+        return new RuleMapping(v::domain(), ['format' => 'hostname']);
+
       // --- Enumeration (args: [array $values]) ---
       case 'in':
         return new RuleMapping(v::in($args[0]), ['enum' => $args[0]]);

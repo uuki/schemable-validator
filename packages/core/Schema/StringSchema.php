@@ -44,6 +44,54 @@ final class StringSchema extends AbstractFieldSchema {
     return $this;
   }
 
+  /** @return $this */
+  public function date() {
+    $this->extras[] = ['rule' => 'date', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function dateTime() {
+    $this->extras[] = ['rule' => 'dateTime', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function time() {
+    $this->extras[] = ['rule' => 'time', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function uuid() {
+    $this->extras[] = ['rule' => 'uuid', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function ipv4() {
+    $this->extras[] = ['rule' => 'ipv4', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function ipv6() {
+    $this->extras[] = ['rule' => 'ipv6', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function slug() {
+    $this->extras[] = ['rule' => 'slug', 'args' => []];
+    return $this;
+  }
+
+  /** @return $this */
+  public function domain() {
+    $this->extras[] = ['rule' => 'domain', 'args' => []];
+    return $this;
+  }
+
   public function toRespect(): v {
     $chain = v::create();
     $chain->addRule(RuleMapper::resolve('string', [])->respect);

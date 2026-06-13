@@ -294,4 +294,412 @@ class SchemaBuilderTest extends TestCase {
     $result2 = $sb->toValidator()->validate(['type' => 'c'])->getResult();
     $this->assertFalse($result2['type']['is_valid']);
   }
+
+  // ── New string formats ───────────────────────────────────────
+
+  /**
+   * @dataProvider stringFormatProvider
+   */
+  public function test_stringSchema_format_jsonSchema(string $method, string $expectedKey, string $expectedValue): void {
+    $js = SV::string()->{$method}()->toJsonSchema();
+    $this->assertSame($expectedValue, $js[$expectedKey] ?? null);
+  }
+
+  public static function stringFormatProvider(): array {
+    return [
+      ['date',     'format',  'date'      ],
+      ['dateTime', 'format',  'date-time' ],
+      ['time',     'format',  'time'      ],
+      ['uuid',     'format',  'uuid'      ],
+      ['ipv4',     'format',  'ipv4'      ],
+      ['ipv6',     'format',  'ipv6'      ],
+      ['domain',   'format',  'hostname'  ],
+      ['slug',     'pattern', '^[a-z0-9]+(?:-[a-z0-9]+)*$'],
+    ];
+  }
+
+  public function test_stringSchema_format_preserves_type(): void {
+    foreach (['date', 'dateTime', 'time', 'uuid', 'ipv4', 'ipv6', 'domain', 'slug'] as $method) {
+      $js = SV::string()->{$method}()->toJsonSchema();
+      $this->assertSame('string', $js['type'], "type must be 'string' for format method '{$method}'");
+    }
+  }
+
+  public function test_stringSchema_date_nullable(): void {
+    $js = SV::string()->date()->nullable()->toJsonSchema();
+    $this->assertSame(['string', 'null'], $js['type']);
+    $this->assertSame('date', $js['format']);
+  }
+
+  // ── SV facade — new wrappers ────────────────────────────────
+
+  public function test_postalCode_is_not_mappable(): void {
+    $field = SV::postalCode('JP');
+    $this->assertFalse($field->isMappable());
+    $this->assertSame([], $field->toJsonSchema());
+  }
+
+  public function test_postalCode_toRespect_validates(): void {
+    $r = SV::postalCode('JP')->toRespect();
+    $this->assertTrue($r->validate('101-0021'));
+    $this->assertFalse($r->validate('not-a-postal'));
+  }
+
+  public function test_creditCard_is_not_mappable(): void {
+    $this->assertFalse(SV::creditCard()->isMappable());
+  }
+
+  public function test_creditCard_toRespect_validates(): void {
+    $r = SV::creditCard()->toRespect();
+    // Luhn-valid test number (Visa)
+    $this->assertTrue($r->validate('4111111111111111'));
+    $this->assertFalse($r->validate('1234567890123456'));
+  }
+
+  public function test_iban_is_not_mappable(): void {
+    $this->assertFalse(SV::iban()->isMappable());
+  }
+
+  public function test_iban_toRespect_validates(): void {
+    $r = SV::iban()->toRespect();
+    $this->assertTrue($r->validate('GB82WEST12345698765432'));
+    $this->assertFalse($r->validate('NOTANIBAN'));
+  }
+
+  // ── ArraySchema ─────────────────────────────────────────────
+
+  public function test_arraySchema_basic_jsonSchema(): void {
+    $js = SV::array(SV::string()->min(1))->toJsonSchema();
+    $this->assertSame('array', $js['type']);
+    $this->assertSame(['type' => 'string', 'minLength' => 1], $js['items']);
+    $this->assertArrayNotHasKey('minItems', $js);
+    $this->assertArrayNotHasKey('maxItems', $js);
+  }
+
+  public function test_arraySchema_minItems_maxItems(): void {
+    $js = SV::array(SV::string())->minItems(1)->maxItems(5)->toJsonSchema();
+    $this->assertSame(1, $js['minItems']);
+    $this->assertSame(5, $js['maxItems']);
+  }
+
+  public function test_arraySchema_enum_items(): void {
+    $js = SV::array(SV::enum(['a', 'b', 'c']))->toJsonSchema();
+    $this->assertSame('array', $js['type']);
+    $this->assertSame(['a', 'b', 'c'], $js['items']['enum']);
+  }
+
+  public function test_arraySchema_in_object_appears_in_properties(): void {
+    $sb = SV::object(['tags' => SV::array(SV::string())->optional()]);
+    $js = $sb->toJsonSchema();
+    $this->assertArrayHasKey('tags', $js['properties']);
+    $this->assertSame('array', $js['properties']['tags']['type']);
+    $this->assertNotContains('tags', $js['required'] ?? []);
+  }
+
+  public function test_arraySchema_toRespect_validates_valid_items(): void {
+    $r = SV::array(SV::string()->min(2))->toRespect();
+    $this->assertTrue($r->validate(['ab', 'cd']));
+  }
+
+  public function test_arraySchema_toRespect_rejects_short_items(): void {
+    $r = SV::array(SV::string()->min(3))->toRespect();
+    $this->assertFalse($r->validate(['ab']));
+  }
+
+  public function test_arraySchema_is_mappable(): void {
+    $this->assertTrue(SV::array(SV::string())->isMappable());
+  }
+
+  // ── SchemaBuilder::when() ────────────────────────────────────
+
+  public function test_when_single_produces_if_then(): void {
+    $js = SV::object([
+      'type'         => SV::enum(['personal', 'company']),
+      'company_name' => SV::string()->optional(),
+    ])->when('type', 'company', ['company_name'])->toJsonSchema();
+
+    $this->assertArrayHasKey('if', $js);
+    $this->assertArrayHasKey('then', $js);
+    $this->assertArrayNotHasKey('allOf', $js);
+    $this->assertSame(['const' => 'company'], $js['if']['properties']['type']);
+    $this->assertSame(['company_name'], $js['then']['required']);
+  }
+
+  public function test_when_multiple_produces_allOf(): void {
+    $js = SV::object([
+      'plan'          => SV::enum(['free', 'enterprise']),
+      'billing_email' => SV::string()->optional(),
+      'contract'      => SV::string()->optional(),
+    ])->when('plan', 'enterprise', ['billing_email'])
+      ->when('plan', 'enterprise', ['contract'])
+      ->toJsonSchema();
+
+    $this->assertArrayNotHasKey('if', $js);
+    $this->assertArrayNotHasKey('then', $js);
+    $this->assertArrayHasKey('allOf', $js);
+    $this->assertCount(2, $js['allOf']);
+    $this->assertSame(['contract'], $js['allOf'][1]['then']['required']);
+  }
+
+  public function test_when_absent_produces_no_conditional_keys(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema();
+    $this->assertArrayNotHasKey('if', $js);
+    $this->assertArrayNotHasKey('then', $js);
+    $this->assertArrayNotHasKey('allOf', $js);
+    $this->assertArrayNotHasKey('x-when', $js);
+  }
+
+  // ── SV::equal / SV::notEqual / SV::field ────────────────────
+
+  public function test_when_with_equal_expr_produces_x_when(): void {
+    $js = SV::object([
+      'type'         => SV::enum(['personal', 'company']),
+      'company_name' => SV::string()->optional(),
+    ])->when('type', SV::equal('company'), ['company_name'])->toJsonSchema();
+
+    $this->assertArrayHasKey('x-when', $js);
+    $this->assertCount(1, $js['x-when']);
+    $this->assertSame('===',          $js['x-when'][0]['op']);
+    $this->assertSame('type',         $js['x-when'][0]['field']);
+    $this->assertSame('company',      $js['x-when'][0]['equals']);
+    $this->assertSame(['company_name'], $js['x-when'][0]['require']);
+    // literal === also emits standard if/then
+    $this->assertArrayHasKey('if', $js);
+    $this->assertArrayHasKey('then', $js);
+  }
+
+  public function test_when_with_not_equal_expr_produces_x_when_no_if_then(): void {
+    $js = SV::object([
+      'role'  => SV::enum(['admin', 'user']),
+      'note'  => SV::string()->optional(),
+    ])->when('role', SV::notEqual('admin'), ['note'])->toJsonSchema();
+
+    $this->assertArrayHasKey('x-when', $js);
+    $this->assertSame('!==',   $js['x-when'][0]['op']);
+    $this->assertSame('admin', $js['x-when'][0]['equals']);
+    // !== conditions are not expressible in standard JSON Schema
+    $this->assertArrayNotHasKey('if', $js);
+    $this->assertArrayNotHasKey('then', $js);
+  }
+
+  public function test_when_with_field_ref_produces_equalsField(): void {
+    $js = SV::object([
+      'password'         => SV::string(),
+      'confirm_password' => SV::string()->optional(),
+      'hint'             => SV::string()->optional(),
+    ])->when('password', SV::equal(SV::field('confirm_password')), ['hint'])->toJsonSchema();
+
+    $this->assertArrayHasKey('x-when', $js);
+    $this->assertSame('===',             $js['x-when'][0]['op']);
+    $this->assertArrayHasKey('equalsField', $js['x-when'][0]);
+    $this->assertSame('confirm_password', $js['x-when'][0]['equalsField']);
+    $this->assertArrayNotHasKey('equals', $js['x-when'][0]);
+    // field refs can't emit standard if/then
+    $this->assertArrayNotHasKey('if', $js);
+  }
+
+  public function test_when_notEqual_field_ref_produces_equalsField(): void {
+    $js = SV::object([
+      'new_password'     => SV::string(),
+      'old_password'     => SV::string()->optional(),
+      'confirmation_msg' => SV::string()->optional(),
+    ])->when('new_password', SV::notEqual(SV::field('old_password')), ['confirmation_msg'])->toJsonSchema();
+
+    $this->assertSame('!==',          $js['x-when'][0]['op']);
+    $this->assertSame('old_password', $js['x-when'][0]['equalsField']);
+  }
+
+  // ── Validator: equal / notEqual runtime ──────────────────────
+
+  public function test_notEqual_triggers_when_condition_matches(): void {
+    $sb = SV::object([
+      'role' => SV::enum(['admin', 'user']),
+      'note' => SV::string()->optional(),
+    ])->when('role', SV::notEqual('admin'), ['note']);
+
+    // role !== 'admin' → note required
+    $result = $sb->toValidator()->validate(['role' => 'user'])->getResult();
+    $this->assertFalse($result['note']['is_valid']);
+  }
+
+  public function test_notEqual_does_not_trigger_when_condition_unmet(): void {
+    $sb = SV::object([
+      'role' => SV::enum(['admin', 'user']),
+      'note' => SV::string()->optional(),
+    ])->when('role', SV::notEqual('admin'), ['note']);
+
+    // role === 'admin' → condition unmet, note not required
+    $result = $sb->toValidator()->validate(['role' => 'admin'])->getResult();
+    if (isset($result['note'])) {
+      $this->assertTrue($result['note']['is_valid']);
+    } else {
+      $this->assertTrue(true);
+    }
+  }
+
+  public function test_equal_field_ref_triggers_when_fields_match(): void {
+    $sb = SV::object([
+      'password'         => SV::string(),
+      'confirm_password' => SV::string(),
+      'hint'             => SV::string()->optional(),
+    ])->when('password', SV::equal(SV::field('confirm_password')), ['hint']);
+
+    // password === confirm_password → hint required
+    $result = $sb->toValidator()->validate([
+      'password'         => 'secret',
+      'confirm_password' => 'secret',
+    ])->getResult();
+    $this->assertFalse($result['hint']['is_valid']);
+  }
+
+  public function test_equal_field_ref_does_not_trigger_when_fields_differ(): void {
+    $sb = SV::object([
+      'password'         => SV::string(),
+      'confirm_password' => SV::string(),
+      'hint'             => SV::string()->optional(),
+    ])->when('password', SV::equal(SV::field('confirm_password')), ['hint']);
+
+    // password !== confirm_password → condition unmet
+    $result = $sb->toValidator()->validate([
+      'password'         => 'secret',
+      'confirm_password' => 'different',
+    ])->getResult();
+    if (isset($result['hint'])) {
+      $this->assertTrue($result['hint']['is_valid']);
+    } else {
+      $this->assertTrue(true);
+    }
+  }
+
+  // ── Numeric operators (>=, <=, >, <) ────────────────────────
+
+  /**
+   * @dataProvider numericOpProvider
+   */
+  public function test_numeric_op_x_when_output(string $method, string $expectedOp): void {
+    $js = SV::object([
+      'age'     => SV::integer(),
+      'consent' => SV::string()->optional(),
+    ])->when('age', SV::{$method}(18), ['consent'])->toJsonSchema();
+
+    $this->assertArrayHasKey('x-when', $js);
+    $this->assertSame($expectedOp, $js['x-when'][0]['op']);
+    $this->assertSame(18, $js['x-when'][0]['equals']);
+    // Numeric ops are not expressible in standard JSON Schema
+    $this->assertArrayNotHasKey('if', $js);
+  }
+
+  public static function numericOpProvider(): array {
+    return [
+      ['greaterThanOrEqual', '>='],
+      ['lessThanOrEqual',    '<='],
+      ['greaterThan',        '>' ],
+      ['lessThan',           '<' ],
+    ];
+  }
+
+  public function test_greaterThanOrEqual_triggers_at_boundary(): void {
+    $sb = SV::object(['age' => SV::integer(), 'note' => SV::string()->optional()])
+      ->when('age', SV::greaterThanOrEqual(18), ['note']);
+    // 18 >= 18 → triggers
+    $result = $sb->toValidator()->validate(['age' => '18'])->getResult();
+    $this->assertFalse($result['note']['is_valid']);
+    // 17 >= 18 → does not trigger
+    $result2 = $sb->toValidator()->validate(['age' => '17', 'note' => ''])->getResult();
+    $this->assertTrue($result2['note']['is_valid']);
+  }
+
+  public function test_lessThan_triggers_below_boundary(): void {
+    $sb = SV::object(['qty' => SV::integer(), 'warn' => SV::string()->optional()])
+      ->when('qty', SV::lessThan(1), ['warn']);
+    // 0 < 1 → triggers
+    $result = $sb->toValidator()->validate(['qty' => '0'])->getResult();
+    $this->assertFalse($result['warn']['is_valid']);
+    // 1 < 1 → does not trigger (boundary is exclusive)
+    $result2 = $sb->toValidator()->validate(['qty' => '1', 'warn' => ''])->getResult();
+    $this->assertTrue($result2['warn']['is_valid']);
+  }
+
+  public function test_lessThanOrEqual_triggers_at_boundary(): void {
+    $sb = SV::object(['score' => SV::integer(), 'retry' => SV::string()->optional()])
+      ->when('score', SV::lessThanOrEqual(50), ['retry']);
+    $this->assertFalse(
+      $sb->toValidator()->validate(['score' => '50'])->getResult()['retry']['is_valid']
+    );
+    $this->assertTrue(
+      $sb->toValidator()->validate(['score' => '51', 'retry' => ''])->getResult()['retry']['is_valid']
+    );
+  }
+
+  public function test_greaterThan_triggers_above_boundary(): void {
+    $sb = SV::object(['level' => SV::integer(), 'bonus' => SV::string()->optional()])
+      ->when('level', SV::greaterThan(10), ['bonus']);
+    $this->assertFalse(
+      $sb->toValidator()->validate(['level' => '11'])->getResult()['bonus']['is_valid']
+    );
+    $this->assertTrue(
+      $sb->toValidator()->validate(['level' => '10', 'bonus' => ''])->getResult()['bonus']['is_valid']
+    );
+  }
+
+  public function test_numeric_op_with_field_ref(): void {
+    $sb = SV::object([
+      'price'     => SV::integer(),
+      'min_price' => SV::integer()->optional(),
+      'note'      => SV::string()->optional(),
+    ])->when('price', SV::greaterThanOrEqual(SV::field('min_price')), ['note']);
+
+    $js = $sb->toJsonSchema();
+    $this->assertSame('>=',        $js['x-when'][0]['op']);
+    $this->assertSame('min_price', $js['x-when'][0]['equalsField']);
+
+    // price(100) >= min_price(50) → triggers
+    $result = $sb->toValidator()->validate(['price' => '100', 'min_price' => '50'])->getResult();
+    $this->assertFalse($result['note']['is_valid']);
+
+    // price(30) >= min_price(50) → does not trigger
+    $result2 = $sb->toValidator()->validate(['price' => '30', 'min_price' => '50', 'note' => ''])->getResult();
+    $this->assertTrue($result2['note']['is_valid']);
+  }
+
+  public function test_when_expr_invalid_op_throws_invalid_argument_exception(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessageMatches('/Invalid WhenExpr operator/');
+    new \SchemableValidator\Schema\WhenExpr('~=', 'value');
+  }
+
+  public function test_when_expr_empty_string_op_throws(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    new \SchemableValidator\Schema\WhenExpr('', 'value');
+  }
+
+  public function test_when_expr_whitespace_padded_op_throws(): void {
+    // ' ===' is a different string from '==='; must not silently match
+    $this->expectException(\InvalidArgumentException::class);
+    new \SchemableValidator\Schema\WhenExpr(' ===', 'value');
+  }
+
+  public function test_when_expr_lookalike_op_throws(): void {
+    // '==' (JS loose equality) must not be accepted
+    $this->expectException(\InvalidArgumentException::class);
+    new \SchemableValidator\Schema\WhenExpr('==', 'value');
+  }
+
+  public function test_when_expr_valid_ops_do_not_throw(): void {
+    foreach (['===', '!==', '>=', '<=', '>', '<'] as $op) {
+      $expr = new \SchemableValidator\Schema\WhenExpr($op, 'x');
+      $this->assertSame($op, $expr->op);
+    }
+  }
+
+  public function test_scalar_shorthand_still_works_as_equal(): void {
+    // Passing a plain scalar to when() should behave identically to SV::equal()
+    $js1 = SV::object(['type' => SV::enum(['a', 'b']), 'x' => SV::string()->optional()])
+      ->when('type', 'a', ['x'])->toJsonSchema();
+    $js2 = SV::object(['type' => SV::enum(['a', 'b']), 'x' => SV::string()->optional()])
+      ->when('type', SV::equal('a'), ['x'])->toJsonSchema();
+
+    $this->assertSame($js1['x-when'][0]['op'],     $js2['x-when'][0]['op']);
+    $this->assertSame($js1['x-when'][0]['equals'], $js2['x-when'][0]['equals']);
+  }
 }

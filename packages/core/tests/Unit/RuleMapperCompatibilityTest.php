@@ -234,35 +234,51 @@ class RuleMapperCompatibilityTest extends TestCase {
    */
   public static function mappedRulesProvider(): array {
     return [
-      //  rule        args              valid input         invalid input
-      ['string',   [],                 'hello',            123           ],
-      ['integer',  [],                 42,                 3.14          ],
-      ['number',   [],                 3.14,               'hello'       ],
-      ['boolean',  [],                 true,               'yes'         ],
-      ['email',    [],                 'a@example.com',    'not-an-email'],
-      ['url',      [],                 'https://ex.com',   'not-a-url'   ],
-      ['length',   [2, 10],            'hello',            'x'           ],
-      ['min',      [5],                10,                 3             ],
-      ['max',      [5],                3,                  10            ],
-      ['pattern',  ['^[a-z]+$'],       'abc',              'ABC'         ],
-      ['in',       [['a', 'b', 'c']],  'a',                'd'           ],
+      //  rule        args              valid input                       invalid input
+      ['string',   [],                 'hello',                          123                  ],
+      ['integer',  [],                 42,                               3.14                 ],
+      ['number',   [],                 3.14,                             'hello'              ],
+      ['boolean',  [],                 true,                             'yes'                ],
+      ['email',    [],                 'a@example.com',                  'not-an-email'       ],
+      ['url',      [],                 'https://ex.com',                 'not-a-url'          ],
+      ['length',   [2, 10],            'hello',                          'x'                  ],
+      ['min',      [5],                10,                               3                    ],
+      ['max',      [5],                3,                                10                   ],
+      ['pattern',  ['^[a-z]+$'],       'abc',                            'ABC'                ],
+      ['in',       [['a', 'b', 'c']],  'a',                              'd'                  ],
+      ['date',     [],                 '2024-01-15',                     'not-a-date'         ],
+      ['dateTime', [],                 '2024-01-15T12:00:00+00:00',      'not-a-datetime'     ],
+      ['time',     [],                 '12:30:00',                       'not-a-time'         ],
+      ['uuid',     [],                 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'not-a-uuid'  ],
+      ['ipv4',     [],                 '192.168.1.1',                    '256.0.0.1'          ],
+      ['ipv6',     [],                 '2001:db8::1',                    'not-an-ip'          ],
+      ['slug',     [],                 'my-slug-123',                    'My Slug!'           ],
+      ['domain',   [],                 'example.com',                    'not a domain'       ],
     ];
   }
 
   /** Minimal valid args for each MAPPED rule (used in catalog-sweep tests). */
   private static function defaultArgsFor(string $rule): array {
     $defaults = [
-      'string'  => [],
-      'integer' => [],
-      'number'  => [],
-      'boolean' => [],
-      'email'   => [],
-      'url'     => [],
-      'length'  => [1, null],
-      'min'     => [0],
-      'max'     => [100],
-      'pattern' => ['^.+$'],
-      'in'      => [['a', 'b']],
+      'string'   => [],
+      'integer'  => [],
+      'number'   => [],
+      'boolean'  => [],
+      'email'    => [],
+      'url'      => [],
+      'length'   => [1, null],
+      'min'      => [0],
+      'max'      => [100],
+      'pattern'  => ['^.+$'],
+      'in'       => [['a', 'b']],
+      'date'     => [],
+      'dateTime' => [],
+      'time'     => [],
+      'uuid'     => [],
+      'ipv4'     => [],
+      'ipv6'     => [],
+      'slug'     => [],
+      'domain'   => [],
     ];
     return $defaults[$rule] ?? [];
   }

@@ -15,6 +15,8 @@ require_once SV_VENDOR_DIR . '/autoload.php';
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 use SchemableValidator\Controllers\CurlController;
+use SchemableValidator\Schema\FieldRef;
+use SchemableValidator\Schema\WhenExpr;
 
 /**
  * Class Validator
@@ -22,12 +24,12 @@ use SchemableValidator\Controllers\CurlController;
  * Provide methods related to validation according to the defined schema.
  */
 final class Validator {
-  use Helpers\Security;
 
-  /**
-   * @var array<string, v> $schema
-   */
+  /** @var array<string, v> */
   private array $schema;
+
+  /** @var array<array{field: string, value: mixed, require: string[]}> */
+  private array $conditionals;
 
   /** @var array<string, mixed> */
   private array $options;
@@ -40,8 +42,9 @@ final class Validator {
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances. Validation rules can be found here https://github.com/Respect/Validation/blob/2.2/docs/list-of-rules.md
    */
-  function __construct(array $schema = [], array $options = []) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = []) {
     $this->schema = $schema;
+    $this->conditionals = $conditionals;
     $this->options = array_merge([
       'recaptcha_provider' => 'https://www.google.com/recaptcha/api/siteverify',
       'recaptcha_secret' => '',
@@ -73,8 +76,54 @@ final class Validator {
     }
 
     foreach($this->schema as $name => $validator) {
-      $value = isset($data[$name]) ? $this->sanitize($data[$name]) : null;
+      $value = $data[$name] ?? null;
       $this->state['result'][$name] = $this->assert($value, $validator);
+    }
+
+    // Apply conditional requirements
+    foreach ($this->conditionals as $cond) {
+      /** @var WhenExpr $expr */
+      $expr        = $cond['expr'];
+      $triggerRaw  = $data[$cond['field']] ?? null;
+      $triggerStr  = is_array($triggerRaw)
+        ? implode(',', array_map('strval', $triggerRaw))
+        : (string) ($triggerRaw ?? '');
+
+      // Resolve the right-hand operand (literal or field reference)
+      $operand    = $expr->operand;
+      $operandStr = ($operand instanceof FieldRef)
+        ? (string) ($data[$operand->name] ?? '')
+        : (string) $operand;
+
+      $triggerNum = self::toFloat($triggerStr);
+      $operandNum = self::toFloat($operandStr);
+      if ($expr->op === '!==') {
+        $matches = $triggerStr !== $operandStr;
+      } elseif ($expr->op === '>=') {
+        $matches = $triggerNum >= $operandNum;
+      } elseif ($expr->op === '<=') {
+        $matches = $triggerNum <= $operandNum;
+      } elseif ($expr->op === '>') {
+        $matches = $triggerNum > $operandNum;
+      } elseif ($expr->op === '<') {
+        $matches = $triggerNum < $operandNum;
+      } else {
+        $matches = $triggerStr === $operandStr; // '==='
+      }
+
+      if (!$matches) {
+        continue;
+      }
+      foreach ($cond['require'] as $requiredField) {
+        $val = $data[$requiredField] ?? null;
+        $isEmpty = $val === null || $val === '' || $val === [];
+        if ($isEmpty) {
+          $state = $this->createState();
+          $state['value']  = $val;
+          $state['errors'] = "- {$requiredField} is required";
+          $this->state['result'][$requiredField] = $state;
+        }
+      }
     }
 
     return $this;
@@ -125,40 +174,69 @@ final class Validator {
   /**
    * @param array<string, mixed> $options
    * @return static
+   * @throws \RuntimeException if recaptcha_secret is not configured
+   * @throws \InvalidArgumentException if recaptcha_provider is not an allowed endpoint
    */
   public function validateReCaptcha(array $options = []): self {
-    $curl = new CurlController();
-    $options = array_merge([
-      'action' => null,
-    ], $options);
+    // A02-2: reject unconfigured secret rather than silently failing
+    if ($this->options['recaptcha_secret'] === '') {
+      throw new \RuntimeException(
+        'recaptcha_secret must be configured before calling validateReCaptcha()'
+      );
+    }
+
+    // A10-1: allow-list the provider URL to Google reCAPTCHA endpoints only
+    $provider        = $this->options['recaptcha_provider'];
+    $allowedPrefixes = [
+      'https://www.google.com/recaptcha/',
+      'https://www.recaptcha.net/recaptcha/',
+    ];
+    $allowed = false;
+    foreach ($allowedPrefixes as $prefix) {
+      if (strncmp($provider, $prefix, strlen($prefix)) === 0) {
+        $allowed = true;
+        break;
+      }
+    }
+    if (!$allowed) {
+      throw new \InvalidArgumentException(
+        'recaptcha_provider must begin with https://www.google.com/recaptcha/ ' .
+        'or https://www.recaptcha.net/recaptcha/'
+      );
+    }
+
+    $curl    = new CurlController();
+    $options = array_merge(['action' => null], $options);
 
     $newState = $this->createState();
-    $params = [
-      'secret' => $this->options['recaptcha_secret'],
+    $params   = [
+      'secret'   => $this->options['recaptcha_secret'],
       'response' => $this->state['recaptcha_token'],
     ];
 
-    $recaptcha_result = null;
-
     try {
-      $result = $curl->post($this->options['recaptcha_provider'], $params);
+      $result           = $curl->post($provider, $params);
       $recaptcha_result = json_decode($result['response']);
 
-      $newState['value'] = $recaptcha_result->score;
-      $newState['is_valid'] = $recaptcha_result->success &&
-        $recaptcha_result->score >= $this->options['recaptcha_valid_score'];
+      // A05-1: guard against malformed responses before accessing properties
+      if (!isset($recaptcha_result->success)) {
+        throw new \RuntimeException('Malformed reCAPTCHA response');
+      }
 
-      if ($options['action']) {
+      $newState['is_valid'] = (bool) $recaptcha_result->success;
+
+      if ($newState['is_valid'] && isset($recaptcha_result->score)) {
+        $newState['value']    = $recaptcha_result->score;
+        $newState['is_valid'] = $recaptcha_result->score >= $this->options['recaptcha_valid_score'];
+      }
+
+      if ($options['action'] && isset($recaptcha_result->action)) {
         $newState['is_valid'] = $options['action'] === $recaptcha_result->action;
       }
     } catch(\Exception $e) {
-      $newState['errors'] = [
-        'message' => $e->getMessage(),
-        'result' => [
-          'success' => $recaptcha_result->success ?? null,
-          'action' => $recaptcha_result->action ?? null,
-        ],
-      ];
+      // A05-1: do not expose internal error details (endpoint URL, network info) to callers
+      error_log('schemable-validator: reCAPTCHA verification failed: ' . $e->getMessage());
+      $newState['errors'] = 'reCAPTCHA verification failed';
     }
 
     $this->state['result']['recaptcha'] = $newState;
@@ -170,27 +248,73 @@ final class Validator {
     return $this->state['result'];
   }
 
-  public function createToken(): string {
+  /**
+   * Generate a CSRF token scoped to a specific form and store it with a 1-hour expiry.
+   *
+   * @param string $form Unique identifier for the form (e.g. 'contact', 'login').
+   */
+  public function createToken(string $form = 'default'): string {
     $new_token = bin2hex(random_bytes(32));
     $this->startSession();
-    $_SESSION['schv_csrf_token'] = $new_token;
-    $this->state['token'] = $new_token;
 
+    if (!isset($_SESSION['schv_csrf_tokens']) || !is_array($_SESSION['schv_csrf_tokens'])) {
+      $_SESSION['schv_csrf_tokens'] = [];
+    }
+    $_SESSION['schv_csrf_tokens'][$form] = [
+      'token' => $new_token,
+      'exp'   => time() + 3600,
+    ];
+
+    $this->state['token'] = $new_token;
     return $new_token;
   }
 
-  public function checkToken(string $token): bool {
+  /**
+   * Verify a CSRF token for the given form scope.
+   * Returns false if the token is missing, expired, or does not match.
+   *
+   * @param string $form Must match the $form used in createToken().
+   */
+  public function checkToken(string $token, string $form = 'default'): bool {
     $this->startSession();
-    return isset($_SESSION['schv_csrf_token']) && hash_equals($_SESSION['schv_csrf_token'], $token);
+    $stored = $_SESSION['schv_csrf_tokens'][$form] ?? null;
+
+    if (!is_array($stored) || !isset($stored['token'], $stored['exp'])) {
+      return false;
+    }
+    if (time() > $stored['exp']) {
+      unset($_SESSION['schv_csrf_tokens'][$form]);
+      return false;
+    }
+    return hash_equals($stored['token'], $token);
   }
 
   private static bool $sessionStarted = false;
 
   private function startSession(): void {
     if (!self::$sessionStarted && session_status() !== PHP_SESSION_ACTIVE) {
+      // A02-3: enforce secure session cookie attributes when we start the session ourselves
+      session_set_cookie_params([
+        'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+      ]);
       session_start();
       self::$sessionStarted = true;
     }
+  }
+
+  /**
+   * Strict string-to-float conversion that rejects hex literals ("0x…").
+   * PHP's (float) cast already ignores the "x" suffix and returns 0.0 for
+   * "0x10", but this makes the intent explicit and guards against future
+   * PHP behaviour changes that could silently diverge from the TS client.
+   */
+  private static function toFloat(string $str): float {
+    if (is_numeric($str) && !preg_match('/^[+-]?0x/i', $str)) {
+      return (float) $str;
+    }
+    return 0.0;
   }
 
   private function createState(): array {

@@ -56,7 +56,7 @@ final class RuleCatalog {
       // ═══════════════════════════════════════════════════════
       'fileExt'    => ['status' => self::STATUS_UNMAPPABLE, 'respect' => null],       // custom MIME rule
       'base64'     => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'base64'],   // no JSON Schema keyword
-      'creditCard' => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'creditCard'], // Luhn + format check
+      'creditCard' => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'creditCard'],
       'extension'  => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'extension'], // file extension check
       'image'      => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'image'],    // binary image check
       'mimetype'   => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'mimetype'], // file MIME type
@@ -74,16 +74,18 @@ final class RuleCatalog {
       'boolVal'    => ['status' => self::STATUS_TODO, 'respect' => 'boolVal'],    // { type: "boolean" } (accepts "true"/"1")
       'contains'   => ['status' => self::STATUS_TODO, 'respect' => 'contains'],   // no direct equivalent; pattern workaround
       'containsAny'=> ['status' => self::STATUS_TODO, 'respect' => 'containsAny'],// no direct equivalent
-      'date'       => ['status' => self::STATUS_TODO, 'respect' => 'date'],       // { format: "date" }
-      'dateTime'   => ['status' => self::STATUS_TODO, 'respect' => 'dateTime'],   // { format: "date-time" }
+      'date'       => ['status' => self::STATUS_MAPPED, 'respect' => 'date'],
+      'dateTime'   => ['status' => self::STATUS_MAPPED, 'respect' => 'dateTime'],
       'decimal'    => ['status' => self::STATUS_TODO, 'respect' => 'decimal'],    // { type: "number", ... }
       'digit'      => ['status' => self::STATUS_TODO, 'respect' => 'digit'],      // { pattern: "^[0-9]+$" }
-      'domain'     => ['status' => self::STATUS_TODO, 'respect' => 'domain'],     // { format: "hostname" }
+      'domain'     => ['status' => self::STATUS_MAPPED, 'respect' => 'domain'],
       'endsWith'   => ['status' => self::STATUS_TODO, 'respect' => 'endsWith'],   // { pattern: "suffix$" }
       'equals'     => ['status' => self::STATUS_TODO, 'respect' => 'equals'],     // { const: value }
       'greaterThan'=> ['status' => self::STATUS_TODO, 'respect' => 'greaterThan'],// { exclusiveMinimum: n }
       'identical'  => ['status' => self::STATUS_TODO, 'respect' => 'identical'],  // { const: value } (strict)
-      'ip'         => ['status' => self::STATUS_TODO, 'respect' => 'ip'],         // { format: "ipv4" | "ipv6" }
+      'ip'         => ['status' => self::STATUS_EXCLUDED, 'respect' => 'ip'],      // use ipv4/ipv6 instead
+      'ipv4'       => ['status' => self::STATUS_MAPPED, 'respect' => 'ip'],       // { format: "ipv4" }
+      'ipv6'       => ['status' => self::STATUS_MAPPED, 'respect' => 'ip'],       // { format: "ipv6" }
       'json'       => ['status' => self::STATUS_TODO, 'respect' => 'json'],       // { type: "string" } (structure not expressible)
       'lessThan'   => ['status' => self::STATUS_TODO, 'respect' => 'lessThan'],   // { exclusiveMaximum: n }
       'lowercase'  => ['status' => self::STATUS_TODO, 'respect' => 'lowercase'],  // { pattern: "^[a-z\\s]+$" }
@@ -95,13 +97,13 @@ final class RuleCatalog {
       'notOptional'=> ['status' => self::STATUS_TODO, 'respect' => 'notOptional'],// alias for required / notNull
       'positive'   => ['status' => self::STATUS_TODO, 'respect' => 'positive'],   // { exclusiveMinimum: 0 }
       'size'       => ['status' => self::STATUS_TODO, 'respect' => 'size'],       // file size — likely UNMAPPABLE
-      'slug'       => ['status' => self::STATUS_TODO, 'respect' => 'slug'],       // { pattern: "^[a-z0-9-]+$" }
+      'slug'       => ['status' => self::STATUS_MAPPED, 'respect' => 'slug'],
       'sorted'     => ['status' => self::STATUS_TODO, 'respect' => 'sorted'],     // no JSON Schema equivalent
       'startsWith' => ['status' => self::STATUS_TODO, 'respect' => 'startsWith'], // { pattern: "^prefix" }
       'subset'     => ['status' => self::STATUS_TODO, 'respect' => 'subset'],     // { items: { enum: [...] } } for arrays
-      'time'       => ['status' => self::STATUS_TODO, 'respect' => 'time'],       // { format: "time" }
+      'time'       => ['status' => self::STATUS_MAPPED, 'respect' => 'time'],
       'uppercase'  => ['status' => self::STATUS_TODO, 'respect' => 'uppercase'],  // { pattern: "^[A-Z\\s]+$" }
-      'uuid'       => ['status' => self::STATUS_TODO, 'respect' => 'uuid'],       // { format: "uuid" }
+      'uuid'       => ['status' => self::STATUS_MAPPED, 'respect' => 'uuid'],
       'version'    => ['status' => self::STATUS_TODO, 'respect' => 'version'],    // { pattern: "semver" }
 
       // ═══════════════════════════════════════════════════════
@@ -153,7 +155,7 @@ final class RuleCatalog {
       'cnh'             => ['status' => self::STATUS_EXCLUDED, 'respect' => 'cnh'],         // Brazilian driver's license
       'cnpj'            => ['status' => self::STATUS_EXCLUDED, 'respect' => 'cnpj'],        // Brazilian company ID
       'cpf'             => ['status' => self::STATUS_EXCLUDED, 'respect' => 'cpf'],         // Brazilian individual ID
-      'iban'            => ['status' => self::STATUS_EXCLUDED, 'respect' => 'iban'],        // bank account
+      'iban'            => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'iban'],
       'imei'            => ['status' => self::STATUS_EXCLUDED, 'respect' => 'imei'],        // device IMEI
       'isbn'            => ['status' => self::STATUS_EXCLUDED, 'respect' => 'isbn'],        // book ISBN
       'luhn'            => ['status' => self::STATUS_EXCLUDED, 'respect' => 'luhn'],        // Luhn algorithm
@@ -170,7 +172,7 @@ final class RuleCatalog {
       'countryCode'     => ['status' => self::STATUS_EXCLUDED, 'respect' => 'countryCode'],
       'currencyCode'    => ['status' => self::STATUS_EXCLUDED, 'respect' => 'currencyCode'],
       'languageCode'    => ['status' => self::STATUS_EXCLUDED, 'respect' => 'languageCode'],
-      'postalCode'      => ['status' => self::STATUS_EXCLUDED, 'respect' => 'postalCode'],  // locale-specific format
+      'postalCode'      => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'postalCode'],
       'subdivisionCode' => ['status' => self::STATUS_EXCLUDED, 'respect' => 'subdivisionCode'],
 
       // Mathematical / number theory — rarely needed in web forms

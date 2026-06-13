@@ -3,7 +3,7 @@ export { ok, err, isOk, isErr, map, flatMap, mapErr, getOrElse } from './result.
 export type { Ok, Err, Result } from './result.js'
 
 // Schema types (mirror of SchemaBuilder::toJsonSchema() output)
-export type { JsonSchemaType, PropertySchema, ObjectSchema } from './schema.js'
+export type { JsonSchemaType, PropertySchema, ObjectSchema, ConditionalSchema, WhenCondition, WhenOp } from './schema.js'
 
 // Constraint pipeline (exported for consumers who need custom rules)
 export {
@@ -17,6 +17,7 @@ export {
   checkFormat,
   checkPattern,
   checkEnum,
+  PATTERN_MAX_INPUT_LENGTH,
 } from './constraint.js'
 export type { FieldState, Constraint } from './constraint.js'
 
