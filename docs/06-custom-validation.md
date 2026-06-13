@@ -1,39 +1,118 @@
 # カスタムバリデーション — 高度な利用例
 
-JSON Schema (draft 2020-12) で表現できない制約（電話番号、IBAN、クレジットカード Luhn チェックなど）を扱うパターンを説明する。  
-電話番号を例に、バックエンド・フロントエンドそれぞれで外部ライブラリを使う最小実装を示す。
-
 ---
 
 ## 概要
 
-```
-PHP (SchemaBuilder)
-  └─ SV::respect($customRule)    ← 任意の Respect ルール / 外部ライブラリをラップ
-        │
-        ▼
-  JSON Schema output
-  └─ "x-unmapped-fields": ["tel"]  ← 表現不可フィールドはここに記録される
-        │
-        ▼
-  フロントエンド
-  └─ SDK: Constraint で独自ライブラリを合成
-     Zod: .superRefine() で独自ライブラリを注入
-```
+このプラグインは、フィールドの型・形式・文字数といった**構造的な制約**をPHPを主体としながらクライアント側での多重管理が不要になるように、JSON Schema を通じて、制約を共有することを目的としています。
 
-原理的な検証は schema 上では `x-unmapped-fields` として返却を行い、各領域における検証の実装を前提とする。SDK 利用時は、これらを自動的に「クライアント検証スキップ → サーバー委譲」として扱う。
+一方で、実際のフォームでは、電話番号の国際番号検証や住所といった環境により固有の検証が必要な「原理的な検証」を含むことがあり、これらは JSON Schema で表現が難しいものとなります。
+本プラグインではそうした複雑な検証を想定して、任意のバリデーションロジックを組み込める拡張ポイント（`SV::respect()`）を設けており、外部ライブラリや独自ロジックをスキーマ定義に統合できます。
 
 ---
 
-## PHP 側 — `giggsey/libphonenumber-for-php`
+## 原理的な検証とは
 
-### インストール
+JSON Schema (draft 2020-12) はフィールドの**構造と形式**を記述するための仕様であり、すべての検証ロジックを表現できるわけではない。
+
+たとえば次のような制約は、型・長さ・正規表現といったキーワードでは表現できない。
+
+- 電話番号が実在する番号体系に属するか（国別の番号計画の検証）
+- クレジットカード番号が Luhn アルゴリズムを満たすか
+- IBAN が国コードと整合するか
+- パスワードが十分な強度を持つか
+
+これらは「文字列の形式チェック」ではなく、**ドメイン固有のルールや外部データベースに基づいた検証**であり、正規表現や JSON Schema のキーワードで近似することはできても、完全な表現は原理的に不可能である。
+
+このプラグインでは、こうした制約を `SV::respect()` でラップし、JSON Schema 出力の `x-unmapped-fields` に記録する設計としている。
+
+```
+SV::respect($rule)
+  │
+  ├─ サーバー側: Respect/Validation でそのまま検証
+  │
+  └─ JSON Schema: x-unmapped-fields に記録（properties には含まれない）
+       │
+       └─ クライアント側: @schemable-validator/client / Zod で独自に追加検証
+```
+
+---
+
+## 外部ライブラリとの結合パターン
+
+JSON Schema で表現できない制約を実装する場合、バックエンドとフロントエンドでそれぞれ適切なライブラリを選び、このプラグインのエスケープハッチ（`SV::respect()`）を介して結合する。
+
+### PHP 側（サーバー）
+
+`SV::respect()` は Respect/Validation の `Validator` インスタンスを受け取る。`v::callback()` を使えば任意のロジック・外部ライブラリを注入できる。
+
+```php
+use Respect\Validation\Validator as v;
+
+SV::respect(
+  v::callback(function (mixed $value): bool {
+    // ここに任意の検証ロジックを書く
+    return someExternalLibrary::validate($value);
+  })
+)
+```
+
+サーバーが常に正の検証者となる。クライアント側の検証はあくまで UX 補助として扱う。
+
+### JS 側（クライアント）
+
+`x-unmapped-fields` に含まれるフィールドは `validateObject` が自動スキップする。クライアントでの検証が必要な場合は、**`@schemable-validator/client` の `Constraint`** または **Zod の `.superRefine()`** で追加する。
+
+**`@schemable-validator/client` の場合:**
+
+```typescript
+import { type Constraint } from '@schemable-validator/client'
+
+const checkCustomField: Constraint = (state) => {
+  if (state.value === '') return state // optional フィールドの空入力は通す
+  const ok = someJsLibrary.validate(state.value)
+  return ok ? state : { ...state, errors: [...state.errors, 'エラーメッセージ'] }
+}
+```
+
+**Zod の場合:**
+
+```typescript
+const schema = buildZodSchema(jsonSchema).extend({
+  fieldName: z.string().optional().superRefine((val, ctx) => {
+    if (!val) return
+    if (!someJsLibrary.validate(val)) {
+      ctx.addIssue({ code: 'custom', message: 'エラーメッセージ' })
+    }
+  }),
+})
+```
+
+### 応用できるユースケース
+
+| ユースケース | PHP ライブラリ | JS ライブラリ | JSON Schema |
+|:--|:--|:--|:--|
+| 電話番号 (E.164 / 国別) | `giggsey/libphonenumber-for-php` | `libphonenumber-js` | UNMAPPABLE |
+| IBAN / 口座番号 | `globalcitizen/php-iban` | `ibantools` | UNMAPPABLE |
+| クレジットカード (Luhn) | Respect `v::creditCard()` 組み込み | 独自 Luhn 実装 | UNMAPPABLE |
+| 郵便番号 (国別) | `axlon/laravel-postal-code-validation` 等 | `postal-codes-js` | `pattern` で近似可 |
+| パスワード強度 | カスタム callback | `zxcvbn` | UNMAPPABLE |
+
+---
+
+## ユースケース: 電話番号検証
+
+電話番号は正規表現による近似では対応しきれない典型例である。`libphonenumber`（Google 製）は ITU-T E.164 に基づく国別番号体系のデータベースを持ち、実在する番号範囲を正確に検証できる。
+
+### PHP 側 — `giggsey/libphonenumber-for-php`
+
+#### インストール
 
 ```bash
 composer require giggsey/libphonenumber-for-php
 ```
 
-### カスタム Respect ルール
+#### カスタム Respect ルール
 
 ```php
 use Respect\Validation\Validator as v;
@@ -63,7 +142,7 @@ function makePhoneRule(string $region = null): \Respect\Validation\Validator {
 }
 ```
 
-### SchemaBuilder への組み込み
+#### SchemaBuilder への組み込み
 
 ```php
 use SchemableValidator\SV;
@@ -71,12 +150,11 @@ use SchemableValidator\SV;
 $schema = SV::object([
   'name'  => SV::string()->min(1)->max(100),
   'email' => SV::string()->email(),
-  // SV::respect() は JSON Schema 変換不可 → x-unmapped-fields に記録される
   'tel'   => SV::respect(makePhoneRule('JP'))->optional(),
 ]);
 ```
 
-### JSON Schema 出力
+#### JSON Schema 出力
 
 `toJson()` を呼ぶと `tel` は `x-unmapped-fields` に現れる（`properties` には含まれない）。
 
@@ -88,34 +166,31 @@ $schema = SV::object([
     "name":  { "type": "string", "minLength": 1, "maxLength": 100 },
     "email": { "type": "string", "format": "email" }
   },
-  "required": ["name", "email", "tel"],
+  "required": ["name", "email"],
   "x-unmapped-fields": ["tel"]
 }
 ```
 
-> **注意**: `optional()` を付けた場合でも `required` から除外されるだけで、バリデーションロジック自体は PHP 側で実行される。
-
 ---
 
-## JS 側 (SDK) — `libphonenumber-js`
+### JS 側 (`@schemable-validator/client`) — `libphonenumber-js`
 
-SDK の `Constraint` は `FieldState → FieldState` の純関数。外部ライブラリを直接ラップできる。
+`@schemable-validator/client` の `Constraint` は `FieldState → FieldState` の純関数。外部ライブラリを直接ラップできる。
 
-### インストール
+#### インストール
 
 ```bash
 npm install libphonenumber-js
 ```
 
-### カスタム Constraint の実装
+#### カスタム Constraint の実装
 
 ```typescript
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { type Constraint } from '@schemable-validator/sdk'
+import { type Constraint } from '@schemable-validator/client'
 
 export const checkJapanesePhone: Constraint = (state) => {
-  // 空文字は optional フィールドの「未入力」なので通す
-  if (state.value === '') return state
+  if (state.value === '') return state // optional フィールドの空入力は通す
 
   return isValidPhoneNumber(state.value, 'JP')
     ? state
@@ -123,54 +198,40 @@ export const checkJapanesePhone: Constraint = (state) => {
 }
 ```
 
-### SDK の `validateObject` + 追加 Constraint の合成
-
-`x-unmapped-fields` に入ったフィールドはスキーマに `properties` がないため、
-`validateObject` は「クライアント検証スキップ」として扱う。
-そのフィールドだけ手動で追加検証する。
+#### `validateObject` との合成
 
 ```typescript
-import { validateObject, composeConstraints, constraintsFromSchema } from '@schemable-validator/sdk'
+import { validateObject } from '@schemable-validator/client'
 import { checkJapanesePhone } from './constraints/phone'
 
 async function validate(data: Record<string, string>, jsonSchema: ObjectSchema) {
-  // 1. JSON Schema で表現されたフィールドを一括検証
-  const result = validateObject(data, jsonSchema)
+  const result = { ...validateObject(data, jsonSchema) }
 
-  // 2. x-unmapped-fields (tel など) を追加検証
-  const unmapped = jsonSchema['x-unmapped-fields'] ?? []
-
-  const extendedResult = { ...result }
-
-  if (unmapped.includes('tel') && data['tel'] !== undefined) {
-    const state = checkJapanesePhone({ value: data['tel'], errors: [] })
-    extendedResult['tel'] = {
+  // x-unmapped-fields のフィールドを追加検証
+  if ((jsonSchema['x-unmapped-fields'] ?? []).includes('tel')) {
+    const state = checkJapanesePhone({ value: data['tel'] ?? '', errors: [] })
+    result['tel'] = {
       value:    state.value,
       is_valid: state.errors.length === 0,
       errors:   state.errors.length > 0 ? state.errors : null,
     }
   }
 
-  return extendedResult
+  return result
 }
 ```
 
 ---
 
-## JS 側 (Zod) — `libphonenumber-js`
-
-スキーマを Zod で構築している場合は `.superRefine()` を使う。
+### JS 側 (Zod) — `libphonenumber-js`
 
 ```typescript
 import { z } from 'zod'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
-// buildZodSchema() で生成した既存のスキーマに tel フィールドを追加
 const contactSchema = buildZodSchema(jsonSchema).extend({
-  // x-unmapped-fields なので buildZodSchema には入っていない
-  // required かどうかに応じて optional() を付ける
   tel: z.string().optional().superRefine((val, ctx) => {
-    if (!val) return // optional + 空文字 = OK
+    if (!val) return
     if (!isValidPhoneNumber(val, 'JP')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -180,19 +241,3 @@ const contactSchema = buildZodSchema(jsonSchema).extend({
   }),
 })
 ```
-
-
----
-
-## 一般化 — 他のライブラリへの応用
-
-同じパターンは電話番号以外にも使える。
-
-| ユースケース | PHP ライブラリ | JS ライブラリ | JSON Schema |
-|:--|:--|:--|:--|
-| 電話番号 (E.164 / 国別) | `giggsey/libphonenumber-for-php` | `libphonenumber-js` | UNMAPPABLE |
-| IBAN / 口座番号 | `globalcitizen/php-iban` | `ibantools` | UNMAPPABLE |
-| クレジットカード (Luhn) | Respect `v::creditCard()` 組み込み | 独自 Luhn 実装 | UNMAPPABLE |
-| 郵便番号 (国別) | `axlon/laravel-postal-code-validation` 等 | `postal-codes-js` | `pattern` で近似可 |
-| パスワード強度 | カスタム callback | `zxcvbn` | UNMAPPABLE |
-

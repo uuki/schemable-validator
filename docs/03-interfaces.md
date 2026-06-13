@@ -90,14 +90,6 @@ add_filter('request', function ($qv) {
 <form method="post" novalidate>
 ```
 
-### PHP WASM（WP Playground）での session_start()
-
-WP Playground の PHP WASM では `session_status()` が同一リクエスト内でも  
-`PHP_SESSION_NONE` を返す場合があり、`session_start()` の二重呼び出しで  
-`$_SESSION` がリセットされる。
-
-`FormController` と `Validator` は `static bool $started` フラグで防御済み。
-
 ---
 
 ## AbstractInterface

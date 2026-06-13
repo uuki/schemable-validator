@@ -17,7 +17,7 @@ SV::object([...])          ← PHP: single source of truth
            │
            └─ REST endpoint (WordPress)
                   │
-                  └─ @schemable-validator/sdk  → client-side validation
+                  └─ @schemable-validator/client  → client-side validation
                      Zod / any JS validator
 ```
 
@@ -31,7 +31,7 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 |:--|:--|
 | `uuki/schemable-validator` | PHP core library (framework-agnostic) |
 | `wp-schemable-validator` | WordPress plugin — REST endpoint, helpers, admin UI |
-| `@schemable-validator/sdk` | TypeScript SDK — validates against JSON Schema output |
+| `@schemable-validator/client` | TypeScript SDK — validates against JSON Schema output |
 
 ---
 
@@ -68,7 +68,7 @@ schv_register_schema('/schema/contact', $schema);
 ### 4. Client-side validation (TypeScript SDK)
 
 ```typescript
-import { validateObject, isAllValid, extractErrors } from '@schemable-validator/sdk'
+import { validateObject, isAllValid, extractErrors } from '@schemable-validator/client'
 
 const schema = await fetch('/wp-json/schv/v1/schema/contact').then(r => r.json())
 
@@ -123,7 +123,7 @@ composer require uuki/schemable-validator:0.x@dev
 cd packages/wp-schemable-validator && composer install --no-dev
 
 # TypeScript SDK
-npm install @schemable-validator/sdk
+npm install @schemable-validator/client
 ```
 
 See [docs/01-installation.md](docs/01-installation.md) for full setup.

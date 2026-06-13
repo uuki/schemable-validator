@@ -2,10 +2,11 @@
 
 ## Requirements
 
-| | Version |
-|:--|:--|
-| PHP | ^7.4 \|\| ^8.x |
-| Node.js | ^22 (playground / E2E のみ) |
+| | Version | 用途 |
+|:--|:--|:--|
+| PHP | ^7.4 \|\| ^8.x | core ライブラリ・WP プラグイン |
+| WordPress | 5.9+ | WP プラグインのみ |
+| Node.js | >=24 | `@schemable-validator/client` のみ |
 
 ## PHP library
 
@@ -15,15 +16,19 @@ composer require uuki/schemable-validator:0.x@dev
 
 ## WordPress plugin
 
-`packages/wp-schemable-validator` をプラグインとして配置する。
-依存パッケージは Composer でインストールする。
+リポジトリをクローンし、プラグインディレクトリに配置して依存パッケージをインストールする。
 
 ```shell
-cd packages/wp-schemable-validator
+# リポジトリをプラグインディレクトリに直接クローン
+git clone https://github.com/uuki/schemable-validator.git \
+  wp-content/plugins/schemable-validator
+
+# プラグイン内の WordPress パッケージに移動して依存をインストール
+cd wp-content/plugins/schemable-validator/packages/wp-schemable-validator
 composer install --no-dev
 ```
 
-`wp-content/plugins/wp-schemable-validator/index.php` としてマウントすれば有効化できる。
+WordPress 管理画面のプラグイン一覧から **Schemable Validator** を有効化する。
 
 ## Package structure
 
@@ -43,5 +48,5 @@ packages/
     src/Interfaces/WordPress/
       Plugin.php                 # 管理画面・設定登録
       helpers.php                # schv_* グローバル関数
-    examples/                    # ローカル開発用サンプルページ
+    examples/                    # サンプルショートコード（ローカル開発用）
 ```
