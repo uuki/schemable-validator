@@ -11,7 +11,7 @@
 ## PHP library
 
 ```shell
-composer require uuki/schemable-validator:0.x@dev
+composer require uuki/schemable-validator:0.9.0
 ```
 
 ## WordPress plugin

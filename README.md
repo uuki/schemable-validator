@@ -117,7 +117,7 @@ const parsed = zodSchema.safeParse(formData)
 
 ```shell
 # PHP core
-composer require uuki/schemable-validator:0.x@dev
+composer require uuki/schemable-validator:0.9.0
 
 # WordPress plugin
 cd packages/wp-schemable-validator && composer install --no-dev
