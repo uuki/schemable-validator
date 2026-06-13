@@ -1,8 +1,6 @@
 <?php
 namespace SchemableValidator\Interfaces;
 
-require_once __DIR__ . '/../AbstractInterface.php';
-
 final class WordPress extends AbstractInterface {
 
   function __construct($options = []) {

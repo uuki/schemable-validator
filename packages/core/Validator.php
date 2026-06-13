@@ -184,9 +184,12 @@ final class Validator {
     return isset($_SESSION['schv_csrf_token']) && hash_equals($_SESSION['schv_csrf_token'], $token);
   }
 
+  private static bool $sessionStarted = false;
+
   private function startSession(): void {
-    if (session_status() === PHP_SESSION_NONE) {
+    if (!self::$sessionStarted && session_status() !== PHP_SESSION_ACTIVE) {
       session_start();
+      self::$sessionStarted = true;
     }
   }
 

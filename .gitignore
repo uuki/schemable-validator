@@ -4,6 +4,8 @@ node_modules/
 # composer
 vendor/
 plugins/schemable-validator/vendor/
+packages/wp-schemable-validator/vendor/
+packages/wp-schemable-validator/lib/core/
 
 # wp-now development files.
 database/
@@ -17,3 +19,9 @@ library/**/ignore.*.php
 
 # cache
 .phpunit.result.cache
+
+# local / build artifacts
+playground/.tmp-sessions
+packages/e2e/test-results
+packages/sdk/dist/
+packages/wp-schemable-validator/dist/

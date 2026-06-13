@@ -1,8 +1,8 @@
 {
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
-  "landingPage": "/schv-examples/",
+  "landingPage": "/",
   "preferredVersions": {
-    "php": "8.1",
+    "php": "8.3",
     "wp": "latest"
   },
   "siteOptions": {
@@ -16,6 +16,12 @@
       }
     },
     {
+      "step": "setSiteOptions",
+      "options": {
+        "permalink_structure": "/%postname%/"
+      }
+    },
+    {
       "step": "activatePlugin",
       "pluginPath": "wp-schemable-validator/index.php"
     },
@@ -25,10 +31,6 @@
         "SCHV_REPLY_FORMAT_FOR_user": "Dear {name},\nThank you for your message.\n\n{body}",
         "SCHV_REPLY_FORMAT_FOR_admin": "From: {name} <{email}>\n\n{body}"
       }
-    },
-    {
-      "step": "runPHP",
-      "code": "<?php require '/wordpress/wp-load.php'; $pages = [ ['schv-examples', 'Schemable Validator Examples', '<h2>Examples</h2><ul><li><a href=\"/schv-validate/\">Validate</a></li><li><a href=\"/schv-files/\">File Validation</a></li><li><a href=\"/schv-csrf/\">CSRF Token</a></li><li><a href=\"/schv-template/\">Template</a></li><li><a href=\"/schv-form-input/\">Multi-step Form</a></li></ul>'], ['schv-validate',      'Validate Example',       '[schv_example_validate]'], ['schv-files',         'File Validation Example','[schv_example_files]'], ['schv-csrf',          'CSRF Token Example',     '[schv_example_csrf]'], ['schv-template',      'Template Example',       '[schv_example_template]'], ['schv-form-input',    'Form: Input',            '[schv_example_form_input]'], ['schv-form-confirm',  'Form: Confirm',          '[schv_example_form_confirm]'], ['schv-form-complete', 'Form: Complete',         '[schv_example_form_complete]'], ]; foreach ($pages as [$slug, $title, $content]) { wp_insert_post(['post_type'=>'page','post_status'=>'publish','post_name'=>$slug,'post_title'=>$title,'post_content'=>$content]); } ?>"
     }
   ]
 }

@@ -4,7 +4,7 @@
  */
 namespace SchemableValidator\Rules;
 
-require SV_VENDOR_DIR . "/autoload.php";
+require_once SV_VENDOR_DIR . '/autoload.php';
 
 use Respect\Validation\Rules\AbstractRule;
 

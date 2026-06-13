@@ -10,9 +10,12 @@ require_once __DIR__ . "/../constants.php";
  */
 final class FormController {
 
+  private static bool $started = false;
+
   private function startSession(): void {
-    if (session_status() === PHP_SESSION_NONE) {
+    if (!self::$started && session_status() !== PHP_SESSION_ACTIVE) {
       session_start();
+      self::$started = true;
     }
   }
 

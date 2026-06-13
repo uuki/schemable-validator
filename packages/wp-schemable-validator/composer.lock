@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4b5a541902d8e8ba248e604d473a2855",
+    "content-hash": "73b972d7d55194d386433ac1320eabac",
     "packages": [
         {
             "name": "respect/stringifier",
@@ -129,7 +129,7 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "1.x-dev",
+            "version": "v1.38.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
@@ -151,7 +151,6 @@
             "suggest": {
                 "ext-mbstring": "For best performance"
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "thanks": {
@@ -191,7 +190,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/1.x"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.38.2"
             },
             "funding": [
                 {
@@ -215,7 +214,7 @@
         },
         {
             "name": "symfony/polyfill-php80",
-            "version": "1.x-dev",
+            "version": "v1.37.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php80.git",
@@ -230,7 +229,6 @@
             "require": {
                 "php": ">=7.2"
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "thanks": {
@@ -276,7 +274,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php80/tree/1.x"
+                "source": "https://github.com/symfony/polyfill-php80/tree/v1.37.0"
             },
             "funding": [
                 {
@@ -297,47 +295,11 @@
                 }
             ],
             "time": "2026-04-10T16:19:22+00:00"
-        },
-        {
-            "name": "uuki/schemable-validator",
-            "version": "0.1.0",
-            "dist": {
-                "type": "path",
-                "url": "../..",
-                "reference": "90930f5a6d7185d88e1b139ac77836b70647c0fc"
-            },
-            "require": {
-                "php": ">=7.4",
-                "respect/validation": "2.2.4",
-                "symfony/polyfill-php80": "^1.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^9.6"
-            },
-            "type": "package",
-            "autoload": {
-                "psr-4": {
-                    "SchemableValidator\\": "library/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "SchemableValidator\\Tests\\": "tests/"
-                }
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Schema based validation plugin.",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
         }
     ],
     "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,

@@ -1,8 +1,8 @@
 <?php
 namespace SchemableValidator;
 
-require_once "constants.php";
-require SV_VENDOR_DIR . "/autoload.php";
+require_once __DIR__ . '/constants.php';
+require_once SV_VENDOR_DIR . '/autoload.php';
 
 use SchemableValidator\Controllers\FormController;
 use SchemableValidator\Interfaces\WordPress as WordpressInterface;

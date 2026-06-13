@@ -1,8 +1,5 @@
 <?php
 add_shortcode('schv_example_template', function (): string {
-  $user_tpl  = get_option('SCHV_REPLY_FORMAT_FOR_user',  "Dear {name},\nThank you for your message.\n\n{body}");
-  $admin_tpl = get_option('SCHV_REPLY_FORMAT_FOR_admin', "From: {name} <{email}>\n\n{body}");
-
   // Simulate validated session data for preview
   $form = schv_form();
   $data = $form->get() ?: [
@@ -14,7 +11,7 @@ add_shortcode('schv_example_template', function (): string {
 
   $template = schv_template([
     'aliases'   => ['name' => 'name', 'email' => 'email', 'body' => 'body'],
-    'templates' => ['user' => $user_tpl, 'admin' => $admin_tpl],
+    'templates' => ['user' => 'SCHV_REPLY_FORMAT_FOR_user', 'admin' => 'SCHV_REPLY_FORMAT_FOR_admin'],
   ]);
 
   ob_start(); ?>
