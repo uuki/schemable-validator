@@ -1,0 +1,36 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/",
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "siteOptions": {
+    "blogname": "Schemable Validator Dev"
+  },
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_ENVIRONMENT_TYPE": "local"
+      }
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "permalink_structure": "/%postname%/"
+      }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "wp-schemable-validator/index.php"
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "SCHV_REPLY_FORMAT_FOR_user": "Dear {name},\nThank you for your message.\n\n{body}",
+        "SCHV_REPLY_FORMAT_FOR_admin": "From: {name} <{email}>\n\n{body}"
+      }
+    }
+  ]
+}

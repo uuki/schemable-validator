@@ -1,0 +1,15 @@
+{
+  "name": "playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync-core": "rsync -a --delete ../packages/core/ ../packages/wp-schemable-validator/lib/core/",
+    "predev": "pnpm run sync-core && composer install --no-dev --working-dir=../packages/wp-schemable-validator",
+    "dev": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json",
+    "pretest:start": "pnpm run sync-core && composer install --no-dev --working-dir=../packages/wp-schemable-validator",
+    "test:start": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json --reset --skip-browser"
+  },
+  "devDependencies": {
+    "@wp-playground/cli": "*"
+  }
+}

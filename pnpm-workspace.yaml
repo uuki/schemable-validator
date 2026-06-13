@@ -1,0 +1,4 @@
+packages:
+  - playground
+  - packages/e2e
+  - packages/docs

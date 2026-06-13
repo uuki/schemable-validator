@@ -1,106 +1,148 @@
-
 # Schemable Validator
 
-The Schemable Validator was developed to streamline the validation processing involved in form submissions.
+A PHP-first validation library whose core purpose is **defining and executing validation constraints on the server**. Its distinguishing feature is the ability to export those constraints as [JSON Schema draft 2020-12](https://json-schema.org/), making the same rules available to any JavaScript framework on the client — without maintaining duplicate definitions across the stack.
 
-## ✨ Features
+The name reflects this: *validator* is the primary role, *schemable* is its defining feature.
 
-- 🍨 **Vanilla PHP Based**: Designed to be independent of specific systems such as CMS platforms.
-- ✅ **Validation**: Built on flexible and powerful validation processing using Respect/Validation, with sanitization features.
-- 📂 **Data Store**: Equipped with a controller that allows for easy storage of validated data for reuse across different pages and processes.
-- ⚙️ **Customizability**: Supports replaceable reply templates through aliases.
+---
 
-## 📦 Install
+## How it works
+
+```
+SV::object([...])          ← PHP: single source of truth
+    │
+    ├─ toValidator()        → server-side validation (Respect/Validation)
+    │
+    └─ toJson()             → JSON Schema draft 2020-12
+           │
+           └─ REST endpoint (WordPress)
+                  │
+                  └─ @schemable-validator/client  → client-side validation
+                     Zod / any JS validator
+```
+
+Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and delegated to the server automatically by the client library.
+
+---
+
+## Packages
+
+| Package | Description |
+|:--|:--|
+| `uuki/schemable-validator` | PHP core library (framework-agnostic) |
+| `wp-schemable-validator` | WordPress plugin — REST endpoint, helpers, admin UI |
+| `@schemable-validator/client` | TypeScript client — validates against JSON Schema output |
+
+---
+
+## Quick Start
+
+### 1. Define constraints (PHP)
+
+```php
+use SchemableValidator\SV;
+
+$schema = SV::object([
+  'name'  => SV::string()->min(1)->max(100),
+  'email' => SV::string()->email(),
+  'tel'   => SV::string()->pattern('^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$')->optional(),
+  'type'  => SV::enum(['general', 'support', 'other']),
+  'body'  => SV::string()->min(10),
+]);
+```
+
+### 2. Server-side validation
+
+```php
+$result = $schema->toValidator()->validate($_POST)->getResult();
+// { "name": { "value": "...", "is_valid": true, "errors": null }, ... }
+```
+
+### 3. Expose as REST endpoint (WordPress)
+
+```php
+// GET /wp-json/schv/v1/schema/contact → JSON Schema
+schv_register_schema('/schema/contact', $schema);
+```
+
+### 4. Client-side validation (TypeScript client)
+
+```typescript
+import { validateObject, isAllValid, extractErrors } from '@schemable-validator/client'
+
+const schema = await fetch('/wp-json/schv/v1/schema/contact').then(r => r.json())
+
+const result = validateObject(formData, schema)
+
+if (!isAllValid(result)) {
+  console.log(extractErrors(result))
+}
+```
+
+Or with Zod:
+
+```typescript
+import { z } from 'zod'
+
+// Build a Zod schema from the fetched JSON Schema, then extend with
+// custom .superRefine() for x-unmapped-fields (see docs/06-custom-validation.md)
+const zodSchema = buildZodSchema(schema)
+const parsed = zodSchema.safeParse(formData)
+```
+
+---
+
+## JSON Schema output
+
+`toJson()` converts the PHP schema definition to JSON Schema draft 2020-12:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name":  { "type": "string", "minLength": 1, "maxLength": 100 },
+    "email": { "type": "string", "format": "email" },
+    "tel":   { "type": "string", "pattern": "^(0\\d{9,10}|0\\d{1,4}-\\d{1,4}-\\d{3,4})$" },
+    "type":  { "type": "string", "enum": ["general", "support", "other"] },
+    "body":  { "type": "string", "minLength": 10 }
+  },
+  "required": ["name", "email", "type", "body"]
+}
+```
+
+---
+
+## Installation
 
 ```shell
+# PHP core
 composer require uuki/schemable-validator:0.x@dev
+
+# WordPress plugin
+cd packages/wp-schemable-validator && composer install --no-dev
+
+# TypeScript client
+npm install @schemable-validator/client
 ```
 
-## 🐣 Usage
+See [docs/01-installation.md](docs/01-installation.md) for full setup.
 
-### Step 1.
+---
 
-Include plugin.
+## Documentation
 
-```php
-require_once __DIR__ . '/path/to/vendor/uuki/schemable-validator/src/index.php';
-```
-
-### Step 2.
-
-Create schema.
-
-```php
-use Respect\Validation\Validator as v;
-
-$schema = [
-  'type' => v::notEmpty()
-              ->setTemplate('Please select an item')
-              ->in(['option1', 'option2', 'option3']),
-  'name' => v::stringType()->length(1, 50),
-  'email' => v::email(),
-  'phone' => v::phone()->length(10, 15),
-  'url' => v::url(),
-  'address' => v::stringType()->length(1, 255),
-  'body' => v::stringType()->length(1, 1000),
-  'usage' => v::notEmpty()->in(['for_business', 'for_personal']),
-  'docs' => v::key('error', v::equals(UPLOAD_ERR_OK))
-    ->key('name', v::oneOf(
-      v::extension('jpg'),
-      v::extension('png'),
-    )),
-  'agreement' => v::trueVal()
-];
-```
-
-### Step 3.
-
-Create validator instance.
-
-```php
-use SchemableValidator\Validator;
-
-$validator = new Validator($schema);
-```
-
-### Step 4.
-
-Validation at any time.
-
-```php
-$result = $validator->validate($_POST);
-```
-
-### More documentations
-
-[docs](docs)
-
-## Require
-
-| name | versions |
+| | |
 |:--|:--|
-| PHP | ^7.4 \|\| ^8.0 \|\| ^8.1 \|\| ^8.2 |
+| [Installation](docs/01-installation.md) | Requirements, package structure |
+| [Feature Guide](docs/02-feature-guide.md) | Validator, file validation, CSRF, reCAPTCHA |
+| [Interfaces](docs/03-interfaces.md) | WordPress helpers, REST API |
+| [Development](docs/04-development.md) | Local playground, E2E tests |
+| [SchemaBuilder](docs/05-schema-builder.md) | `SV::object()` API, JSON Schema output samples |
+| [Custom Validation](docs/06-custom-validation.md) | External libraries (libphonenumber etc.), `x-unmapped-fields` |
+
+---
 
 ## Dependencies
-https://packagist.org/packages/respect/validation#2.2.4
 
-## Futures
-- Some options
-  - reCAPTCHA
-  - i18n
-
-## ⛏️Plugin Development
-
-## Require
-- [wp-now](https://github.com/WordPress/playground-tools/tree/trunk/packages/wp-now)
-
-## Setup
-
-```sh
-pnpm install
-pnpm dev # start wp-content mode
-```
-
-## Docs
-
-https://github.com/WordPress/playground-tools/tree/trunk/packages/wp-now#automatic-modes
+- [Respect/Validation](https://packagist.org/packages/respect/validation) ^2.2

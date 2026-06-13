@@ -1,0 +1,22 @@
+{
+  "name": "uuki/schemable-validator-plugin",
+  "type": "wordpress-plugin",
+  "require": {
+    "respect/validation": "2.2.4",
+    "symfony/polyfill-php80": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "SchemableValidator\\": "lib/core/",
+      "SchemableValidator\\Interfaces\\WordPress\\": "src/Interfaces/WordPress/"
+    },
+    "files": [
+      "lib/core/constants.php",
+      "src/Interfaces/WordPress/constants.php"
+    ]
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.6",
+    "brain/monkey": "^2.6"
+  }
+}

@@ -5,10 +5,14 @@
   "private": true,
   "main": "",
   "scripts": {
-    "dev": "wp-now start --blueprint=blueprint.config.json"
+    "dev": "pnpm --filter playground dev",
+    "release": "semantic-release"
   },
   "author": "uuki<uuki.dev@gmail.com>",
   "devDependencies": {
-    "@wp-now/wp-now": "^0.1.74"
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^25.0.5"
   }
 }

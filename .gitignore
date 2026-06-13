@@ -1,8 +1,14 @@
+# claude context (internal development notes, not for distribution)
+.claude/
+
 # node
 node_modules/
 
 # composer
 vendor/
+plugins/schemable-validator/vendor/
+packages/wp-schemable-validator/vendor/
+packages/wp-schemable-validator/lib/core/
 
 # wp-now development files.
 database/
@@ -11,5 +17,16 @@ mu-plugins/
 uploads/
 
 # local development files
-src/models/
-src/**/ignore.*.php
+library/Models/
+library/**/ignore.*.php
+
+# cache
+.phpunit.result.cache
+
+# local / build artifacts
+playground/.tmp-sessions
+packages/e2e/test-results
+packages/client/dist/
+packages/wp-schemable-validator/dist/
+packages/docs/.vitepress/dist/
+packages/docs/.vitepress/cache/
