@@ -1,6 +1,6 @@
 # SV::string() — 文字列型
 
-テキスト入力に使う基本型。長さ・フォーマット・正規表現の制約をチェーンで付与できる。
+テキスト入力に使う基本型。長さ・フォーマット・正規表現の制約をチェーンで付与できます。
 
 ```php
 SV::string()
@@ -15,7 +15,7 @@ SV::string()
 
 ## .min(n) {#min}
 
-**最小文字数**を設定する。
+**最小文字数**を設定します。
 
 ```php
 SV::string()->min(int $n)
@@ -45,7 +45,7 @@ SV::string()->min(10)
 
 ## .max(n) {#max}
 
-**最大文字数**を設定する。
+**最大文字数**を設定します。
 
 ```php
 SV::string()->max(int $n)
@@ -75,7 +75,7 @@ SV::string()->max(255)
 
 ## .email() {#email}
 
-メールアドレス形式を検証する。
+メールアドレス形式を検証します。
 
 ```php
 SV::string()->email()
@@ -99,7 +99,7 @@ SV::string()->email()
 
 ## .url() {#url}
 
-URL 形式（`https://` または `http://` から始まる）を検証する。
+URL 形式（`https://` または `http://` から始まる）を検証します。
 
 ```php
 SV::string()->url()
@@ -154,7 +154,7 @@ SV::string()->pattern('^\d{3}-\d{4}$')
 
 ### ReDoS（正規表現 DoS）防止ガイドライン
 
-クライアント側バリデーターは入力のキーストロークごとにパターンを評価する。**カタストロフィックなバックトラッキング**を持つパターンはブラウザを長時間ブロックする（ReDoS）。
+クライアント側バリデーターは入力のキーストロークごとにパターンを評価します。**カタストロフィックなバックトラッキング**を持つパターンはブラウザを長時間ブロックします（ReDoS）。
 
 **避けるべきパターン例:**
 
@@ -181,7 +181,7 @@ SV::string()->pattern('^\d{3}-\d{4}$')
 [\w\d]+
 ```
 
-**クライアント側の安全ネット:** クライアント実装は入力が `PATTERN_MAX_INPUT_LENGTH`（デフォルト 500 文字）を超えた場合、パターン評価をスキップしてサーバーに委ねる。この閾値を下げたい場合は `checkPattern(pattern, limit)` を直接呼び出すか、`PATTERN_MAX_INPUT_LENGTH` を参照してください。
+**クライアント側の安全ネット:** クライアント実装は入力が `PATTERN_MAX_INPUT_LENGTH`（デフォルト 500 文字）を超えた場合、パターン評価をスキップしてサーバーに委ねます。この閾値を下げたい場合は `checkPattern(pattern, limit)` を直接呼び出すか、`PATTERN_MAX_INPUT_LENGTH` を参照してください。
 
 > サーバーサイドバリデーションは常に権威側です。クライアントバリデーションは UX 補助に過ぎません。
 
@@ -189,7 +189,7 @@ SV::string()->pattern('^\d{3}-\d{4}$')
 
 ## .date() {#date}
 
-**日付**（`YYYY-MM-DD` 形式）を検証する。
+**日付**（`YYYY-MM-DD` 形式）を検証します。
 
 ```php
 SV::string()->date()
@@ -207,7 +207,7 @@ SV::string()->date()
 
 ## .dateTime() {#datetime}
 
-**日時**（RFC 3339: `YYYY-MM-DDTHH:mm:ssZ` 形式）を検証する。
+**日時**（RFC 3339: `YYYY-MM-DDTHH:mm:ssZ` 形式）を検証します。
 
 ```php
 SV::string()->dateTime()
@@ -225,7 +225,7 @@ SV::string()->dateTime()
 
 ## .time() {#time}
 
-**時刻**（`HH:mm:ss` 形式）を検証する。
+**時刻**（`HH:mm:ss` 形式）を検証します。
 
 ```php
 SV::string()->time()
@@ -243,7 +243,7 @@ SV::string()->time()
 
 ## .uuid() {#uuid}
 
-**UUID** 形式（`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`）を検証する。
+**UUID** 形式（`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`）を検証します。
 
 ```php
 SV::string()->uuid()
@@ -261,7 +261,7 @@ SV::string()->uuid()
 
 ## .ipv4() {#ipv4}
 
-**IPv4 アドレス**を検証する。
+**IPv4 アドレス**を検証します。
 
 ```php
 SV::string()->ipv4()
@@ -279,7 +279,7 @@ SV::string()->ipv4()
 
 ## .ipv6() {#ipv6}
 
-**IPv6 アドレス**を検証する。
+**IPv6 アドレス**を検証します。
 
 ```php
 SV::string()->ipv6()
@@ -295,7 +295,7 @@ SV::string()->ipv6()
 
 ## .slug() {#slug}
 
-**URL スラッグ**（小文字英数字とハイフンのみ）を検証する。
+**URL スラッグ**（小文字英数字とハイフンのみ）を検証します。
 
 ```php
 SV::string()->slug()
@@ -313,7 +313,7 @@ SV::string()->slug()
 
 ## .domain() {#domain}
 
-**ドメイン名**（`example.com` 形式）を検証する。
+**ドメイン名**（`example.com` 形式）を検証します。
 
 ```php
 SV::string()->domain()

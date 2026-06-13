@@ -4,7 +4,7 @@
 
 ### スキーマ定義
 
-[Respect/Validation](https://respect-validation.readthedocs.io/en/latest/validators/) のルールをフィールド名にマップする。
+[Respect/Validation](https://respect-validation.readthedocs.io/en/latest/validators/) のルールをフィールド名にマップします。
 
 ```php
 use Respect\Validation\Validator as v;
@@ -18,7 +18,7 @@ $schema = [
 ];
 ```
 
-複数ルールはメソッドチェーンで結合できる。
+複数ルールはメソッドチェーンで結合できます。
 
 ```php
 v::stringType()->notEmpty()->length(1, 100)
@@ -50,7 +50,7 @@ $validator = new Validator($schema, [
 $result = $validator->validate($_POST)->getResult();
 ```
 
-入力値は自動的にサニタイズ（`strip_tags` + `htmlspecialchars`）される。
+入力値は自動的にサニタイズ（`strip_tags` + `htmlspecialchars`）されます。
 
 ### ファイルの検証
 
@@ -62,7 +62,7 @@ $result = $validator->validateFiles($_FILES)->getResult();
 $result = $validator->validateFiles($data, ['native_files' => false])->getResult();
 ```
 
-`FileExtension` カスタムルールで MIME タイプを検証できる:
+`FileExtension` カスタムルールで MIME タイプを検証できます:
 
 ```php
 use SchemableValidator\Rules\FileExtension;
@@ -97,7 +97,7 @@ $result = $validator
 
 ### 結果の構造
 
-`getResult()` は以下の形式の連想配列を返す。
+`getResult()` は以下の形式の連想配列を返します。
 
 ```php
 [
@@ -175,7 +175,7 @@ schv_form()->clear();
 
 ## Template（メール本文の組み立て）
 
-セッションに保存された検証済みデータを、定義済みテンプレートに差し込む。
+セッションに保存された検証済みデータを、定義済みテンプレートに差し込みます。
 
 ### 基本
 
@@ -199,8 +199,8 @@ $admin_mail = $template->get('admin');
 $all        = $template->getAll();
 ```
 
-`aliases` は `テンプレート内キー => $data のフィールド名` のマッピング。
-フォームフィールド名とテンプレートプレースホルダー名が異なる場合に使う。
+`aliases` は `テンプレート内キー => $data のフィールド名` のマッピングです。
+フォームフィールド名とテンプレートプレースホルダー名が異なる場合に使います。
 
 ### WordPress ヘルパー
 
@@ -217,4 +217,4 @@ $user_mail = $template->get('user');
 ```
 
 WordPress 環境では `templates` の値を WP オプション名として解釈し、
-`get_option()` で本文を取得する。テンプレート文字列を直接渡さないこと。
+`get_option()` で本文を取得します。テンプレート文字列を直接渡さないでください。

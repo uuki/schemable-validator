@@ -1,12 +1,12 @@
 # SV::integer() / SV::number() — 数値型
 
-数値入力に使う型。整数のみの場合は `integer`、小数を含む場合は `number` を使う。
+数値入力に使う型。整数のみの場合は `integer`、小数を含む場合は `number` を使います。
 
 ---
 
 ## SV::integer()
 
-整数値を検証する。HTML フォームからの文字列入力も自動的に整数として評価される。
+整数値を検証します。HTML フォームからの文字列入力も自動的に整数として評価されます。
 
 ```php
 SV::integer()
@@ -23,7 +23,7 @@ SV::integer()
 
 ## SV::number()
 
-整数または小数を検証する。
+整数または小数を検証します。
 
 ```php
 SV::number()
@@ -40,7 +40,7 @@ SV::number()
 
 ## .min(n) {#min}
 
-**最小値**を設定する。
+**最小値**を設定します。
 
 ```php
 SV::integer()->min(int $n)
@@ -71,7 +71,7 @@ SV::number()->min(0.0)->max(5.0)
 
 ## .max(n) {#max}
 
-**最大値**を設定する。
+**最大値**を設定します。
 
 ```php
 SV::integer()->max(int $n)
@@ -125,4 +125,4 @@ $schema = SV::object([
 }
 ```
 
-> クライアントの `validateObject` はフォーム入力の文字列を `Number()` で数値に変換してから検証する。`z.coerce.number()` を使う Zod 統合でも同様。
+> クライアントの `validateObject` はフォーム入力の文字列を `Number()` で数値に変換してから検証します。`z.coerce.number()` を使う Zod 統合でも同様です。

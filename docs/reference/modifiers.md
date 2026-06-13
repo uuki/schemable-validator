@@ -1,12 +1,12 @@
 # 修飾子 — optional / nullable
 
-修飾子はすべてのフィールド型（`string` / `integer` / `number` / `boolean` / `enum` / `file` / `respect`）に付与できる。
+修飾子はすべてのフィールド型（`string` / `integer` / `number` / `boolean` / `enum` / `file` / `respect`）に付与できます。
 
 ---
 
 ## .optional() {#optional}
 
-フィールドを**任意入力**にする。JSON Schema の `required` 配列から除外される。
+フィールドを**任意入力**にします。JSON Schema の `required` 配列から除外されます。
 
 ```php
 SV::string()->optional()
@@ -90,7 +90,7 @@ SV::string()->url()->nullable()->optional()
 }
 ```
 
-この場合 `required` にも含まれず、`null` 値も受け付ける。
+この場合 `required` にも含まれず、`null` 値も受け付けます。
 
 ---
 

@@ -34,7 +34,7 @@ $schema = SV::object([
 }
 ```
 
-> HTML の `<input type="checkbox">` は未チェック時に値が送信されないため、サーバー側では `$_POST['agreement'] ?? ''` のように扱うこと。
+> HTML の `<input type="checkbox">` は未チェック時に値が送信されないため、サーバー側では `$_POST['agreement'] ?? ''` のように扱ってください。
 
 ---
 

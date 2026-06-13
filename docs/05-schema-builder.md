@@ -1,6 +1,6 @@
 # SchemaBuilder — JSON 出力サンプル
 
-`SV::object()` で定義したスキーマは `toJson()` / `toJsonSchema()` で JSON Schema (draft 2020-12) に変換できる。
+`SV::object()` で定義したスキーマは `toJson()` / `toJsonSchema()` で JSON Schema (draft 2020-12) に変換できます。
 
 ---
 
@@ -74,7 +74,7 @@ echo $schema->toJson();
 }
 ```
 
-`tel` は `.optional()` のため `required` に含まれない。
+`tel` は `.optional()` のため `required` に含まれません。
 
 ---
 
@@ -128,15 +128,15 @@ $schema = SV::object([
 ```
 
 - `website` は `.nullable()` により `"type": ["string", "null"]`
-- `avatar` は `SV::file()` (JSON Schema に対応するキーワードがない) のため `properties` から除外され `x-unmapped-fields` に記録される
+- `avatar` は `SV::file()` (JSON Schema に対応するキーワードがない) のため `properties` から除外され `x-unmapped-fields` に記録されます
 
 ---
 
 ## `x-unmapped-fields` について
 
 JSON Schema に変換できないフィールド（ファイルアップロード・カスタム Respect ルール）は
-`x-unmapped-fields` 拡張キーに名前だけ記録される。
-バリデーション自体は `toValidator()` を通じて Respect/Validation で行われる。
+`x-unmapped-fields` 拡張キーに名前だけ記録されます。
+バリデーション自体は `toValidator()` を通じて Respect/Validation で行われます。
 
 ```php
 // JSON Schema として渡す場合

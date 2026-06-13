@@ -2,7 +2,7 @@
 
 ## WordPress Plugin
 
-管理画面にメールテンプレート設定ページを追加し、`get_option()` でテンプレートを管理する。
+管理画面にメールテンプレート設定ページを追加し、`get_option()` でテンプレートを管理します。
 
 ### セットアップ
 
@@ -21,8 +21,8 @@ new Plugin([
 ]);
 ```
 
-引数のキーに対して `SCHV_REPLY_FORMAT_FOR_{key}` という名前の WP オプションが登録される。  
-管理画面は **WP Admin › Settings › Schemable Validator** に表示される。
+引数のキーに対して `SCHV_REPLY_FORMAT_FOR_{key}` という名前の WP オプションが登録されます。  
+管理画面は **WP Admin › Settings › Schemable Validator** に表示されます。
 
 ### オプションキーの取得
 
@@ -34,8 +34,8 @@ $keys = $plugin->keysAll();
 
 ### テンプレートとの連携
 
-`schv_template()` の `templates` にオプション名（文字列）を渡す。  
-WordPress 環境では自動的に `get_option()` で値を取得する。
+`schv_template()` の `templates` にオプション名（文字列）を渡します。  
+WordPress 環境では自動的に `get_option()` で値を取得します。
 
 ```php
 $template = schv_template([
@@ -51,7 +51,7 @@ $template = schv_template([
 
 ## WordPress ヘルパー関数
 
-プラグインが有効化されると以下のグローバル関数が使えるようになる。
+プラグインが有効化されると以下のグローバル関数が使えるようになります。
 
 | 関数 | 戻り値 | 説明 |
 |:--|:--|:--|
@@ -65,9 +65,9 @@ $template = schv_template([
 
 ### `$_REQUEST` とルーティングの衝突
 
-WordPress は `$_REQUEST`（GET + POST のマージ）を URL ルーティングに使用する。  
+WordPress は `$_REQUEST`（GET + POST のマージ）を URL ルーティングに使用します。  
 フォームフィールド名に WordPress の予約済みクエリ変数（`name`、`p`、`page` など）を使うと、  
-POST 送信時に WordPress が対応する投稿を探して 404 を返すことがある。
+POST 送信時に WordPress が対応する投稿を探して 404 を返すことがあります。
 
 **対処:** `request` フィルターで POST 時に該当クエリ変数を除去する。
 
@@ -83,8 +83,8 @@ add_filter('request', function ($qv) {
 ### `type="email"` とブラウザバリデーション
 
 `<input type="email">` はブラウザが独自のバリデーションを行い、  
-無効な値ではフォームが送信されないことがある。  
-サーバー側でバリデーションを行う場合は `<form novalidate>` を付与する。
+無効な値ではフォームが送信されないことがあります。  
+サーバー側でバリデーションを行う場合は `<form novalidate>` を付与してください。
 
 ```html
 <form method="post" novalidate>

@@ -4,7 +4,7 @@
 
 ## SV::object(fields) {#object}
 
-フィールドの集合からスキーマを定義する。すべてのフィールド定義はここに集約される。
+フィールドの集合からスキーマを定義します。すべてのフィールド定義はここに集約されます。
 
 ```php
 SV::object(array<string, AbstractFieldSchema> $fields): SchemaBuilder
@@ -37,10 +37,10 @@ $schema = SV::object([
 $schema->toJsonSchema(): array
 ```
 
-- `SV::file()` / `SV::respect()` フィールドは `properties` から除外され、`x-unmapped-fields` に記録される
-- `optional()` が付いていないフィールドは `required` 配列に含まれる
+- `SV::file()` / `SV::respect()` フィールドは `properties` から除外され、`x-unmapped-fields` に記録されます
+- `optional()` が付いていないフィールドは `required` 配列に含まれます
 
-**用途:** PHP 側でスキーマを配列として操作したい場合、REST レスポンスの手動加工。
+**用途:** PHP 側でスキーマを配列として操作したい場合や、REST レスポンスを手動加工する場合。
 
 ```php
 $array = $schema->toJsonSchema();
@@ -56,7 +56,7 @@ $array = $schema->toJsonSchema();
 
 ## .toJson() {#tojson}
 
-スキーマを **JSON 文字列**として返す。`JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES` で出力される。
+スキーマを **JSON 文字列**として返します。`JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES` で出力されます。
 
 ```php
 $schema->toJson(): string
@@ -148,7 +148,7 @@ $schema->when(string $field, WhenExpr|scalar $expr, array $require): self
 
 ### 比較式一覧 {#when-expressions}
 
-`$expr` には以下の `SV::*` ファクトリを使用する。
+`$expr` には以下の `SV::*` ファクトリを使用します。
 
 | 式 | 比較 | 備考 |
 |:--|:--|:--|
@@ -161,8 +161,8 @@ $schema->when(string $field, WhenExpr|scalar $expr, array $require): self
 | `SV::lessThan($n)` | `< n` | 数値・未満 |
 | `SV::field('name')` | — | 別フィールドの値を参照（上記と組み合わせる） |
 
-`SV::equal()` / `SV::notEqual()` の引数に `SV::field('name')` を渡すと、**2フィールド間の比較**になる。  
-数値演算子（`>=` / `<=` / `>` / `<`）も同様にフィールド参照を受け取れる。
+`SV::equal()` / `SV::notEqual()` の引数に `SV::field('name')` を渡すと、**2フィールド間の比較**になります。  
+数値演算子（`>=` / `<=` / `>` / `<`）も同様にフィールド参照を受け取れます。
 
 ---
 
@@ -228,7 +228,7 @@ SV::object([...])->
 
 ### JSON Schema 出力 {#when-json-schema}
 
-すべての条件は `x-when` 拡張キーに出力される。リテラル `===` 条件は標準の `if/then`（単一）または `allOf`（複数）も**併記**される。
+すべての条件は `x-when` 拡張キーに出力されます。リテラル `===` 条件は標準の `if/then`（単一）または `allOf`（複数）も**併記**されます。
 
 ```json
 {
@@ -250,7 +250,7 @@ SV::object([...])->
 | `equalsField` | 比較先フィールド名（`SV::field()` を使った場合） |
 | `require` | 条件成立時に必須とするフィールド名の配列 |
 
-> `@schemable-validator/client` の `validateObject` は `x-when` を優先して評価する。`x-when` がない場合は標準の `if/then` / `allOf` にフォールバックする。
+> `@schemable-validator/client` の `validateObject` は `x-when` を優先して評価します。`x-when` がない場合は標準の `if/then` / `allOf` にフォールバックします。
 
 ---
 
@@ -267,7 +267,7 @@ $url = schv_schema_url('/schema/contact');
 // → https://example.com/wp-json/schv/v1/schema/contact
 ```
 
-ETag と `Cache-Control: public, max-age=3600` が自動で付与される。
+ETag と `Cache-Control: public, max-age=3600` が自動で付与されます。
 
 ---
 

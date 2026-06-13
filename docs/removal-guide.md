@@ -19,7 +19,7 @@
    - [バリデーション結果の形式変更](#15-バリデーション結果の形式変更)
 2. [クライアント — TypeScript/JavaScript を Zod へ移行](#2-クライアント--typescriptjavascript-を-zod-へ移行)
    - [型マッピング早見表](#21-型マッピング早見表)
-   - [validateObject → Zod safeParse](#22-validateobject--zod-safeParse)
+   - [validateObject → Zod safeParse](#22-validateobject--zod-safeparse)
    - [when() の Zod への置き換え](#23-when-の-zod-への置き換え)
    - [その他のライブラリ](#24-その他のライブラリ)
 
@@ -536,7 +536,7 @@ const schema = yup.object({
 
 ## 関連ドキュメント
 
-- [Respect/Validation 2.x — List of Rules](https://github.com/Respect/Validation/blob/2.2/docs/list-of-rules.md)
+- [Respect/Validation 2.x — List of Rules](https://respect-validation.readthedocs.io/en/2.4/08-list-of-rules-by-category/)
 - [Respect/Validation 2.x → 3.x Migration Guide](https://github.com/Respect/Validation/blob/main/docs/migration-guide.md) *(3.x 移行時に参照)*
 - [Zod ドキュメント](https://zod.dev)
 - [Valibot ドキュメント](https://valibot.dev)

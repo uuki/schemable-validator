@@ -6,7 +6,7 @@
 |:--|:--|:--|
 | PHP | ^7.4 \|\| ^8.x | core ライブラリ・WP プラグイン |
 | WordPress | 5.9+ | WP プラグインのみ |
-| Node.js | >=24 | `@schemable-validator/client` のみ |
+| Node.js | >=22.12.0 | `@schemable-validator/client` のみ |
 
 ## PHP library
 
@@ -16,7 +16,7 @@ composer require uuki/schemable-validator:0.9.0
 
 ## WordPress plugin
 
-リポジトリをクローンし、プラグインディレクトリに配置して依存パッケージをインストールする。
+リポジトリをクローンし、プラグインディレクトリに配置して依存パッケージをインストールします。
 
 ```shell
 # リポジトリをプラグインディレクトリに直接クローン
@@ -28,7 +28,7 @@ cd wp-content/plugins/schemable-validator/packages/wp-schemable-validator
 composer install --no-dev
 ```
 
-WordPress 管理画面のプラグイン一覧から **Schemable Validator** を有効化する。
+WordPress 管理画面のプラグイン一覧から **Schemable Validator** を有効化してください。
 
 ## Package structure
 

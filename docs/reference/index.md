@@ -1,8 +1,8 @@
 # Schema Reference
 
-`SV::object()` に渡すフィールド定義の全表現を一覧する。
+`SV::object()` に渡すフィールド定義の全表現を一覧します。
 
-各表現は JSON Schema draft 2020-12 のキーワードに対応し、サーバー側バリデーション（Respect/Validation）とクライアント側バリデーション（client / Zod）の両方に適用される。
+各表現は JSON Schema draft 2020-12 のキーワードに対応し、サーバー側バリデーション（Respect/Validation）とクライアント側バリデーション（client / Zod）の両方に適用されます。
 
 ---
 

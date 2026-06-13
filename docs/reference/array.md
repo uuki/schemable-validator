@@ -1,6 +1,6 @@
 # SV::array() — 配列型
 
-複数選択・繰り返し入力フィールドに使う型。各要素を指定したスキーマで検証する。
+複数選択・繰り返し入力フィールドに使う型。各要素を指定したスキーマで検証します。
 
 ```php
 SV::array(AbstractFieldSchema $items): ArraySchema
@@ -37,7 +37,7 @@ SV::array(SV::integer()->min(1))
 
 ## .minItems(n) {#minitems}
 
-配列の**最小要素数**を設定する。
+配列の**最小要素数**を設定します。
 
 ```php
 SV::array($items)->minItems(int $n)
@@ -58,7 +58,7 @@ SV::array(SV::enum(['a', 'b', 'c']))->minItems(1)
 
 ## .maxItems(n) {#maxitems}
 
-配列の**最大要素数**を設定する。
+配列の**最大要素数**を設定します。
 
 ```php
 SV::array($items)->maxItems(int $n)
@@ -101,7 +101,7 @@ $schema = SV::object([
 
 ### サーバー側検証
 
-配列フィールドは `$_POST` で `tags[]` として送られる。
+配列フィールドは `$_POST` で `tags[]` として送られます。
 
 ```php
 $result = $schema->toValidator()->validate($_POST)->getResult();
@@ -120,7 +120,7 @@ const result = validateObject(
 )
 ```
 
-配列フィールドの `FieldResult.value` は `string[]` になる。
+配列フィールドの `FieldResult.value` は `string[]` になります。
 
 ```typescript
 result.tags

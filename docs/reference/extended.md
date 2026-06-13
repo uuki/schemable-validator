@@ -1,15 +1,15 @@
 # SV::file() / SV::respect() — JSON Schema 非対応型
 
-これらの型は Respect/Validation でサーバー側検証を行うが、JSON Schema に変換できない。
-`toJsonSchema()` の出力では `properties` に含まれず、`x-unmapped-fields` にフィールド名が記録される。
+これらの型は Respect/Validation でサーバー側検証を行いますが、JSON Schema に変換できません。
+`toJsonSchema()` の出力では `properties` に含まれず、`x-unmapped-fields` にフィールド名が記録されます。
 
-クライアントの `validateObject` はこれらのフィールドを自動的にスキップし、サーバー側に委譲する。
+クライアントの `validateObject` はこれらのフィールドを自動的にスキップし、サーバー側に委譲します。
 
 ---
 
 ## SV::file(accept) {#file}
 
-ファイルアップロードの MIME タイプを検証する。
+ファイルアップロードの MIME タイプを検証します。
 
 ```php
 SV::file(array $accept = [])
@@ -76,20 +76,20 @@ SV::postalCode(string $countryCode)
 |:--|:--|:--|
 | `$countryCode` | `string` | ISO 3166-1 alpha-2 国コード（例: `'JP'`, `'US'`, `'DE'`） |
 
-JSON Schema では表現できないため `x-unmapped-fields` に記録される。
+JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
 
 ```php
 SV::postalCode('JP')->optional()  // 日本の郵便番号（任意入力）
 SV::postalCode('US')              // 米国の ZIP コード
 ```
 
-`SV::respect(v::postalCode('JP'))` の糖衣構文。
+`SV::respect(v::postalCode('JP'))` の糖衣構文です。
 
 ---
 
 ## SV::creditCard(...brands) {#creditcard}
 
-**クレジットカード番号**を Luhn アルゴリズムで検証する。
+**クレジットカード番号**を Luhn アルゴリズムで検証します。
 
 ```php
 SV::creditCard(string ...$brands)
@@ -99,7 +99,7 @@ SV::creditCard(string ...$brands)
 |:--|:--|:--|
 | `...$brands` | `string` | 受け入れるカードブランド（省略時は全ブランド対応）。例: `'Visa'`, `'Mastercard'` |
 
-JSON Schema では表現できないため `x-unmapped-fields` に記録される。
+JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
 
 ```php
 SV::creditCard()                    // 全ブランド
@@ -116,7 +116,7 @@ SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard のみ
 SV::iban()
 ```
 
-JSON Schema では表現できないため `x-unmapped-fields` に記録される。
+JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
 
 ```php
 SV::iban()->optional()
@@ -126,7 +126,7 @@ SV::iban()->optional()
 
 ## SV::respect(rule) {#respect}
 
-Respect/Validation のルールを直接指定するエスケープハッチ。組み込み型では表現できない制約に使う。
+Respect/Validation のルールを直接指定するエスケープハッチです。組み込み型では表現できない制約に使います。
 
 ```php
 SV::respect(Respect\Validation\Validator $rule)
