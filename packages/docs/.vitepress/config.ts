@@ -8,6 +8,8 @@ export default defineConfig({
   outDir: './.vitepress/dist',
 
   themeConfig: {
+    search: { provider: 'local' },
+
     nav: [
       { text: 'Guide', link: '/01-installation' },
       { text: 'GitHub', link: 'https://github.com/uuki/schemable-validator' },
@@ -38,8 +40,15 @@ export default defineConfig({
           { text: 'Integer / Number', link: '/reference/number' },
           { text: 'Boolean / Enum',   link: '/reference/scalar' },
           { text: 'Modifiers',        link: '/reference/modifiers' },
+          { text: 'Array',            link: '/reference/array' },
           { text: 'File / Respect',   link: '/reference/extended' },
           { text: 'Object & Output',  link: '/reference/object' },
+        ],
+      },
+      {
+        text: 'Migration',
+        items: [
+          { text: 'Removal Guide', link: '/removal-guide' },
         ],
       },
       {

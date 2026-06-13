@@ -4,7 +4,7 @@
 
 ### スキーマ定義
 
-[Respect/Validation](https://github.com/Respect/Validation/tree/main/docs/rules) のルールをフィールド名にマップする。
+[Respect/Validation](https://respect-validation.readthedocs.io/en/latest/validators/) のルールをフィールド名にマップする。
 
 ```php
 use Respect\Validation\Validator as v;

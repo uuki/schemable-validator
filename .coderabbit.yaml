@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "ja-JP"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - "main"
+  path_filters:
+    - "!**/vendor/**"
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!pnpm-lock.yaml"
+    - "!composer.lock"
+  path_instructions:
+    - path: "packages/core/**/*.php"
+      instructions: |
+        - PHP 7.4 互換性を確認（コンストラクタプロモーション・named arguments・match 式は使用不可）
+        - Respect/Validation 2.x の API を正しく使用しているか確認
+        - final クラスへの不要な継承がないか確認
+        - 例外は \InvalidArgumentException か \RuntimeException を使用し、汎用 \Exception は避ける
+
+    - path: "packages/wp-schemable-validator/src/**/*.php"
+      instructions: |
+        - WordPress コーディング標準に準拠しているか確認
+        - 出力に esc_html / esc_attr / esc_textarea / wp_kses が適切に使われているか確認
+        - add_action / add_filter のフック名にタイポがないか確認
+        - ユーザー入力を直接 SQL や HTML に渡していないか確認
+
+    - path: "packages/client/src/**/*.ts"
+      instructions: |
+        - Result 型（Ok/Err）のパターンが一貫して使われているか確認
+        - any 型の使用を避ける
+        - PATTERN_MAX_INPUT_LENGTH など公開済み定数の変更は破壊的変更になるため慎重に確認
+        - ブラウザ互換性：Node.js 固有 API を使用していないか確認
+
+    - path: "docs/**/*.md"
+      instructions: |
+        - コードサンプルが実際の API と一致しているか確認
+        - SV:: メソッド名・オプション名のタイポを確認
+        - removal-guide.md の移行手順に矛盾がないか確認
+
+    - path: ".github/workflows/**/*.yml"
+      instructions: |
+        - secrets を直接ハードコードしていないか確認
+        - permissions は最小権限で設定されているか確認
+        - サードパーティ Action は SHA ピン or バージョンタグを使用しているか確認
+
+  tools:
+    github-actions:
+      enabled: true
+    markdownlint:
+      enabled: true
+    phpstan:
+      enabled: true
+    eslint:
+      enabled: true
+    yamllint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    shellcheck:
+      enabled: true
+
+chat:
+  auto_reply: true

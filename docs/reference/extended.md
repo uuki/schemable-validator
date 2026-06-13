@@ -64,6 +64,66 @@ $result = $schema->toValidator()
 
 ---
 
+## SV::postalCode(countryCode) {#postalcode}
+
+国別の**郵便番号**を検証する。Respect/Validation の `postalCode()` ルールをラップしたショートハンド。
+
+```php
+SV::postalCode(string $countryCode)
+```
+
+| パラメータ | 型 | 説明 |
+|:--|:--|:--|
+| `$countryCode` | `string` | ISO 3166-1 alpha-2 国コード（例: `'JP'`, `'US'`, `'DE'`） |
+
+JSON Schema では表現できないため `x-unmapped-fields` に記録される。
+
+```php
+SV::postalCode('JP')->optional()  // 日本の郵便番号（任意入力）
+SV::postalCode('US')              // 米国の ZIP コード
+```
+
+`SV::respect(v::postalCode('JP'))` の糖衣構文。
+
+---
+
+## SV::creditCard(...brands) {#creditcard}
+
+**クレジットカード番号**を Luhn アルゴリズムで検証する。
+
+```php
+SV::creditCard(string ...$brands)
+```
+
+| パラメータ | 型 | 説明 |
+|:--|:--|:--|
+| `...$brands` | `string` | 受け入れるカードブランド（省略時は全ブランド対応）。例: `'Visa'`, `'Mastercard'` |
+
+JSON Schema では表現できないため `x-unmapped-fields` に記録される。
+
+```php
+SV::creditCard()                    // 全ブランド
+SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard のみ
+```
+
+---
+
+## SV::iban() {#iban}
+
+**IBAN**（国際銀行口座番号）を検証する。
+
+```php
+SV::iban()
+```
+
+JSON Schema では表現できないため `x-unmapped-fields` に記録される。
+
+```php
+SV::iban()->optional()
+```
+
+---
+
 ## SV::respect(rule) {#respect}
 
 Respect/Validation のルールを直接指定するエスケープハッチ。組み込み型では表現できない制約に使う。

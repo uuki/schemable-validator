@@ -5,7 +5,14 @@
   "private": true,
   "main": "",
   "scripts": {
-    "dev": "pnpm --filter playground dev"
+    "dev": "pnpm --filter playground dev",
+    "release": "semantic-release"
   },
-  "author": "uuki<uuki.dev@gmail.com>"
+  "author": "uuki<uuki.dev@gmail.com>",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^25.0.5"
+  }
 }

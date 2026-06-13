@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # pnpm workspace root (playground / packages/docs / packages/e2e)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "javascript"]
+    open-pull-requests-limit: 10
+    groups:
+      dev-tools:
+        patterns: ["vitepress", "vitest", "typescript", "tsdown", "playwright*"]
+
+  # @schemable-validator/client (not part of pnpm workspace)
+  - package-ecosystem: "npm"
+    directory: "/packages/client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "javascript"]
+    open-pull-requests-limit: 5
+
+  # composer – root (packages/core, phpunit, etc.)
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "php"]
+    open-pull-requests-limit: 5
+
+  # composer – WordPress plugin
+  - package-ecosystem: "composer"
+    directory: "/packages/wp-schemable-validator"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "php"]
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "github-actions"]

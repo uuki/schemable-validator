@@ -1,8 +1,8 @@
 # Schemable Validator
 
-Define validation constraints once in PHP — export to [JSON Schema draft 2020-12](https://json-schema.org/) and consume from any JavaScript framework.
+A PHP-first validation library whose core purpose is **defining and executing validation constraints on the server**. Its distinguishing feature is the ability to export those constraints as [JSON Schema draft 2020-12](https://json-schema.org/), making the same rules available to any JavaScript framework on the client — without maintaining duplicate definitions across the stack.
 
-The single PHP schema drives server-side validation, a REST endpoint that delivers the constraint definition, and a framework-agnostic TypeScript SDK for client-side validation. No duplicate rule definitions across the stack.
+The name reflects this: *validator* is the primary role, *schemable* is its defining feature.
 
 ---
 

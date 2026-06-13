@@ -127,6 +127,133 @@ $result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
 
 ---
 
+## .when(field, expr, require) {#when}
+
+あるフィールドが条件を満たすとき、別フィールドを**条件付きで必須**にする。
+
+```php
+$schema->when(string $field, WhenExpr|scalar $expr, array $require): self
+```
+
+| パラメータ | 型 | 説明 |
+|:--|:--|:--|
+| `$field` | `string` | 条件を評価するフィールド名 |
+| `$expr` | `WhenExpr` \| `scalar` | 比較式。スカラーを渡した場合は `SV::equal($value)` と等価 |
+| `$require` | `string[]` | 条件を満たすとき必須にするフィールド名の配列 |
+
+複数回呼び出せる。  
+**用途:** 「種別が "法人" のとき会社名を必須にする」「年齢が 18 未満のとき保護者同意欄を必須にする」など、フィールド間依存のルール。
+
+---
+
+### 比較式一覧 {#when-expressions}
+
+`$expr` には以下の `SV::*` ファクトリを使用する。
+
+| 式 | 比較 | 備考 |
+|:--|:--|:--|
+| `'value'`（スカラー） | `=== 'value'` | `SV::equal('value')` の省略形 |
+| `SV::equal($value)` | `===` | 文字列一致 |
+| `SV::notEqual($value)` | `!==` | 文字列不一致 |
+| `SV::greaterThanOrEqual($n)` | `>= n` | 数値・以上 |
+| `SV::lessThanOrEqual($n)` | `<= n` | 数値・以下 |
+| `SV::greaterThan($n)` | `> n` | 数値・より大きい |
+| `SV::lessThan($n)` | `< n` | 数値・未満 |
+| `SV::field('name')` | — | 別フィールドの値を参照（上記と組み合わせる） |
+
+`SV::equal()` / `SV::notEqual()` の引数に `SV::field('name')` を渡すと、**2フィールド間の比較**になる。  
+数値演算子（`>=` / `<=` / `>` / `<`）も同様にフィールド参照を受け取れる。
+
+---
+
+### 使用例
+
+#### スカラー省略形（=== のみ）
+
+```php
+SV::object([
+  'type'         => SV::enum(['personal', 'company']),
+  'company_name' => SV::string()->min(1)->optional(),
+])->when('type', 'company', ['company_name']);
+```
+
+#### 明示的な === / !==
+
+```php
+// type === 'company' のとき company_name を必須
+->when('type', SV::equal('company'), ['company_name'])
+
+// role !== 'admin' のとき note を必須
+->when('role', SV::notEqual('admin'), ['note'])
+```
+
+#### 数値比較
+
+```php
+// age >= 18 のとき consent を必須
+->when('age', SV::greaterThanOrEqual(18), ['consent'])
+
+// score <= 50 のとき retry を必須
+->when('score', SV::lessThanOrEqual(50), ['retry'])
+
+// qty < 1 のとき warn を必須（未満）
+->when('qty', SV::lessThan(1), ['warn'])
+
+// level > 10 のとき bonus を必須（より大きい）
+->when('level', SV::greaterThan(10), ['bonus'])
+```
+
+#### フィールド参照（2フィールド間の比較）
+
+```php
+// password === confirm_password のとき hint を必須
+->when('password', SV::equal(SV::field('confirm_password')), ['hint'])
+
+// new_password !== old_password のとき change_reason を必須
+->when('new_password', SV::notEqual(SV::field('old_password')), ['change_reason'])
+
+// price >= min_price のとき note を必須
+->when('price', SV::greaterThanOrEqual(SV::field('min_price')), ['note'])
+```
+
+#### 複数条件
+
+```php
+SV::object([...])->
+  when('plan', SV::equal('enterprise'), ['billing_email'])->
+  when('plan', SV::equal('enterprise'), ['contract_name']);
+```
+
+---
+
+### JSON Schema 出力 {#when-json-schema}
+
+すべての条件は `x-when` 拡張キーに出力される。リテラル `===` 条件は標準の `if/then`（単一）または `allOf`（複数）も**併記**される。
+
+```json
+{
+  "x-when": [
+    { "field": "type",     "op": "===", "equals": "company", "require": ["company_name"] },
+    { "field": "age",      "op": ">=",  "equals": 18,        "require": ["consent"] },
+    { "field": "password", "op": "===", "equalsField": "confirm_password", "require": ["hint"] }
+  ],
+  "if":   { "properties": { "type": { "const": "company" } } },
+  "then": { "required": ["company_name"] }
+}
+```
+
+| キー | 内容 |
+|:--|:--|
+| `field` | 比較元フィールド名 |
+| `op` | `===` / `!==` / `>=` / `<=` / `>` / `<` |
+| `equals` | リテラル値（`equalsField` がない場合） |
+| `equalsField` | 比較先フィールド名（`SV::field()` を使った場合） |
+| `require` | 条件成立時に必須とするフィールド名の配列 |
+
+> `@schemable-validator/client` の `validateObject` は `x-when` を優先して評価する。`x-when` がない場合は標準の `if/then` / `allOf` にフォールバックする。
+
+---
+
 ## WordPress REST エンドポイントへの登録
 
 ```php
