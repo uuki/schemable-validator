@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'Schemable Validator',
   description: 'Define validation constraints once in PHP — export to JSON Schema and consume from any JavaScript framework.',
 
+  base: '/schemable-validator/',
   srcDir: '../../docs',
   outDir: './.vitepress/dist',
 
