@@ -1,3 +1,6 @@
+# claude context (internal development notes, not for distribution)
+.claude/
+
 # node
 node_modules/
 
