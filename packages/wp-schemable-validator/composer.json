@@ -14,5 +14,9 @@
       "lib/core/constants.php",
       "src/Interfaces/WordPress/constants.php"
     ]
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.6",
+    "brain/monkey": "^2.6"
   }
 }

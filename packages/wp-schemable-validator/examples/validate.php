@@ -15,6 +15,11 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'validate') {
     return;
   }
+  $validator = schv_validator([]);
+  if (!$validator->checkToken($_POST['schv_csrf_token'] ?? '', 'validate')) {
+    $GLOBALS['schv_ex_validate'] = ['_error' => 'Invalid or expired CSRF token.'];
+    return;
+  }
   $schema = [
     'name'  => v::stringType()->length(1, 50),
     'email' => v::email(),
@@ -25,11 +30,14 @@ add_action('template_redirect', function () {
 });
 
 add_shortcode('schv_example_validate', function (): string {
-  $r = $GLOBALS['schv_ex_validate'] ?? [];
+  $r     = $GLOBALS['schv_ex_validate'] ?? [];
+  $token = schv_validator([])->createToken('validate');
   ob_start(); ?>
   <div style="font-family:sans-serif;max-width:500px">
     <h2>Example: Validate</h2>
-    <?php if ($r): ?>
+    <?php if (!empty($r['_error'])): ?>
+      <p style="color:red"><?php echo esc_html($r['_error']); ?></p>
+    <?php elseif ($r): ?>
       <?php foreach ($r as $field => $state): ?>
         <p style="color:<?php echo $state['is_valid'] ? 'green' : 'red'; ?>">
           <strong><?php echo esc_html($field); ?></strong>:
@@ -39,6 +47,7 @@ add_shortcode('schv_example_validate', function (): string {
     <?php endif; ?>
     <form method="post" novalidate>
       <input type="hidden" name="schv_action" value="validate">
+      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
       <?php foreach (['name', 'email'] as $f): ?>
         <p>
           <label><?php echo esc_html($f); ?><br>

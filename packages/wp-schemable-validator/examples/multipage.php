@@ -15,6 +15,11 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'form_input') {
     return;
   }
+  $csrf = schv_validator([]);
+  if (!$csrf->checkToken($_POST['schv_csrf_token'] ?? '', 'form_input')) {
+    $GLOBALS['schv_ex_input_error'] = 'Invalid or expired CSRF token.';
+    return;
+  }
   $validator = schv_validator(schv_multipage_schema());
   $result    = $validator->validate($_POST)->getResult();
   $all_valid = array_reduce($result, fn($c, $i) => $c && $i['is_valid'], true);
@@ -28,12 +33,17 @@ add_action('template_redirect', function () {
 });
 
 add_shortcode('schv_example_form_input', function (): string {
-  $r = $GLOBALS['schv_ex_input'] ?? [];
+  $r     = $GLOBALS['schv_ex_input'] ?? [];
+  $token = schv_validator([])->createToken('form_input');
   ob_start(); ?>
   <div style="font-family:sans-serif;max-width:500px">
     <h2>Step 1: Input</h2>
+    <?php if (!empty($GLOBALS['schv_ex_input_error'])): ?>
+      <p style="color:red"><?php echo esc_html($GLOBALS['schv_ex_input_error']); ?></p>
+    <?php endif; ?>
     <form method="post">
       <input type="hidden" name="schv_action" value="form_input">
+      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
       <?php foreach (['name', 'email'] as $f): ?>
         <p>
           <label><?php echo esc_html($f); ?><br>
@@ -58,6 +68,11 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'form_confirm') {
     return;
   }
+  $csrf = schv_validator([]);
+  if (!$csrf->checkToken($_POST['schv_csrf_token'] ?? '', 'form_confirm')) {
+    $GLOBALS['schv_ex_confirm_error'] = 'Invalid or expired CSRF token.';
+    return;
+  }
   wp_redirect(home_url('/schv-form-complete/'));
   exit;
 });
@@ -76,8 +91,12 @@ add_shortcode('schv_example_form_confirm', function (): string {
         <dd style="margin-left:1em;white-space:pre-wrap"><?php echo esc_html($state['value']); ?></dd>
       <?php endforeach; ?>
     </dl>
+    <?php if (!empty($GLOBALS['schv_ex_confirm_error'])): ?>
+      <p style="color:red"><?php echo esc_html($GLOBALS['schv_ex_confirm_error']); ?></p>
+    <?php endif; ?>
     <form method="post">
       <input type="hidden" name="schv_action" value="form_confirm">
+      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr(schv_validator([])->createToken('form_confirm')); ?>">
       <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>">← Back</a>
       &nbsp;
       <button type="submit">Submit</button>
