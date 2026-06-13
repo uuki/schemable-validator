@@ -25,19 +25,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: packages/docs/package-lock.json
+          cache: pnpm
 
       - name: Install dependencies
-        working-directory: packages/docs
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
         working-directory: packages/docs
-        run: npm run build
+        run: pnpm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:
