@@ -9,6 +9,9 @@
     "pretest:start": "pnpm run sync-core && composer install --no-dev --working-dir=../packages/wp-schemable-validator",
     "test:start": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json --reset --skip-browser"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "devDependencies": {
     "@wp-playground/cli": "*"
   }
