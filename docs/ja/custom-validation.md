@@ -233,7 +233,7 @@ const contactSchema = buildZodSchema(jsonSchema).extend({
     if (!val) return
     if (!isValidPhoneNumber(val, 'JP')) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: '有効な日本の電話番号を入力してください',
       })
     }

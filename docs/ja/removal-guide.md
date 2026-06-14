@@ -379,7 +379,7 @@ const schema = z.object({
 }).superRefine((data, ctx) => {
   if (data.type === 'company' && !data.company_name) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       path:    ['company_name'],
       message: 'company_name is required when type is company',
     })
@@ -423,7 +423,7 @@ const schema = z.object({
 }).superRefine((data, ctx) => {
   if (data.age < 18 && !data.guardian) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       path:    ['guardian'],
       message: 'guardian is required when age is under 18',
     })
@@ -444,7 +444,7 @@ const schema = z.object({
 }).superRefine((data, ctx) => {
   if (data.password !== data.password_confirm) {
     ctx.addIssue({
-      code:    z.ZodIssueCode.custom,
+      code:    'custom',
       path:    ['password_confirm'],
       message: 'passwords do not match',
     })
@@ -465,14 +465,14 @@ const schema = z.object({
 }).superRefine((data, ctx) => {
   if (data.type === 'company' && !data.company_name) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
       path: ['company_name'],
       message: 'required when type is company',
     })
   }
   if (data.age < 18 && !data.guardian) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
       path: ['guardian'],
       message: 'required when age is under 18',
     })

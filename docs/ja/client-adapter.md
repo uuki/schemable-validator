@@ -1,10 +1,464 @@
-# クライアントアダプター
+# クライアント
 
-`@uuki/schemable-validator-client` パッケージには、`SchemaBuilder::toJsonSchema()` の出力を Zod または Valibot のネイティブスキーマへ変換するビルトインアダプターが含まれています。
+## 概要
+
+`SchemaBuilder::toJsonSchema()` は PHP 側のバリデーションルールを標準 JSON Schema（Draft-07）オブジェクトとしてエクスポートします。JSON Schema に対応した任意のバリデーターをクライアント側で直接利用できます。
+
+`@uuki/schemable-validator-client` には JSON Schema を Zod または Valibot のネイティブスキーマに変換するビルトイン**アダプター**も同梱されており、型推論やフレームワーク連携など、JSON Schema バリデーター単体では得られない機能を提供します。
+
+---
+
+## 基本的な使い方
+
+出力は標準 JSON Schema であるため、準拠する任意のライブラリで検証できます。以下は [AJV](https://ajv.js.org/) を使った例で、アダプターは不要です。
+
+```
+pnpm add ajv ajv-formats
+```
 
 ```ts
-import { toZodSchema }     from '@uuki/schemable-validator-client/zod'
-import { toValibotSchema } from '@uuki/schemable-validator-client/valibot'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
+
+const ajv = new Ajv()
+addFormats(ajv)
+
+// jsonSchema は PHP 側の SchemaBuilder::toJsonSchema() が返すオブジェクト
+const jsonSchema = await fetch('/api/schema/contact').then(r => r.json())
+const validate = ajv.compile(jsonSchema)
+
+const formEl = document.querySelector<HTMLFormElement>('#my-form')!
+
+formEl.addEventListener('submit', (e) => {
+  e.preventDefault()
+
+  const data = Object.fromEntries(new FormData(formEl))
+  const valid = validate(data)
+
+  if (valid) {
+    console.log(data)
+  } else {
+    const errors: Record<string, string> = {}
+    for (const err of validate.errors ?? []) {
+      const field = (err.instancePath.slice(1) || err.params?.missingProperty) as string
+      if (field) errors[field] = err.message ?? 'Invalid'
+    }
+    console.log(errors)
+    // { email: 'must match format "email"' }
+  }
+})
+```
+
+---
+
+## アダプター
+
+TypeScript の型推論やリアクティブフォームとの統合、カスタムリファイナーが必要な場合は、ビルトインアダプターを使います。推奨エントリポイントは `sv()` フルエントビルダーです。
+
+以下のサンプルは最小限のインラインスキーマを使った完結した例です。実際の用途ではサーバーから `jsonSchema` を取得します。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+
+const jsonSchema = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    name:  { type: 'string', minLength: 1 },
+    email: { type: 'string', format: 'email' },
+  },
+  required: ['name', 'email'],
+} as const
+
+const schema = sv(jsonSchema).build()
+
+const formEl = document.querySelector<HTMLFormElement>('#my-form')!
+
+formEl.addEventListener('submit', (e) => {
+  e.preventDefault()
+
+  const data = Object.fromEntries(new FormData(formEl))
+  const result = schema.safeParse(data)
+
+  if (result.success) {
+    console.log(result.data)
+    // { name: 'Alice', email: 'alice@example.com' }
+  } else {
+    const errors: Record<string, string> = {}
+    for (const issue of result.error.issues) {
+      errors[String(issue.path[0])] = issue.message
+    }
+    console.log(errors)
+    // { email: 'Invalid email' }
+  }
+})
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import * as v from 'valibot'
+
+const jsonSchema = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    name:  { type: 'string', minLength: 1 },
+    email: { type: 'string', format: 'email' },
+  },
+  required: ['name', 'email'],
+} as const
+
+const schema = sv(jsonSchema).build()
+
+const formEl = document.querySelector<HTMLFormElement>('#my-form')!
+
+formEl.addEventListener('submit', (e) => {
+  e.preventDefault()
+
+  const data = Object.fromEntries(new FormData(formEl))
+  const result = v.safeParse(schema, data)
+
+  if (result.success) {
+    console.log(result.output)
+    // { name: 'Alice', email: 'alice@example.com' }
+  } else {
+    const errors: Record<string, string> = {}
+    for (const issue of result.issues) {
+      errors[String(issue.path?.[0]?.key ?? '')] = issue.message
+    }
+    console.log(errors)
+    // { email: 'Invalid email' }
+  }
+})
+```
+
+:::
+
+---
+
+## カスタムマッピング
+
+アダプターは大半の PHP ルールを自動変換します。残りはビルダーのメソッドとオプションで対応します。
+
+### 未対応ルールの扱い（`onUnknown`）
+
+アダプターがマッピングできないフィールドに遭遇したとき、`onUnknown` オプションで挙動を制御します。
+
+| 値 | 挙動 |
+|---|---|
+| `'warn'` | `console.warn` を出力し `unknown` にフォールバック |
+| `'throw'` | 即座に `Error` を throw |
+| `(key, field) => Schema` | 関数を呼び出し、返したスキーマを使用 |
+| _(デフォルト)_ | 開発環境は `'warn'`、本番環境は `'throw'` |
+
+デフォルト値は `process.env.NODE_ENV` から自動解決されます。Vite・webpack はビルド時にこの値を文字列リテラルに置換するため、追加設定なしで切り替わります。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+import { z } from 'zod'
+
+const schema = sv(jsonSchema)
+  .onUnknown((key, field) => {
+    if (field.format === 'hostname') {
+      return z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/)
+    }
+    throw new Error(`[zod] 未対応フィールド "${key}": ${JSON.stringify(field)}`)
+  })
+  .build()
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import * as v from 'valibot'
+
+const schema = sv(jsonSchema)
+  .onUnknown((key, field) => {
+    if (field.format === 'hostname') {
+      return v.pipe(v.string(), v.regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/))
+    }
+    throw new Error(`[valibot] 未対応フィールド "${key}": ${JSON.stringify(field)}`)
+  })
+  .build()
+```
+
+:::
+
+### 条件付き必須（`when`）
+
+`SchemaBuilder::when()` は `x-when` 配列を出力します。ビルダーの `.when()` を呼び出すと、スキーマ内のすべての条件を自動的にフィールドレベルの必須チェックとして適用します。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+
+// PHP: ->when('type', SV::equal('company'), ['company_name'])
+const schema = sv(jsonSchema).when().build()
+
+const result = schema.safeParse(formData)
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import * as v from 'valibot'
+
+const schema = sv(jsonSchema).when().build()
+
+const result = v.safeParse(schema, formData)
+```
+
+:::
+
+`.when()` は `x-when` の全エントリを読み取り、フィールドレベルのエラーとして適用します。`===`・`!==`・`>=`・`<=`・`>`・`<`・フィールド参照のすべての演算子に対応しています。
+
+### ファイルフィールド（`x-unmapped-fields`）
+
+`SV::file()` フィールドは PHP 側で JSON Schema 出力から除外され、`x-unmapped-fields` にリストされます。アダプターは自動的にスキップするため、`.extend()` で追加します。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+import { z } from 'zod'
+
+const schema = sv(jsonSchema)
+  .extend({ avatar: z.instanceof(File).refine((f) => f.size < 5_000_000, '最大 5 MB') })
+  .build()
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import * as v from 'valibot'
+
+const schema = sv(jsonSchema)
+  .extend({ avatar: v.pipe(v.instance(File), v.maxSize(5_000_000)) })
+  .build()
+```
+
+:::
+
+### クロスフィールド制約（`SV::respect`）
+
+`SV::respect()` は JSON Schema マッピングのない任意の Respect/Validation ルールをラップします。純粋な関数として実装し、`.refine()` で注入します。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+import type { ZodRefiner } from '@uuki/schemable-validator-client/zod'
+import { z } from 'zod'
+
+// PHP: 'confirm' => SV::respect(v::equals($data['password']))
+const checkConfirm: ZodRefiner = (data, ctx) => {
+  if (data.confirm !== data.password) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['confirm'],
+      message: 'パスワードと一致しません',
+    })
+  }
+}
+
+const schema = sv(jsonSchema).refine(checkConfirm).build()
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import type { ValibotRefiner } from '@uuki/schemable-validator-client/valibot'
+
+const checkConfirm: ValibotRefiner = ({ dataset, addIssue }) => {
+  if (!dataset.typed) return
+  const d = dataset.value as { confirm?: string; password?: string }
+  if (d.confirm !== d.password) addIssue({ message: 'パスワードと一致しません' })
+}
+
+const schema = sv(jsonSchema).refine(checkConfirm).build()
+```
+
+:::
+
+### ランタイムカバレッジチェック
+
+`fetch` でスキーマを取得するパターンでは、実行時まで内容が不明です。`checkZodSchema` / `checkValibotSchema` を使うと、throw せずにカバレッジレポートを取得できます。
+
+```ts
+import { checkZodSchema }     from '@uuki/schemable-validator-client/zod'
+import { checkValibotSchema } from '@uuki/schemable-validator-client/valibot'
+
+const jsonSchema = await fetchSchema('/api/schema/contact')
+
+const report = checkZodSchema(jsonSchema)
+// { supported: ['name', 'email'], unsupported: [{ key: 'host', reason: 'format "hostname" ...' }] }
+
+if (report.unsupported.length) {
+  console.warn('[schemable] 未対応フィールド:', report.unsupported)
+}
+```
+
+`createSv()` に `check: true` を渡すと、`build()` ごとに自動でチェックが走り、未対応フィールドを `console.warn` します。`createSv()` でファクトリを一度設定して全フォームで共有できます。
+
+```ts
+import { createSv } from '@uuki/schemable-validator-client/zod'
+import type { ZodRefiner } from '@uuki/schemable-validator-client/zod'
+import { z } from 'zod'
+
+// アプリ起動時に1度だけ設定 — 全フォームで共有
+const sv = createSv({
+  check: true,  // build() ごとに未対応フィールドを console.warn
+  onUnknown: (key, field) => {
+    // 開発中に surfacing したフォーマットを順次追加
+    throw new Error(`未対応フィールド "${key}": ${field.format ?? field.type}`)
+  },
+})
+
+async function buildSchema(url: string) {
+  const jsonSchema = await fetchSchema(url)
+  return sv(jsonSchema).when().build()
+}
+```
+
+---
+
+## 高度な検証パターン
+
+JSON Schema では表現できない制約（リアルタイムデータへの問い合わせ、FE 固有のビジネスルール）は、ビルダーに組み合わせて実装します。
+
+**設計原則：複雑なロジックはビルダーの外に置く。** バリデーター関数は純粋な関数として定義し、`.refine()` / `.refineAsync()` で注入します。ライブラリへの依存なし、ビルダーの内部実装にも依存しません。
+
+### 非同期フィールド検証
+
+ユーザー名の重複チェックなど、サーバーへの問い合わせが必要な検証を `.refineAsync()` で追加します。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+import type { ZodAsyncRefiner } from '@uuki/schemable-validator-client/zod'
+
+const checkUsernameAvailable: ZodAsyncRefiner = async (data, ctx) => {
+  const res = await fetch(`/api/users/check?name=${encodeURIComponent(data.username as string)}`)
+  const { available } = await res.json() as { available: boolean }
+  if (!available) {
+    ctx.addIssue({ code: 'custom', path: ['username'], message: 'このユーザー名は使用されています' })
+  }
+}
+
+const jsonSchema = await fetchSchema('/api/schema/register')
+
+// 非同期スキーマは parseAsync を使用
+const schema = sv(jsonSchema).when().refineAsync(checkUsernameAvailable).build()
+const result = await schema.safeParseAsync(formData)
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import type { ValibotAsyncRefiner } from '@uuki/schemable-validator-client/valibot'
+import * as v from 'valibot'
+
+const checkUsernameAvailable: ValibotAsyncRefiner = async ({ dataset, addIssue }) => {
+  if (!dataset.typed) return
+  const d = dataset.value as { username: string }
+  const res = await fetch(`/api/users/check?name=${encodeURIComponent(d.username)}`)
+  const { available } = await res.json() as { available: boolean }
+  if (!available) addIssue({ message: 'このユーザー名は使用されています' })
+}
+
+const jsonSchema = await fetchSchema('/api/schema/register')
+
+// 非同期スキーマは safeParseAsync を使用
+const schema = sv(jsonSchema).when().refineAsync(checkUsernameAvailable).build()
+const result = await v.safeParseAsync(schema, formData)
+```
+
+:::
+
+### クロスフィールド・ビジネスルール
+
+「終了日は開始日より後であること」のような日付範囲チェックを `.refine()` で追加します。
+
+:::code-group
+
+```ts [Zod]
+import { sv } from '@uuki/schemable-validator-client/zod'
+import type { ZodRefiner } from '@uuki/schemable-validator-client/zod'
+import { z } from 'zod'
+
+const checkDateRange: ZodRefiner = (data, ctx) => {
+  if (data.start_date && data.end_date && data.start_date >= data.end_date) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['end_date'],
+      message: '開始日より後の日付を入力してください',
+    })
+  }
+}
+
+const schema = sv(jsonSchema).when().refine(checkDateRange).build()
+const result = schema.safeParse(formData)
+```
+
+```ts [Valibot]
+import { sv } from '@uuki/schemable-validator-client/valibot'
+import type { ValibotRefiner } from '@uuki/schemable-validator-client/valibot'
+
+const checkDateRange: ValibotRefiner = ({ dataset, addIssue }) => {
+  if (!dataset.typed) return
+  const d = dataset.value as { start_date?: string; end_date?: string }
+  if (d.start_date && d.end_date && d.start_date >= d.end_date) {
+    addIssue({ message: '開始日より後の日付を入力してください' })
+  }
+}
+
+const schema = sv(jsonSchema).when().refine(checkDateRange).build()
+const result = v.safeParse(schema, formData)
+```
+
+:::
+
+### 全レイヤーを組み合わせる
+
+アダプター変換・`x-when` 条件・ファイルフィールド追加・FE 固有ビジネスルールを重ねた、fetch ベースフォームの完成形です。
+
+```ts
+import { createSv } from '@uuki/schemable-validator-client/zod'
+import type { ZodRefiner } from '@uuki/schemable-validator-client/zod'
+import { z } from 'zod'
+
+// アプリ起動時に1度だけ設定
+const sv = createSv({
+  check: true,
+  onUnknown: (key, field) => {
+    if (field.format === 'hostname') {
+      return z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/)
+    }
+    throw new Error(`未対応フィールド "${key}"`)
+  },
+})
+
+// 外部バリデーター — ビルダーに依存しない純粋な関数
+const checkDeliveryDate: ZodRefiner = (data, ctx) => {
+  if (data.delivery_date && (data.delivery_date as string) < new Date().toISOString().slice(0, 10)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['delivery_date'],
+      message: '配達日は本日以降の日付を選択してください',
+    })
+  }
+}
+
+async function buildOrderSchema() {
+  const jsonSchema = await fetchSchema('/api/schema/order')
+
+  return sv(jsonSchema)
+    .extend({ receipt: z.instanceof(File).optional() })  // x-unmapped-fields のファイルフィールド
+    .when()                                               // x-when の条件付き必須
+    .refine(checkDeliveryDate)                            // FE ビジネスルール
+    .build()
+}
 ```
 
 ---
@@ -39,440 +493,4 @@ import { toValibotSchema } from '@uuki/schemable-validator-client/valibot'
 
 **18 / 19 — 94.7%**（Zod・Valibot 共通）
 
-`hostname` は Zod・Valibot ともにビルトインがないため、`onUnknown` で独自実装を提供します（後述）。
-
----
-
-## 未対応ルールの扱い（`onUnknown`）
-
-アダプターがマッピングできないフィールドに遭遇したとき、`onUnknown` オプションで挙動を制御します。
-
-| 値 | 挙動 |
-|---|---|
-| `'warn'` | `console.warn` を出力し `unknown` にフォールバック |
-| `'throw'` | 即座に `Error` を throw |
-| `(key, field) => Schema` | 関数を呼び出し、返したスキーマを使用 |
-| _(デフォルト)_ | 開発環境は `'warn'`、本番環境は `'throw'` |
-
-デフォルト値は `process.env.NODE_ENV` から自動解決されます。Vite・webpack はビルド時にこの値を文字列リテラルに置換するため、追加設定なしで切り替わります。
-
-### カスタムマッピングの提供
-
-```ts
-import { toZodSchema } from '@uuki/schemable-validator-client/zod'
-import { z } from 'zod'
-
-const schema = toZodSchema(jsonSchema, {
-  onUnknown: (key, field) => {
-    if (field.format === 'hostname') {
-      return z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/)
-    }
-    throw new Error(`[zod] 未対応フィールド "${key}": ${JSON.stringify(field)}`)
-  },
-})
-```
-
-```ts
-import { toValibotSchema } from '@uuki/schemable-validator-client/valibot'
-import * as v from 'valibot'
-
-const schema = toValibotSchema(jsonSchema, {
-  onUnknown: (key, field) => {
-    if (field.format === 'hostname') {
-      return v.pipe(v.string(), v.regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/))
-    }
-    throw new Error(`[valibot] 未対応フィールド "${key}": ${JSON.stringify(field)}`)
-  },
-})
-```
-
----
-
-## アダプターがマッピングしないルール
-
-一部の PHP 側制約は JSON Schema に直接相当するものがないか、複雑すぎてロスレスに変換できません。これらはアダプターがスキップするため、変換後に手動で追加します。
-
-### 条件付き必須（`when`）
-
-`SchemaBuilder::when()` は `x-when`（および `===` 条件の `if/then`）を出力しますが、アダプターはこれらをスキップします。`!==` / `>=` / フィールド参照を含む条件セット全体を Zod・Valibot スキーマとしてロスレスに表現できないためです。
-
-`.superRefine()` (Zod) または `v.forward()` + `v.partialCheck()` (Valibot) で手動実装します：
-
-:::code-group
-
-```ts [Zod]
-import { toZodSchema } from '@uuki/schemable-validator-client/zod'
-import { z } from 'zod'
-
-// PHP: ->when('type', SV::equal('company'), ['company_name'])
-const schema = toZodSchema(jsonSchema).superRefine((data, ctx) => {
-  if (data.type === 'company' && !data.company_name) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['company_name'],
-      message: 'type が company のとき必須です',
-    })
-  }
-})
-```
-
-```ts [Valibot]
-import { toValibotSchema } from '@uuki/schemable-validator-client/valibot'
-import * as v from 'valibot'
-
-// PHP: ->when('type', SV::equal('company'), ['company_name'])
-const schema = v.pipe(
-  toValibotSchema(jsonSchema),
-  v.forward(
-    v.partialCheck(
-      [['company_name']],
-      (d) => !(d.type === 'company' && !d.company_name),
-      'type が company のとき必須です',
-    ),
-    ['company_name'],
-  ),
-)
-```
-
-:::
-
-#### `x-when` をスキーマから自動適用する
-
-アダプターは `x-when` をスキップしますが、`x-when` 配列は JSON Schema オブジェクトに含まれています。以下のヘルパーはすべての条件を読み取り、フィールドレベルのエラーを自動で追加します — フォームごとに手動実装する必要がありません。
-
-:::code-group
-
-```ts [Zod]
-import type { WhenCondition, WhenOp } from '@uuki/schemable-validator-client'
-import { toZodSchema } from '@uuki/schemable-validator-client/zod'
-import { z } from 'zod'
-
-function evalOp(a: unknown, op: WhenOp, b: unknown): boolean {
-  switch (op) {
-    case '===': return a === b
-    case '!==': return a !== b
-    case '>=':  return (a as number) >= (b as number)
-    case '<=':  return (a as number) <= (b as number)
-    case '>':   return (a as number) >  (b as number)
-    case '<':   return (a as number) <  (b as number)
-  }
-}
-
-function applyWhenConditions(
-  schema: z.ZodObject<Record<string, z.ZodTypeAny>>,
-  conditions: readonly WhenCondition[],
-) {
-  return schema.superRefine((data, ctx) => {
-    const d = data as Record<string, unknown>
-    for (const cond of conditions) {
-      const rhs = 'equalsField' in cond ? d[cond.equalsField] : cond.equals
-      if (!evalOp(d[cond.field], cond.op, rhs)) continue
-      for (const key of cond.require) {
-        const val = d[key]
-        if (val === undefined || val === null || val === '') {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: '必須項目です' })
-        }
-      }
-    }
-  })
-}
-
-// 静的スキーマでも fetch 取得スキーマでも動作
-const jsonSchema = await fetchSchema('/api/schema/order')
-const base = toZodSchema(jsonSchema)
-const schema = jsonSchema['x-when']?.length
-  ? applyWhenConditions(base, jsonSchema['x-when'])
-  : base
-```
-
-```ts [Valibot]
-import type { WhenCondition, WhenOp } from '@uuki/schemable-validator-client'
-import { toValibotSchema } from '@uuki/schemable-validator-client/valibot'
-import * as v from 'valibot'
-
-function evalOp(a: unknown, op: WhenOp, b: unknown): boolean {
-  switch (op) {
-    case '===': return a === b
-    case '!==': return a !== b
-    case '>=':  return (a as number) >= (b as number)
-    case '<=':  return (a as number) <= (b as number)
-    case '>':   return (a as number) >  (b as number)
-    case '<':   return (a as number) <  (b as number)
-  }
-}
-
-function applyWhenConditions(
-  schema: ReturnType<typeof toValibotSchema>,
-  conditions: readonly WhenCondition[],
-) {
-  return v.pipe(
-    schema,
-    v.rawCheck(({ dataset, addIssue }) => {
-      if (!dataset.typed) return
-      const d = dataset.value as Record<string, unknown>
-      for (const cond of conditions) {
-        const rhs = 'equalsField' in cond ? d[cond.equalsField] : cond.equals
-        if (!evalOp(d[cond.field], cond.op, rhs)) continue
-        for (const key of cond.require) {
-          const val = d[key]
-          if (val === undefined || val === null || val === '') {
-            addIssue({
-              message: '必須項目です',
-              path: [{ key, type: 'object', origin: 'value', input: d, value: val }],
-            })
-          }
-        }
-      }
-    }),
-  )
-}
-
-// 使用例
-const jsonSchema = await fetchSchema('/api/schema/order')
-const base = toValibotSchema(jsonSchema)
-const schema = jsonSchema['x-when']?.length
-  ? applyWhenConditions(base, jsonSchema['x-when'])
-  : base
-```
-
-:::
-
-### ファイルフィールド（`x-unmapped-fields`）
-
-`SV::file()` フィールドは PHP 側で JSON Schema 出力から除外され、`x-unmapped-fields` にリストされます。アダプターは自動的にスキップするため、必要に応じて手動で追加します：
-
-:::code-group
-
-```ts [Zod]
-const schema = toZodSchema(jsonSchema).extend({
-  avatar: z.instanceof(File).refine((f) => f.size < 5_000_000, '最大 5 MB'),
-})
-```
-
-```ts [Valibot]
-const base = toValibotSchema(jsonSchema)
-const schema = v.object({
-  ...base.entries,
-  avatar: v.pipe(v.instance(File), v.maxSize(5_000_000)),
-})
-```
-
-:::
-
-### クロスフィールド制約（`SV::respect`）
-
-`SV::respect()` は JSON Schema マッピングのない任意の Respect/Validation ルールをラップします。`x-unmapped-fields` に出力されるため、クライアント側で同等の処理を実装します：
-
-:::code-group
-
-```ts [Zod]
-// PHP: 'confirm' => SV::respect(v::equals($data['password']))
-const schema = toZodSchema(jsonSchema).superRefine((data, ctx) => {
-  if (data.confirm !== data.password) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['confirm'],
-      message: 'パスワードと一致しません',
-    })
-  }
-})
-```
-
-```ts [Valibot]
-const schema = v.pipe(
-  toValibotSchema(jsonSchema),
-  v.forward(
-    v.partialCheck(
-      [['confirm'], ['password']],
-      (d) => d.confirm === d.password,
-      'パスワードと一致しません',
-    ),
-    ['confirm'],
-  ),
-)
-```
-
-:::
-
----
-
-## ランタイムカバレッジチェック
-
-`fetch` でスキーマを取得するパターンでは、実行時まで内容が不明です。`checkZodSchema` / `checkValibotSchema` を使うと、throw せずにカバレッジレポートを取得できます：
-
-```ts
-import { checkZodSchema }     from '@uuki/schemable-validator-client/zod'
-import { checkValibotSchema } from '@uuki/schemable-validator-client/valibot'
-
-const jsonSchema = await fetchSchema('/api/schema/contact')
-
-const report = checkZodSchema(jsonSchema)
-// { supported: ['name', 'email'], unsupported: [{ key: 'host', reason: 'format "hostname" ...' }] }
-
-if (report.unsupported.length) {
-  console.warn('[schemable] 未対応フィールド:', report.unsupported)
-}
-```
-
-### fetch パターンの推奨実装
-
-```ts
-async function buildSchema(url: string) {
-  const jsonSchema = await fetchSchema(url)
-
-  // フォームのレンダリング前にカバレッジの問題を検出
-  const { unsupported } = checkZodSchema(jsonSchema)
-  if (unsupported.length) {
-    console.warn('[schemable] onUnknown が必要なフィールド:', unsupported)
-  }
-
-  return toZodSchema(jsonSchema, {
-    // NODE_ENV から自動解決: 開発は 'warn'、本番は 'throw'
-    onUnknown: (key, field) => {
-      // 開発中に surfacing したフォーマットを順次追加
-      throw new Error(`未対応フィールド "${key}": ${field.format ?? field.type}`)
-    },
-  })
-}
-```
-
----
-
-## 高度な検証パターン
-
-JSON Schema では表現できない制約（リアルタイムデータへの問い合わせ、FE 固有のビジネスルール）は、アダプター出力に重ねて実装します。
-
-### 非同期フィールド検証
-
-ユーザー名の重複チェックなど、サーバーへの問い合わせが必要な検証をアダプター生成スキーマに追加します。
-
-:::code-group
-
-```ts [Zod]
-import { toZodSchema } from '@uuki/schemable-validator-client/zod'
-import { z } from 'zod'
-
-const jsonSchema = await fetchSchema('/api/schema/register')
-
-// .extend() でアダプター実行後に個別フィールドを上書き・追加
-const schema = toZodSchema(jsonSchema).extend({
-  username: z.string().min(3).refine(
-    async (val) => {
-      const res = await fetch(`/api/users/check?name=${encodeURIComponent(val)}`)
-      const { available } = await res.json() as { available: boolean }
-      return available
-    },
-    { message: 'このユーザー名は使用されています' },
-  ),
-})
-
-// 非同期スキーマは parseAsync を使用
-const result = await schema.safeParseAsync(formData)
-```
-
-```ts [Valibot]
-import { toValibotSchema } from '@uuki/schemable-validator-client/valibot'
-import * as v from 'valibot'
-
-const jsonSchema = await fetchSchema('/api/schema/register')
-const base = toValibotSchema(jsonSchema)
-
-// base.entries を展開し、対象フィールドだけ非同期バリアントで上書き
-const schema = v.objectAsync({
-  ...base.entries,
-  username: v.pipeAsync(
-    v.string(),
-    v.minLength(3),
-    v.checkAsync(async (val) => {
-      const res = await fetch(`/api/users/check?name=${encodeURIComponent(val)}`)
-      const { available } = await res.json() as { available: boolean }
-      return available
-    }, 'このユーザー名は使用されています'),
-  ),
-})
-
-const result = await v.safeParseAsync(schema, formData)
-```
-
-:::
-
-### クロスフィールド・ビジネスルール
-
-「終了日は開始日より後であること」のような日付範囲チェックは JSON Schema で表現できません。アダプター後に `superRefine` / `v.rawCheck` で追加します。
-
-:::code-group
-
-```ts [Zod]
-const schema = toZodSchema(jsonSchema).superRefine((data, ctx) => {
-  if (data.start_date && data.end_date && data.start_date >= data.end_date) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['end_date'],
-      message: '開始日より後の日付を入力してください',
-    })
-  }
-})
-```
-
-```ts [Valibot]
-const schema = v.pipe(
-  toValibotSchema(jsonSchema),
-  v.rawCheck(({ dataset, addIssue }) => {
-    if (!dataset.typed) return
-    const { start_date, end_date } = dataset.value as { start_date?: string; end_date?: string }
-    if (start_date && end_date && start_date >= end_date) {
-      addIssue({
-        message: '開始日より後の日付を入力してください',
-        path: [{ key: 'end_date', type: 'object', origin: 'value', input: dataset.value, value: end_date }],
-      })
-    }
-  }),
-)
-```
-
-:::
-
-### 全レイヤーを組み合わせる
-
-アダプター・`x-when` 条件・FE 固有ビジネスルールを重ねた、fetch ベースフォームの完成形です。
-
-```ts
-import type { WhenCondition, WhenOp } from '@uuki/schemable-validator-client'
-import { checkZodSchema, toZodSchema } from '@uuki/schemable-validator-client/zod'
-import { z } from 'zod'
-
-// applyWhenConditions は前述のヘルパーを再利用
-
-async function buildOrderSchema() {
-  const jsonSchema = await fetchSchema('/api/schema/order')
-
-  const { unsupported } = checkZodSchema(jsonSchema)
-  if (unsupported.length) console.warn('[schemable]', unsupported)
-
-  // 1. アダプター — JSON Schema 制約をすべてマップ
-  const base = toZodSchema(jsonSchema, {
-    onUnknown: (key, field) => {
-      if (field.format === 'hostname') {
-        return z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/)
-      }
-      throw new Error(`未対応フィールド "${key}"`)
-    },
-  })
-
-  // 2. x-when — PHP SchemaBuilder の条件付き必須フィールド
-  const withWhen = jsonSchema['x-when']?.length
-    ? applyWhenConditions(base, jsonSchema['x-when'])
-    : base
-
-  // 3. FE ビジネスルール — 配達日は今日以降であること
-  return withWhen.superRefine((data, ctx) => {
-    if (data.delivery_date && data.delivery_date < new Date().toISOString().slice(0, 10)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['delivery_date'],
-        message: '配達日は本日以降の日付を選択してください',
-      })
-    }
-  })
-}
-```
+`hostname` は Zod・Valibot ともにビルトインがないため、`onUnknown` で独自実装を提供します（前述）。

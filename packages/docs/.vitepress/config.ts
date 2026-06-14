@@ -15,8 +15,7 @@ const sidebarEn = [
       { text: 'SchemaBuilder',      link: '/schema-builder' },
       { text: 'Custom Validation',  link: '/custom-validation' },
       { text: 'MessageDict (i18n)', link: '/message-dict' },
-      { text: 'Client Adapter',     link: '/client-adapter' },
-      { text: 'Client API',         link: '/client-api' },
+      { text: 'Client',              link: '/client-adapter' },
     ],
   },
   {
@@ -39,6 +38,19 @@ const sidebarEn = [
       { text: 'Array',            link: '/reference/array' },
       { text: 'File / Respect',   link: '/reference/extended' },
       { text: 'Object & Output',  link: '/reference/object' },
+    ],
+  },
+  {
+    text: 'Client API Reference',
+    collapsed: false,
+    items: [
+      { text: 'Index',               link: '/client-api' },
+      { text: 'Core Validator',      link: '/client-reference/core-validator' },
+      { text: 'Result Primitives',   link: '/client-reference/result' },
+      { text: 'Constraint Pipeline', link: '/client-reference/constraint-pipeline' },
+      { text: 'Zod Adapter',         link: '/client-reference/zod-adapter' },
+      { text: 'Valibot Adapter',     link: '/client-reference/valibot-adapter' },
+      { text: 'Types',               link: '/client-reference/types' },
     ],
   },
   {
@@ -70,8 +82,7 @@ const sidebarJa = [
       { text: 'SchemaBuilder',      link: '/ja/schema-builder' },
       { text: 'カスタムバリデーション', link: '/ja/custom-validation' },
       { text: 'MessageDict (i18n)', link: '/ja/message-dict' },
-      { text: 'クライアントアダプター', link: '/ja/client-adapter' },
-      { text: 'クライアント API',    link: '/ja/client-api' },
+      { text: 'クライアント',          link: '/ja/client-adapter' },
     ],
   },
   {
@@ -94,6 +105,19 @@ const sidebarJa = [
       { text: 'Array',            link: '/ja/reference/array' },
       { text: 'File / Respect',   link: '/ja/reference/extended' },
       { text: 'Object & Output',  link: '/ja/reference/object' },
+    ],
+  },
+  {
+    text: 'クライアント API リファレンス',
+    collapsed: false,
+    items: [
+      { text: 'Index',               link: '/ja/client-api' },
+      { text: 'コアバリデーター',      link: '/ja/client-reference/core-validator' },
+      { text: 'Result プリミティブ',  link: '/ja/client-reference/result' },
+      { text: 'Constraint パイプライン', link: '/ja/client-reference/constraint-pipeline' },
+      { text: 'Zod アダプター',       link: '/ja/client-reference/zod-adapter' },
+      { text: 'Valibot アダプター',   link: '/ja/client-reference/valibot-adapter' },
+      { text: '型リファレンス',        link: '/ja/client-reference/types' },
     ],
   },
   {
