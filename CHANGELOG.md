@@ -1,3 +1,10 @@
+## [0.12.1](https://github.com/uuki/schemable-validator/compare/v0.12.0...v0.12.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* **client:** migrate deprecated Zod v4 format APIs and extract shared adapter base ([767c30a](https://github.com/uuki/schemable-validator/commit/767c30af802fe0ba4ccb0223db57388c7d142fa4))
+
 # [0.12.0](https://github.com/uuki/schemable-validator/compare/v0.11.0...v0.12.0) (2026-06-14)
 
 
