@@ -1,3 +1,10 @@
+## [0.12.2](https://github.com/uuki/schemable-validator/compare/v0.12.1...v0.12.2) (2026-06-14)
+
+
+### Bug Fixes
+
+* **deps:** upgrade esbuild to 0.28.1 to resolve GHSA-gv7w-rqvm-qjhr ([844e420](https://github.com/uuki/schemable-validator/commit/844e420f8d147bf2f497381240822cdf8275cf8b))
+
 ## [0.12.1](https://github.com/uuki/schemable-validator/compare/v0.12.0...v0.12.1) (2026-06-14)
 
 
