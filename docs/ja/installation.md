@@ -1,5 +1,30 @@
 # Installation
 
+## コンセプト
+
+Schemable Validator は、バリデーション制約の多重管理を解決することを目的としています。
+
+バックエンド側を主体として定義したバリデーション制約をもとに、フロントエンド側で同型のスキーマを扱えるように設計されています。
+
+このライブラリは、Fluent Interface ライクな記述層を提供することで、フレームワーク非依存なかたちで制約を表現し、各実行環境で扱いやすいスキーマ（PHP バリデーター・JSON Schema）に変換します。
+
+```
+PHP (SchemaBuilder)
+  └─ SV::object()->string('name')->email('email')
+        │
+        │  toJsonSchema()
+        ▼
+  JSON Schema (Draft-07)
+        │
+        ├─ AJV          (直接消費)
+        ├─ Zod adapter  (sv(jsonSchema).build())
+        └─ Valibot adapter
+```
+
+PHP でルールを変更すれば、クライアントは自動的に追従します。並行管理も、定義のズレも生じません。
+
+---
+
 ## Requirements
 
 | | Version | 用途 |
