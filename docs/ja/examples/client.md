@@ -20,9 +20,13 @@
 
 REST エンドポイントからスキーマを取得し、フォーム送信時にバリデーションを実行します。
 
-<<< ../../../packages/client/examples/02-with-fetch.ts
+:::code-group
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/02-with-fetch.ts)
+<<< ../../../packages/client/examples/02-with-fetch-core.ts [Core]
+
+<<< ../../../packages/client/examples/02-with-fetch.ts [WordPress]
+
+:::
 
 ---
 
