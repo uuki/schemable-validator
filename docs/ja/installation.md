@@ -6,7 +6,7 @@
 |:--|:--|:--|
 | PHP | ^7.4 \|\| ^8.x | core ライブラリ・WP プラグイン |
 | WordPress | 5.9+ | WP プラグインのみ |
-| Node.js | >=22.12.0 | `@schemable-validator/client` のみ |
+| Node.js | >=22.12.0 | `@schemable-validator/client` のみ（npm 未公開）|
 
 ## インストール方法
 

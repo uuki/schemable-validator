@@ -29,7 +29,7 @@ composer require uuki/schemable-validator
 # WordPress plugin
 cd packages/wp-schemable-validator && composer install --no-dev
 
-# TypeScript client
+# TypeScript client (not yet published to npm)
 npm install @schemable-validator/client
 ```
 
