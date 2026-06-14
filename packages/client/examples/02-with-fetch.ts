@@ -3,8 +3,8 @@
 // The client library has no opinion on transport. Here we use the browser's fetch API,
 // but any HTTP client (axios, ky, wretch, …) works the same way.
 
-import { validateObject, isAllValid, extractErrors } from '../src/index.js'
-import type { ObjectSchema } from '../src/index.js'
+import { validateObject, isAllValid, extractErrors } from '@uuki/schemable-validator-client'
+import type { ObjectSchema } from '@uuki/schemable-validator-client'
 
 // Fetch the schema once, cache it yourself — the client library does not own this concern.
 async function fetchSchema(url: string): Promise<ObjectSchema> {

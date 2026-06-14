@@ -4,8 +4,8 @@
 // This example shows how to lift it into Result when you want to
 // thread success/failure through a pipeline without nested if-checks.
 
-import { validateObject, isAllValid, extractErrors, ok, err, flatMap } from '../src/index.js'
-import type { Result, ObjectSchema, ValidationResult } from '../src/index.js'
+import { validateObject, isAllValid, extractErrors, ok, err, flatMap } from '@uuki/schemable-validator-client'
+import type { Result, ObjectSchema, ValidationResult } from '@uuki/schemable-validator-client'
 
 type ValidationErrors = Readonly<Record<string, readonly string[]>>
 

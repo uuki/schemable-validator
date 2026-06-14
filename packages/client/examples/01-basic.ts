@@ -3,8 +3,8 @@
 // The schema is a JSON Schema object — typically received from a REST endpoint
 // (e.g. GET /wp-json/schv/v1/contact), but here inlined for illustration.
 
-import { validateObject, isAllValid, extractErrors } from '../src/index.js'
-import type { ObjectSchema } from '../src/index.js'
+import { validateObject, isAllValid, extractErrors } from '@uuki/schemable-validator-client'
+import type { ObjectSchema } from '@uuki/schemable-validator-client'
 
 const schema: ObjectSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',

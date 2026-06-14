@@ -5,8 +5,8 @@
 // through unchanged when the check passes. Multiple constraints compose
 // with composeConstraints — all errors are accumulated, not short-circuited.
 
-import { composeConstraints, constraintsFromSchema, validateObject } from '../src/index.js'
-import type { Constraint, ObjectSchema } from '../src/index.js'
+import { composeConstraints, constraintsFromSchema, validateObject } from '@uuki/schemable-validator-client'
+import type { Constraint, ObjectSchema } from '@uuki/schemable-validator-client'
 
 // --- Define a custom constraint ---
 

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@uuki/schemable-validator-client": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "examples"]
+}
