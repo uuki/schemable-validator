@@ -1,31 +1,31 @@
-# SchemaBuilder - JSON Output Examples
+# SchemaBuilder - JSON 出力サンプル
 
-Schemas defined with `SV::object()` can be converted to JSON Schema (draft 2020-12) using `toJson()` / `toJsonSchema()`.
+`SV::object()` で定義したスキーマは `toJson()` / `toJsonSchema()` で JSON Schema (draft 2020-12) に変換できます。
 
 ---
 
-## Field Type Reference
+## フィールド型一覧
 
-| Method | JSON Schema `type` | Notes |
+| メソッド | JSON Schema `type` | 備考 |
 |:--|:--|:--|
 | `SV::string()` | `"string"` | `.email()` `.url()` `.min()` `.max()` `.pattern()` |
 | `SV::integer()` | `"integer"` | `.min()` `.max()` |
 | `SV::number()` | `"number"` | `.min()` `.max()` (int/float) |
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
-| `SV::file(['image/jpeg'])` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
-| `SV::respect(v::...)` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
+| `SV::file(['image/jpeg'])` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::respect(v::...)` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
 
-Modifiers:
+修飾子:
 
-| Modifier | Effect |
+| 修飾子 | 効果 |
 |:--|:--|
-| `.optional()` | Excluded from the `required` array |
-| `.nullable()` | Converts `"type"` to an array such as `["string", "null"]` |
+| `.optional()` | `required` 配列から除外 |
+| `.nullable()` | `"type"` を `["string", "null"]` のように配列化 |
 
 ---
 
-## Example 1: Contact Form
+## サンプル 1: お問い合わせフォーム
 
 ```php
 use SchemableValidator\SV;
@@ -41,7 +41,7 @@ $schema = SV::object([
 echo $schema->toJson();
 ```
 
-Output:
+出力:
 
 ```json
 {
@@ -74,11 +74,11 @@ Output:
 }
 ```
 
-`tel` is not included in `required` because it has `.optional()`.
+`tel` は `.optional()` のため `required` に含まれません。
 
 ---
 
-## Example 2: User Profile (nullable / file)
+## サンプル 2: ユーザープロフィール (nullable / file)
 
 ```php
 $schema = SV::object([
@@ -91,7 +91,7 @@ $schema = SV::object([
 ]);
 ```
 
-Output:
+出力:
 
 ```json
 {
@@ -127,39 +127,39 @@ Output:
 }
 ```
 
-- `website` becomes `"type": ["string", "null"]` due to `.nullable()`
-- `avatar` uses `SV::file()` (which has no corresponding JSON Schema keyword), so it is excluded from `properties` and recorded in `x-unmapped-fields`
+- `website` は `.nullable()` により `"type": ["string", "null"]`
+- `avatar` は `SV::file()` (JSON Schema に対応するキーワードがない) のため `properties` から除外され `x-unmapped-fields` に記録されます
 
 ---
 
-## About `x-unmapped-fields`
+## `x-unmapped-fields` について
 
-Fields that cannot be converted to JSON Schema (file uploads and custom Respect rules)
-are recorded by name only under the `x-unmapped-fields` extension key.
-Validation itself is performed via Respect/Validation through `toValidator()`.
+JSON Schema に変換できないフィールド（ファイルアップロード・カスタム Respect ルール）は
+`x-unmapped-fields` 拡張キーに名前だけ記録されます。
+バリデーション自体は `toValidator()` を通じて Respect/Validation で行われます。
 
 ```php
-// Use as JSON Schema
+// JSON Schema として渡す場合
 $jsonSchema = $schema->toJsonSchema(); // array
 $json       = $schema->toJson();       // string
 
-// Use as a Respect validator (includes file fields)
+// Respect バリデーターとして使う場合（ファイルフィールドも含む）
 $validator = $schema->toValidator();
 $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 ```
 
 ---
 
-## `toValidator()` Output Example
+## `toValidator()` の出力例
 
-`toValidator()` returns a `SchemableValidator\Validator`.
-Use `validate()` + `getResult()` to retrieve the validation result for each field.
+`toValidator()` は `SchemableValidator\Validator` を返す。
+`validate()` + `getResult()` で各フィールドの検証結果を取得できる。
 
 ```php
 $schema    = SV::object(['name' => SV::string()->min(1)->max(100), 'email' => SV::string()->email()]);
 $validator = $schema->toValidator();
 
-// Valid input
+// 正常系
 $result = $validator->validate(['name' => 'Alice', 'email' => 'alice@example.com'])->getResult();
 ```
 
@@ -171,7 +171,7 @@ $result = $validator->validate(['name' => 'Alice', 'email' => 'alice@example.com
 ```
 
 ```php
-// Invalid input
+// エラー系
 $result = $validator->validate(['name' => '', 'email' => 'not-an-email'])->getResult();
 ```
 
@@ -184,7 +184,7 @@ $result = $validator->validate(['name' => '', 'email' => 'not-an-email'])->getRe
 
 ---
 
-## Registering a WordPress REST Endpoint
+## WordPress REST エンドポイントへの登録
 
 ```php
 use SchemableValidator\SV;
@@ -194,6 +194,6 @@ $schema = SV::object([
   'email' => SV::string()->email(),
 ]);
 
-// GET /wp-json/schv/v1/contact → returns JSON Schema
+// GET /wp-json/schv/v1/contact → JSON Schema を返す
 schv_register_schema('/contact', $schema);
 ```

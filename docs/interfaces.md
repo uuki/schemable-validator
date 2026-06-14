@@ -2,9 +2,9 @@
 
 ## WordPress Plugin
 
-管理画面にメールテンプレート設定ページを追加し、`get_option()` でテンプレートを管理します。
+Adds a mail template settings page to the admin dashboard and manages templates via `get_option()`.
 
-### セットアップ
+### Setup
 
 ```php
 use SchemableValidator\Interfaces\WordPress\Plugin;
@@ -21,10 +21,10 @@ new Plugin([
 ]);
 ```
 
-引数のキーに対して `SCHV_REPLY_FORMAT_FOR_{key}` という名前の WP オプションが登録されます。  
-管理画面は **WP Admin › Settings › Schemable Validator** に表示されます。
+A WP option named `SCHV_REPLY_FORMAT_FOR_{key}` is registered for each key in the argument.  
+The settings page is displayed at **WP Admin › Settings › Schemable Validator**.
 
-### オプションキーの取得
+### Retrieving option keys
 
 ```php
 $plugin = new Plugin([...]);
@@ -32,10 +32,10 @@ $keys = $plugin->keysAll();
 // ['user' => 'SCHV_REPLY_FORMAT_FOR_user', 'admin' => 'SCHV_REPLY_FORMAT_FOR_admin']
 ```
 
-### テンプレートとの連携
+### Integration with Template
 
-`schv_template()` の `templates` にオプション名（文字列）を渡します。  
-WordPress 環境では自動的に `get_option()` で値を取得します。
+Pass the option name (as a string) to the `templates` parameter of `schv_template()`.  
+In a WordPress environment, the value is retrieved automatically via `get_option()`.
 
 ```php
 $template = schv_template([
@@ -49,27 +49,27 @@ $template = schv_template([
 
 ---
 
-## WordPress ヘルパー関数
+## WordPress Helper Functions
 
-プラグインが有効化されると以下のグローバル関数が使えるようになります。
+The following global functions become available once the plugin is activated.
 
-| 関数 | 戻り値 | 説明 |
+| Function | Return | Description |
 |:--|:--|:--|
-| `schv_validator(array $schema, array $options = [])` | `Validator` | Validator インスタンスを生成 |
-| `schv_template(array $options = [])` | `Template` | Template インスタンスを生成 |
-| `schv_form()` | `FormController` | FormController インスタンスを生成 |
+| `schv_validator(array $schema, array $options = [])` | `Validator` | Creates a Validator instance |
+| `schv_template(array $options = [])` | `Template` | Creates a Template instance |
+| `schv_form()` | `FormController` | Creates a FormController instance |
 
 ---
 
-## WordPress 環境における注意点
+## Notes for WordPress Environments
 
-### `$_REQUEST` とルーティングの衝突
+### Conflicts between `$_REQUEST` and routing
 
-WordPress は `$_REQUEST`（GET + POST のマージ）を URL ルーティングに使用します。  
-フォームフィールド名に WordPress の予約済みクエリ変数（`name`、`p`、`page` など）を使うと、  
-POST 送信時に WordPress が対応する投稿を探して 404 を返すことがあります。
+WordPress uses `$_REQUEST` (a merge of GET and POST) for URL routing.  
+If a form field name matches a WordPress reserved query variable (`name`, `p`, `page`, etc.),  
+WordPress may look for a corresponding post on submission and return a 404.
 
-**対処:** `request` フィルターで POST 時に該当クエリ変数を除去する。
+**Workaround:** Use the `request` filter to remove the conflicting query variable on POST requests.
 
 ```php
 add_filter('request', function ($qv) {
@@ -80,11 +80,11 @@ add_filter('request', function ($qv) {
 });
 ```
 
-### `type="email"` とブラウザバリデーション
+### `type="email"` and browser validation
 
-`<input type="email">` はブラウザが独自のバリデーションを行い、  
-無効な値ではフォームが送信されないことがあります。  
-サーバー側でバリデーションを行う場合は `<form novalidate>` を付与してください。
+`<input type="email">` triggers the browser's built-in validation,  
+which may prevent form submission when an invalid value is entered.  
+If you intend to validate on the server side, add `novalidate` to the form element.
 
 ```html
 <form method="post" novalidate>
@@ -94,20 +94,20 @@ add_filter('request', function ($qv) {
 
 ## AbstractInterface
 
-カスタム環境向けのインターフェース基底クラス。
+Base interface class for custom environments.
 
 ```php
 use SchemableValidator\Interfaces\AbstractInterface;
 
 class MyInterface extends AbstractInterface {
   function __construct(array $templates) {
-    // テンプレートを独自に取得・変換してから親に渡す
+    // Fetch and transform templates in your own way, then pass them to the parent
     parent::__construct($templates);
   }
 }
 ```
 
-| メソッド | 説明 |
+| Method | Description |
 |:--|:--|
-| `getTemplate(string $name): string` | 指定テンプレートの文字列を返す |
-| `getAll(): array` | 全テンプレートを配列で返す |
+| `getTemplate(string $name): string` | Returns the template string for the given name |
+| `getAll(): array` | Returns all templates as an array |

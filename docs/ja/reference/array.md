@@ -1,16 +1,16 @@
-# SV::array() - Array Type
+# SV::array() - 配列型
 
-The type for multi-select and repeated input fields. Validates each element against the specified schema.
+複数選択・繰り返し入力フィールドに使う型。各要素を指定したスキーマで検証します。
 
 ```php
 SV::array(AbstractFieldSchema $items): ArraySchema
 ```
 
-| Parameter | Type | Description |
+| パラメータ | 型 | 説明 |
 |:--|:--|:--|
-| `$items` | `AbstractFieldSchema` | Schema definition for each element |
+| `$items` | `AbstractFieldSchema` | 各要素のスキーマ定義 |
 
-**JSON Schema output:**
+**JSON Schema 出力:**
 
 ```json
 { "type": "array", "items": { ... } }
@@ -18,18 +18,18 @@ SV::array(AbstractFieldSchema $items): ArraySchema
 
 ---
 
-## Basic Usage
+## 基本的な使い方
 
 ```php
 use SchemableValidator\SV;
 
-// Array of strings (each element: 1–100 characters)
+// 文字列の配列（各要素は1〜100文字）
 SV::array(SV::string()->min(1)->max(100))
 
-// Array of enum values (multi-select checkboxes)
+// enum 値の配列（チェックボックス複数選択）
 SV::array(SV::enum(['php', 'js', 'python', 'ruby']))
 
-// Array of integers
+// integer の配列
 SV::array(SV::integer()->min(1))
 ```
 
@@ -37,16 +37,16 @@ SV::array(SV::integer()->min(1))
 
 ## .minItems(n) {#minitems}
 
-Sets the **minimum number of items** in the array.
+配列の**最小要素数**を設定します。
 
 ```php
 SV::array($items)->minItems(int $n)
 ```
 
-**JSON Schema keyword:** `minItems`
+**JSON Schema キーワード:** `minItems`
 
 ```php
-// At least one selection required
+// 最低1つは選択必須
 SV::array(SV::enum(['a', 'b', 'c']))->minItems(1)
 ```
 
@@ -58,24 +58,24 @@ SV::array(SV::enum(['a', 'b', 'c']))->minItems(1)
 
 ## .maxItems(n) {#maxitems}
 
-Sets the **maximum number of items** in the array.
+配列の**最大要素数**を設定します。
 
 ```php
 SV::array($items)->maxItems(int $n)
 ```
 
-**JSON Schema keyword:** `maxItems`
+**JSON Schema キーワード:** `maxItems`
 
 ```php
-// Up to 3 selections allowed
+// 最大3つまで選択
 SV::array(SV::enum(['a', 'b', 'c', 'd']))->maxItems(3)
 ```
 
 ---
 
-## Implementation Examples
+## 実装例
 
-### PHP (Schema Definition)
+### PHP（スキーマ定義）
 
 ```php
 $schema = SV::object([
@@ -85,7 +85,7 @@ $schema = SV::object([
 ]);
 ```
 
-### JSON Schema Output
+### JSON Schema 出力
 
 ```json
 {
@@ -99,17 +99,17 @@ $schema = SV::object([
 }
 ```
 
-### Server-side Validation
+### サーバー側検証
 
-Array fields are submitted via `$_POST` as `tags[]`.
+配列フィールドは `$_POST` で `tags[]` として送られます。
 
 ```php
 $result = $schema->toValidator()->validate($_POST)->getResult();
 ```
 
-### Client-side (`@schemable-validator/client`)
+### クライアント側（`@schemable-validator/client`）
 
-Pass a `Record<string, string | string[]>` to `validateObject`.
+`validateObject` に `Record<string, string | string[]>` を渡す。
 
 ```typescript
 import { validateObject } from '@schemable-validator/client'
@@ -120,7 +120,7 @@ const result = validateObject(
 )
 ```
 
-The `FieldResult.value` for array fields is `string[]`.
+配列フィールドの `FieldResult.value` は `string[]` になります。
 
 ```typescript
 result.tags

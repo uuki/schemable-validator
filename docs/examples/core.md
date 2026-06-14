@@ -1,55 +1,55 @@
 # Examples - Core
 
-フレームワーク非依存のコアライブラリを使った実装例です。
+Implementation examples using the framework-agnostic core library.
 
-> ソースコード: [`packages/example/core/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/example/core)
+> Source code: [`packages/example/core/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/example/core)
 
 ---
 
-## 1. 基本的なバリデーション
+## 1. Basic Validation
 
-フィールドスキーマを定義し、`Validator` で入力値を検証します。
+Define a field schema and validate input values with `Validator`.
 
 <<< ../../packages/example/core/01-validate.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/01-validate.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/01-validate.php)
 
 ---
 
-## 2. ファイルアップロードのバリデーション
+## 2. File Upload Validation
 
-`validateFiles()` を使い、アップロードされたファイルの拡張子・エラーコードを検証します。
+Use `validateFiles()` to validate the extension and error code of uploaded files.
 
 <<< ../../packages/example/core/02-validate-files.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/02-validate-files.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/02-validate-files.php)
 
 ---
 
-## 3. reCAPTCHA v3 バリデーション
+## 3. reCAPTCHA v3 Validation
 
-`validateReCaptcha()` をメソッドチェーンに組み込み、スコア閾値と action 名を検証します。
+Incorporate `validateReCaptcha()` into the method chain to verify the score threshold and action name.
 
 <<< ../../packages/example/core/03-recaptcha.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/03-recaptcha.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/03-recaptcha.php)
 
 ---
 
-## 4. CSRF トークン
+## 4. CSRF Token
 
-`createToken()` でトークンを生成し、`checkToken()` でフォーム送信時に照合します。
+Generate a token with `createToken()` and verify it against form submissions using `checkToken()`.
 
 <<< ../../packages/example/core/04-csrf-token.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/04-csrf-token.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/04-csrf-token.php)
 
 ---
 
-## 5. テンプレートレンダリング
+## 5. Template Rendering
 
-`Template` クラスでセッションの検証済みデータをメール本文に差し込みます。
+Use the `Template` class to inject validated session data into an email body.
 
 <<< ../../packages/example/core/05-template.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/05-template.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/05-template.php)

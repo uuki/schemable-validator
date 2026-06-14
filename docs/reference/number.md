@@ -1,65 +1,65 @@
-# SV::integer() / SV::number() - 数値型
+# SV::integer() / SV::number() - Number Types
 
-数値入力に使う型。整数のみの場合は `integer`、小数を含む場合は `number` を使います。
+Types for numeric input. Use `integer` for whole numbers only, and `number` when decimals are needed.
 
 ---
 
 ## SV::integer()
 
-整数値を検証します。HTML フォームからの文字列入力も自動的に整数として評価されます。
+Validates integer values. String input from HTML forms is automatically coerced to an integer for evaluation.
 
 ```php
 SV::integer()
 ```
 
-**JSON Schema 出力:**
+**JSON Schema output:**
 ```json
 { "type": "integer" }
 ```
 
-**用途:** 年齢・個数・評価スコア（整数）など。
+**Use case:** Age, quantity, rating score (integer), etc.
 
 ---
 
 ## SV::number()
 
-整数または小数を検証します。
+Validates integers or decimals.
 
 ```php
 SV::number()
 ```
 
-**JSON Schema 出力:**
+**JSON Schema output:**
 ```json
 { "type": "number" }
 ```
 
-**用途:** 価格・評価スコア（小数）・重量など。
+**Use case:** Price, rating score (decimal), weight, etc.
 
 ---
 
 ## .min(n) {#min}
 
-**最小値**を設定します。
+Sets the **minimum value**.
 
 ```php
 SV::integer()->min(int $n)
 SV::number()->min(int|float $n)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$n` | `int`（integer）/ `int\|float`（number） | 許容する最小値（以上） |
+| `$n` | `int` (integer) / `int\|float` (number) | Minimum value allowed (inclusive) |
 
-**JSON Schema キーワード:** `minimum`
+**JSON Schema keyword:** `minimum`
 
-**用途:** 0以上の個数、1以上の評価スコア。
+**Use case:** Non-negative quantity, rating score of at least 1.
 
 ```php
-// 0以上の年齢
+// Age of 0 or more
 SV::integer()->min(0)->max(150)
 
-// 0.0以上の評価スコア
+// Rating score of 0.0 or more
 SV::number()->min(0.0)->max(5.0)
 ```
 
@@ -71,24 +71,24 @@ SV::number()->min(0.0)->max(5.0)
 
 ## .max(n) {#max}
 
-**最大値**を設定します。
+Sets the **maximum value**.
 
 ```php
 SV::integer()->max(int $n)
 SV::number()->max(int|float $n)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$n` | `int`（integer）/ `int\|float`（number） | 許容する最大値（以下） |
+| `$n` | `int` (integer) / `int\|float` (number) | Maximum value allowed (inclusive) |
 
-**JSON Schema キーワード:** `maximum`
+**JSON Schema keyword:** `maximum`
 
 ```php
-// 1〜100 の整数スコア
+// Integer score from 1 to 100
 SV::integer()->min(1)->max(100)
 
-// 0.5〜5.0 の小数評価
+// Decimal rating from 0.5 to 5.0
 SV::number()->min(0.5)->max(5.0)
 ```
 
@@ -98,17 +98,17 @@ SV::number()->min(0.5)->max(5.0)
 
 ---
 
-## 組み合わせ例
+## Combination Examples
 
 ```php
 $schema = SV::object([
-  // 年齢: 0〜150 の整数、任意入力
+  // Age: integer 0–150, optional input
   'age'    => SV::integer()->min(0)->max(150)->optional(),
 
-  // 評価: 0.0〜5.0 の数値、任意入力
+  // Score: number 0.0–5.0, optional input
   'score'  => SV::number()->min(0.0)->max(5.0)->optional(),
 
-  // 数量: 1以上
+  // Quantity: at least 1
   'count'  => SV::integer()->min(1),
 ]);
 ```
@@ -125,4 +125,4 @@ $schema = SV::object([
 }
 ```
 
-> クライアントの `validateObject` はフォーム入力の文字列を `Number()` で数値に変換してから検証します。`z.coerce.number()` を使う Zod 統合でも同様です。
+> The client's `validateObject` converts form input strings to numbers using `Number()` before validation. The same applies to the Zod integration which uses `z.coerce.number()`.

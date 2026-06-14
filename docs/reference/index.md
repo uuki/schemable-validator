@@ -1,86 +1,86 @@
 # Schema Reference
 
-`SV::object()` に渡すフィールド定義の全表現を一覧します。
+Lists all field definition expressions that can be passed to `SV::object()`.
 
-各表現は JSON Schema draft 2020-12 のキーワードに対応し、サーバー側バリデーション（Respect/Validation）とクライアント側バリデーション（client / Zod）の両方に適用されます。
+Each expression maps to a JSON Schema draft 2020-12 keyword and is applied to both server-side validation (Respect/Validation) and client-side validation (client / Zod).
 
 ---
 
-## フィールド型
+## Field Types
 
-| 表現 | JSON Schema `type` | 説明 |
+| Expression | JSON Schema `type` | Description |
 |:--|:--|:--|
-| [`SV::string()`](./string) | `"string"` | テキスト入力。長さ・形式・正規表現の制約を持てる |
-| [`SV::integer()`](./number) | `"integer"` | 整数。範囲制約を持てる |
-| [`SV::number()`](./number) | `"number"` | 整数または小数。範囲制約を持てる |
-| [`SV::boolean()`](./scalar) | `"boolean"` | 真偽値 |
-| [`SV::enum(values)`](./scalar) | `"string"` + `enum` | 選択肢から1つを選ぶ |
-| [`SV::array(items)`](./array) | `"array"` | 配列。各要素のスキーマを指定できる |
-| [`SV::file(accept)`](./extended) | -（JSON Schema 非対応） | ファイルアップロード |
-| [`SV::respect(rule)`](./extended) | -（JSON Schema 非対応） | Respect/Validation ルールの直接指定 |
-| [`SV::postalCode(country)`](./extended#postalcode) | -（JSON Schema 非対応） | 国別郵便番号 |
-| [`SV::creditCard()`](./extended#creditcard) | -（JSON Schema 非対応） | クレジットカード番号（Luhn） |
-| [`SV::iban()`](./extended#iban) | -（JSON Schema 非対応） | IBAN |
+| [`SV::string()`](./string) | `"string"` | Text input. Supports length, format, and regex constraints |
+| [`SV::integer()`](./number) | `"integer"` | Integer. Supports range constraints |
+| [`SV::number()`](./number) | `"number"` | Integer or decimal. Supports range constraints |
+| [`SV::boolean()`](./scalar) | `"boolean"` | Boolean value |
+| [`SV::enum(values)`](./scalar) | `"string"` + `enum` | Select one from a set of choices |
+| [`SV::array(items)`](./array) | `"array"` | Array. Accepts a schema for each element |
+| [`SV::file(accept)`](./extended) | - (not JSON Schema) | File upload |
+| [`SV::respect(rule)`](./extended) | - (not JSON Schema) | Direct Respect/Validation rule |
+| [`SV::postalCode(country)`](./extended#postalcode) | - (not JSON Schema) | Country-specific postal code |
+| [`SV::creditCard()`](./extended#creditcard) | - (not JSON Schema) | Credit card number (Luhn) |
+| [`SV::iban()`](./extended#iban) | - (not JSON Schema) | IBAN |
 
-## 文字列制約
+## String Constraints
 
-| 表現 | JSON Schema キーワード | 説明 |
+| Expression | JSON Schema keyword | Description |
 |:--|:--|:--|
-| [`.min(n)`](./string#min) | `minLength` | 最小文字数 |
-| [`.max(n)`](./string#max) | `maxLength` | 最大文字数 |
-| [`.email()`](./string#email) | `format: "email"` | メールアドレス形式 |
-| [`.url()`](./string#url) | `format: "uri"` | URL 形式 |
-| [`.pattern(p)`](./string#pattern) | `pattern` | 正規表現 |
-| [`.date()`](./string#date) | `format: "date"` | 日付（YYYY-MM-DD） |
-| [`.dateTime()`](./string#datetime) | `format: "date-time"` | 日時（RFC 3339） |
-| [`.time()`](./string#time) | `format: "time"` | 時刻（HH:mm:ss） |
+| [`.min(n)`](./string#min) | `minLength` | Minimum character count |
+| [`.max(n)`](./string#max) | `maxLength` | Maximum character count |
+| [`.email()`](./string#email) | `format: "email"` | Email address format |
+| [`.url()`](./string#url) | `format: "uri"` | URL format |
+| [`.pattern(p)`](./string#pattern) | `pattern` | Regular expression |
+| [`.date()`](./string#date) | `format: "date"` | Date (YYYY-MM-DD) |
+| [`.dateTime()`](./string#datetime) | `format: "date-time"` | Date-time (RFC 3339) |
+| [`.time()`](./string#time) | `format: "time"` | Time (HH:mm:ss) |
 | [`.uuid()`](./string#uuid) | `format: "uuid"` | UUID |
-| [`.ipv4()`](./string#ipv4) | `format: "ipv4"` | IPv4 アドレス |
-| [`.ipv6()`](./string#ipv6) | `format: "ipv6"` | IPv6 アドレス |
-| [`.slug()`](./string#slug) | `pattern` | URL スラッグ（小文字英数字・ハイフン） |
-| [`.domain()`](./string#domain) | `format: "hostname"` | ドメイン名 |
+| [`.ipv4()`](./string#ipv4) | `format: "ipv4"` | IPv4 address |
+| [`.ipv6()`](./string#ipv6) | `format: "ipv6"` | IPv6 address |
+| [`.slug()`](./string#slug) | `pattern` | URL slug (lowercase alphanumeric and hyphens) |
+| [`.domain()`](./string#domain) | `format: "hostname"` | Domain name |
 
-## 配列制約
+## Array Constraints
 
-| 表現 | JSON Schema キーワード | 説明 |
+| Expression | JSON Schema keyword | Description |
 |:--|:--|:--|
-| [`.minItems(n)`](./array#minitems) | `minItems` | 最小要素数 |
-| [`.maxItems(n)`](./array#maxitems) | `maxItems` | 最大要素数 |
+| [`.minItems(n)`](./array#minitems) | `minItems` | Minimum number of items |
+| [`.maxItems(n)`](./array#maxitems) | `maxItems` | Maximum number of items |
 
-## 数値制約
+## Number Constraints
 
-| 表現 | JSON Schema キーワード | 説明 |
+| Expression | JSON Schema keyword | Description |
 |:--|:--|:--|
-| [`.min(n)`](./number#min) | `minimum` | 最小値 |
-| [`.max(n)`](./number#max) | `maximum` | 最大値 |
+| [`.min(n)`](./number#min) | `minimum` | Minimum value |
+| [`.max(n)`](./number#max) | `maximum` | Maximum value |
 
-## 修飾子
+## Modifiers
 
-| 表現 | 効果 |
+| Expression | Effect |
 |:--|:--|
-| [`.optional()`](./modifiers#optional) | `required` 配列から除外。未入力を許容する |
-| [`.nullable()`](./modifiers#nullable) | `type` を `[type, "null"]` に拡張。`null` 値を許容する |
+| [`.optional()`](./modifiers#optional) | Excluded from the `required` array. Allows empty input |
+| [`.nullable()`](./modifiers#nullable) | Extends `type` to `[type, "null"]`. Allows `null` values |
 
-## オブジェクト・出力
+## Object & Output
 
-| 表現 | 説明 |
+| Expression | Description |
 |:--|:--|
-| [`SV::object(fields)`](./object#object) | フィールドの集合を定義する |
-| [`.when(field, expr, require)`](./object#when) | 条件付き必須 |
-| [`.toJsonSchema()`](./object#tojsonschema) | JSON Schema (array) として出力 |
-| [`.toJson()`](./object#tojson) | JSON Schema (string) として出力 |
-| [`.toValidator()`](./object#tovalidator) | Respect/Validation ベースの `Validator` を生成 |
+| [`SV::object(fields)`](./object#object) | Defines a set of fields |
+| [`.when(field, expr, require)`](./object#when) | Conditional required |
+| [`.toJsonSchema()`](./object#tojsonschema) | Output as JSON Schema (array) |
+| [`.toJson()`](./object#tojson) | Output as JSON Schema (string) |
+| [`.toValidator()`](./object#tovalidator) | Generate a Respect/Validation-based `Validator` |
 
-## 条件式（when() の第2引数）
+## Condition Expressions (second argument of when())
 
-`.when()` に渡す比較式。スカラー値を直接渡した場合は `SV::equal()` と等価。
+Comparison expressions passed to `.when()`. Passing a scalar value directly is equivalent to `SV::equal()`.
 
-| 式 | 比較演算子 | 用途 |
+| Expression | Operator | When to use |
 |:--|:--|:--|
-| [`SV::equal($value)`](./object#when-expressions) | `===` | 値が一致するとき |
-| [`SV::notEqual($value)`](./object#when-expressions) | `!==` | 値が一致しないとき |
-| [`SV::greaterThanOrEqual($n)`](./object#when-expressions) | `>=` | 値が $n 以上のとき |
-| [`SV::lessThanOrEqual($n)`](./object#when-expressions) | `<=` | 値が $n 以下のとき |
-| [`SV::greaterThan($n)`](./object#when-expressions) | `>` | 値が $n より大きいとき |
-| [`SV::lessThan($n)`](./object#when-expressions) | `<` | 値が $n 未満のとき |
-| [`SV::field('name')`](./object#when-expressions) | - | 比較先を別フィールドの値にする |
+| [`SV::equal($value)`](./object#when-expressions) | `===` | When the value matches |
+| [`SV::notEqual($value)`](./object#when-expressions) | `!==` | When the value does not match |
+| [`SV::greaterThanOrEqual($n)`](./object#when-expressions) | `>=` | When the value is greater than or equal to $n |
+| [`SV::lessThanOrEqual($n)`](./object#when-expressions) | `<=` | When the value is less than or equal to $n |
+| [`SV::greaterThan($n)`](./object#when-expressions) | `>` | When the value is greater than $n |
+| [`SV::lessThan($n)`](./object#when-expressions) | `<` | When the value is less than $n |
+| [`SV::field('name')`](./object#when-expressions) | - | Use another field's value as the comparison target |

@@ -1,38 +1,38 @@
-# SV::file() / SV::respect() - JSON Schema 非対応型
+# SV::file() / SV::respect() - Non-JSON Schema Types
 
-これらの型は Respect/Validation でサーバー側検証を行いますが、JSON Schema に変換できません。
-`toJsonSchema()` の出力では `properties` に含まれず、`x-unmapped-fields` にフィールド名が記録されます。
+These types perform server-side validation via Respect/Validation but cannot be converted to JSON Schema.
+In `toJsonSchema()` output they are excluded from `properties`, and their field names are recorded in `x-unmapped-fields`.
 
-クライアントの `validateObject` はこれらのフィールドを自動的にスキップし、サーバー側に委譲します。
+The client's `validateObject` automatically skips these fields and defers them to the server.
 
 ---
 
 ## SV::file(accept) {#file}
 
-ファイルアップロードの MIME タイプを検証します。
+Validates the MIME type of a file upload.
 
 ```php
 SV::file(array $accept = [])
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$accept` | `string[]` | 許容する MIME タイプの配列 |
+| `$accept` | `string[]` | Array of allowed MIME types |
 
-**用途:** `<input type="file">` のファイル種別を制限する。
+**Use case:** Restrict file types for `<input type="file">`.
 
 ```php
-// 画像のみ
+// Images only
 SV::file(['image/jpeg', 'image/png', 'image/webp'])
 
-// PDF のみ、任意入力
+// PDF only, optional input
 SV::file(['application/pdf'])->optional()
 
-// 種別不問（存在チェックのみ）
+// Any file type (existence check only)
 SV::file()
 ```
 
-### サーバー側での使い方
+### Server-side Usage
 
 ```php
 $schema = SV::object([
@@ -40,16 +40,16 @@ $schema = SV::object([
   'avatar' => SV::file(['image/jpeg', 'image/png'])->optional(),
 ]);
 
-// ファイルの検証は validateFiles() を使う
+// Use validateFiles() to validate files
 $result = $schema->toValidator()
   ->validate($_POST)
   ->validateFiles($_FILES)
   ->getResult();
 ```
 
-### JSON Schema 出力
+### JSON Schema Output
 
-`avatar` は `properties` に含まれず `x-unmapped-fields` に記録される。
+`avatar` is not included in `properties` and is recorded in `x-unmapped-fields`.
 
 ```json
 {
@@ -66,57 +66,57 @@ $result = $schema->toValidator()
 
 ## SV::postalCode(countryCode) {#postalcode}
 
-国別の**郵便番号**を検証する。Respect/Validation の `postalCode()` ルールをラップしたショートハンド。
+Validates a **postal code** for a specific country. A shorthand that wraps Respect/Validation's `postalCode()` rule.
 
 ```php
 SV::postalCode(string $countryCode)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$countryCode` | `string` | ISO 3166-1 alpha-2 国コード（例: `'JP'`, `'US'`, `'DE'`） |
+| `$countryCode` | `string` | ISO 3166-1 alpha-2 country code (e.g. `'JP'`, `'US'`, `'DE'`) |
 
-JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
+Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
 
 ```php
-SV::postalCode('JP')->optional()  // 日本の郵便番号（任意入力）
-SV::postalCode('US')              // 米国の ZIP コード
+SV::postalCode('JP')->optional()  // Japanese postal code (optional)
+SV::postalCode('US')              // US ZIP code
 ```
 
-`SV::respect(v::postalCode('JP'))` の糖衣構文です。
+This is syntactic sugar for `SV::respect(v::postalCode('JP'))`.
 
 ---
 
 ## SV::creditCard(...brands) {#creditcard}
 
-**クレジットカード番号**を Luhn アルゴリズムで検証します。
+Validates a **credit card number** using the Luhn algorithm.
 
 ```php
 SV::creditCard(string ...$brands)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `...$brands` | `string` | 受け入れるカードブランド（省略時は全ブランド対応）。例: `'Visa'`, `'Mastercard'` |
+| `...$brands` | `string` | Card brands to accept (omit to accept all brands). E.g. `'Visa'`, `'Mastercard'` |
 
-JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
+Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
 
 ```php
-SV::creditCard()                    // 全ブランド
-SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard のみ
+SV::creditCard()                    // All brands
+SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard only
 ```
 
 ---
 
 ## SV::iban() {#iban}
 
-**IBAN**（国際銀行口座番号）を検証する。
+Validates an **IBAN** (International Bank Account Number).
 
 ```php
 SV::iban()
 ```
 
-JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
+Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
 
 ```php
 SV::iban()->optional()
@@ -126,31 +126,31 @@ SV::iban()->optional()
 
 ## SV::respect(rule) {#respect}
 
-Respect/Validation のルールを直接指定するエスケープハッチです。組み込み型では表現できない制約に使います。
+An escape hatch for specifying Respect/Validation rules directly. Use this for constraints that cannot be expressed with the built-in types.
 
 ```php
 SV::respect(Respect\Validation\Validator $rule)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$rule` | `Respect\Validation\Validator` | Respect のバリデーターインスタンス |
+| `$rule` | `Respect\Validation\Validator` | A Respect validator instance |
 
-**用途:** libphonenumber を使った電話番号検証、IBAN 検証、カスタム業務ルールなど、JSON Schema では表現できない制約。
+**Use case:** Phone number validation with libphonenumber, IBAN validation, custom business rules — constraints that cannot be expressed in JSON Schema.
 
 ```php
 use Respect\Validation\Validator as v;
 
-// Respect 組み込みのクレジットカード検証
+// Built-in Respect credit card validation
 SV::respect(v::creditCard())
 
-// callback でカスタムロジックを注入
+// Inject custom logic via callback
 SV::respect(v::callback(function ($value) {
   return strlen($value) === 8 && ctype_digit($value);
 }))->optional()
 ```
 
-### 外部ライブラリとの連携
+### Integration with External Libraries
 
 ```php
 use libphonenumber\PhoneNumberUtil;
@@ -172,9 +172,9 @@ $schema = SV::object([
 ]);
 ```
 
-詳細は [高度な利用例](/custom-validation) を参照。
+See [Advanced Usage](/reference/custom-validation) for more details.
 
-### JSON Schema 出力
+### JSON Schema Output
 
 ```json
 {
@@ -186,28 +186,28 @@ $schema = SV::object([
 
 ---
 
-## x-unmapped-fields の扱い
+## Handling x-unmapped-fields
 
-クライアント側で `x-unmapped-fields` を追加検証するには、クライアントの `Constraint` または Zod の `.superRefine()` を使う。
+To add client-side validation for `x-unmapped-fields`, use the client's `Constraint` or Zod's `.superRefine()`.
 
 ```typescript
-// client: 手動で追加検証
+// client: manually add validation
 const result = validateObject(data, schema)
 const unmapped = schema['x-unmapped-fields'] ?? []
 
 if (unmapped.includes('tel')) {
   const ok = /^0\d{9,10}$/.test(data.tel ?? '')
-  // result を拡張して tel の検証結果を追加
+  // extend result to add tel validation outcome
 }
 ```
 
 ```typescript
-// Zod: superRefine で追加
+// Zod: add via superRefine
 const zodSchema = buildZodSchema(schema).extend({
   tel: z.string().optional().superRefine((val, ctx) => {
     if (!val) return
     if (!/^0\d{9,10}$/.test(val)) {
-      ctx.addIssue({ code: 'custom', message: '有効な電話番号を入力してください' })
+      ctx.addIssue({ code: 'custom', message: 'Please enter a valid phone number' })
     }
   }),
 })

@@ -2,13 +2,13 @@
 
 ## Requirements
 
-| | Version | 用途 |
+| | Version | Purpose |
 |:--|:--|:--|
-| PHP | ^7.4 \|\| ^8.x | core ライブラリ・WP プラグイン |
-| WordPress | 5.9+ | WP プラグインのみ |
-| Node.js | >=22.12.0 | `@schemable-validator/client` のみ |
+| PHP | ^7.4 \|\| ^8.x | Core library & WP plugin |
+| WordPress | 5.9+ | WP plugin only |
+| Node.js | >=22.12.0 | `@schemable-validator/client` only |
 
-## インストール方法
+## Installation
 
 ### PHP library
 
@@ -16,62 +16,62 @@
 composer require uuki/schemable-validator:0.9.0
 ```
 
-### プラグインパターン - WordPress
+### Plugin pattern - WordPress
 
-リポジトリをクローンし、プラグインディレクトリに配置して依存パッケージをインストールします。
+Clone the repository, place it in your plugins directory, and install the dependencies.
 
 ```shell
-# リポジトリをクローン
+# Clone the repository
 git clone https://github.com/uuki/schemable-validator.git
-# 設置先の例: wp-content/plugins/schemable-validator
+# Example destination: wp-content/plugins/schemable-validator
 
-# プラグイン内の WordPress パッケージに移動して依存をインストール
+# Navigate to the WordPress package inside the plugin and install dependencies
 cd path/to/plugins/schemable-validator/packages/wp-schemable-validator
-# 設置先が`wp-content`の場合: wp-content/plugins/schemable-validator/packages/wp-schemable-validator
+# If placed under `wp-content`: wp-content/plugins/schemable-validator/packages/wp-schemable-validator
 
 composer install --no-dev
 ```
 
-WordPress 管理画面のプラグイン一覧から **Schemable Validator** を有効化してください。
+Activate **Schemable Validator** from the plugin list in the WordPress admin dashboard.
 
-## 主要機能
+## Key features
 
-### PHP library - 主要クラス
+### PHP library - Core classes
 
-`composer require` でインストールすると、`SchemableValidator\` 名前空間以下のクラスが使えるようになります。
+After installing via `composer require`, the classes under the `SchemableValidator\` namespace become available.
 
-| クラス | 概要 |
+| Class | Description |
 |:--|:--|
-| `Validator` | スキーマに対して入力値を検証する |
-| `SV` | `SchemaBuilder` のファサード。`SV::object()` / `SV::string()` などでスキーマを構築する |
-| `SchemaBuilder` | フィールドスキーマを組み立て、`Validator` または JSON Schema に変換する |
-| `Template` | テンプレート文字列に検証済みデータを差し込む |
-| `FormController` | マルチページフォームの検証済みデータをセッションで保持する |
-| `MessageDict` | エラーメッセージをフィールド×ルール単位で定義する（i18n） |
-| `Rules\FileExtension` | ファイルの MIME タイプを検証するカスタムルール |
+| `Validator` | Validates input values against a schema |
+| `SV` | Facade for `SchemaBuilder`. Build schemas with `SV::object()`, `SV::string()`, etc. |
+| `SchemaBuilder` | Assembles field schemas and converts them to `Validator` format or JSON Schema |
+| `Template` | Injects validated data into template strings |
+| `FormController` | Persists validated data across multi-page forms using sessions |
+| `MessageDict` | Defines error messages per field × rule (i18n) |
+| `Rules\FileExtension` | Custom rule that validates a file's MIME type |
 
-詳細は [Feature Guide](/feature-guide) および [SchemaBuilder](/schema-builder) を参照してください。
+See [Feature Guide](/feature-guide) and [SchemaBuilder](/schema-builder) for details.
 
-### WordPress - グローバル関数
+### WordPress - Global functions
 
-プラグインを有効化すると、以下の `schv_*` 関数がグローバルに使えるようになります。
+Once the plugin is activated, the following `schv_*` functions become available globally.
 
-| 関数 | 戻り値 | 概要 |
+| Function | Return | Description |
 |:--|:--|:--|
-| `schv_validator($schema, $options, $dict)` | `Validator` | バリデーターを生成する |
-| `schv_message_dict()` | `MessageDict` | `schv_message_dict` フィルター経由でサイト全体の辞書を返す |
-| `schv_form()` | `FormController` | マルチページフォームのセッション管理を行う |
-| `schv_template($options)` | `Template` | WP オプションのテンプレートにデータを差し込む |
-| `schv_register_schema($route, $provider)` | `void` | スキーマを REST エンドポイントとして登録する |
-| `schv_schema_url($route)` | `string` | 登録済みスキーマの REST URL を返す |
+| `schv_validator($schema, $options, $dict)` | `Validator` | Creates a Validator instance |
+| `schv_message_dict()` | `MessageDict` | Returns the site-wide dictionary via the `schv_message_dict` filter |
+| `schv_form()` | `FormController` | Manages session state for multi-page forms |
+| `schv_template($options)` | `Template` | Injects data into a WP option template |
+| `schv_register_schema($route, $provider)` | `void` | Registers a schema as a REST endpoint |
+| `schv_schema_url($route)` | `string` | Returns the REST URL of a registered schema |
 
-詳細は [Feature Guide](/feature-guide) および [Interfaces](/interfaces) を参照してください。
+See [Feature Guide](/feature-guide) and [Interfaces](/interfaces) for details.
 
 ## Package structure
 
 ```
 packages/
-  core/                          # コアライブラリ（フレームワーク非依存）
+  core/                          # Core library (framework-agnostic)
     Validator.php
     Template.php
     Controllers/FormController.php
@@ -79,11 +79,11 @@ packages/
     Rules/FileExtension.php
     Helpers/Security.php
     Helpers/Environment.php
-  wp-schemable-validator/        # WordPress プラグイン
+  wp-schemable-validator/        # WordPress plugin
     index.php
-    lib/core/                    # core の rsync コピー（composer 経由）
+    lib/core/                    # rsync copy of core (via composer)
     src/Interfaces/WordPress/
-      Plugin.php                 # 管理画面・設定登録
-      helpers.php                # schv_* グローバル関数
-    examples/                    # サンプルショートコード（ローカル開発用）
+      Plugin.php                 # Admin screen & settings registration
+      helpers.php                # schv_* global functions
+    examples/                    # Sample shortcodes (for local development)
 ```

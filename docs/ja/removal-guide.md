@@ -1,33 +1,33 @@
 # Removal Guide
 
-This guide explains how to remove the **SchemaBuilder / Validator core** from the schemable-validator plugin and migrate to each stack's native libraries.
+このガイドは schemable-validator プラグインの **SchemaBuilder / Validator コア** を取り除き、各スタック本来のライブラリへ移行する手順を説明します。
 
-**Scope:** The `SV::` facade, `SchemaBuilder`, and `Validator` classes (including client packages). WordPress helpers, `Template`, CSRF, and reCAPTCHA are out of scope.
+**スコープ:** `SV::` ファサード・`SchemaBuilder`・`Validator` クラス（クライアントパッケージを含む）。WordPress ヘルパー・`Template`・CSRF・reCAPTCHA は対象外です。
 
-> **Version assumption**  
-> The PHP side targets Respect/Validation **2.x**. If this plugin's dependency is bumped to 3.x in the future, a separate Respect/Validation 3.x migration guide will be added.
+> **バージョン前提**  
+> PHP 側は Respect/Validation **2.x** を対象とします。将来このプラグインの依存バージョンが 3.x に上がった際は、別途 Respect/Validation 3.x 移行ガイドを追加予定です。
 
 ---
 
-## Table of Contents
+## 目次
 
-1. [PHP - Migrating SchemaBuilder to Respect/Validation 2.x](#1-php--migrating-schemabuilder-to-respectvalidation-2x)
-   - [Type mapping quick reference](#11-type-mapping-quick-reference)
-   - [Using Validator directly](#12-using-validator-directly)
-   - [Handling optional / nullable](#13-handling-optional--nullable)
-   - [Replacing when() conditional branching](#14-replacing-when-conditional-branching)
-   - [Validation result format changes](#15-validation-result-format-changes)
-2. [Client - Migrating TypeScript/JavaScript to Zod](#2-client--migrating-typescriptjavascript-to-zod)
-   - [Type mapping quick reference](#21-type-mapping-quick-reference)
+1. [PHP - SchemaBuilder を Respect/Validation 2.x へ移行](#1-php--schemabuilder-を-respectvalidation-2x-へ移行)
+   - [型マッピング早見表](#11-型マッピング早見表)
+   - [Validator の直接利用](#12-validator-の直接利用)
+   - [optional / nullable の扱い](#13-optional--nullable-の扱い)
+   - [when() 条件分岐の置き換え](#14-when-条件分岐の置き換え)
+   - [バリデーション結果の形式変更](#15-バリデーション結果の形式変更)
+2. [クライアント - TypeScript/JavaScript を Zod へ移行](#2-クライアント--typescriptjavascript-を-zod-へ移行)
+   - [型マッピング早見表](#21-型マッピング早見表)
    - [validateObject → Zod safeParse](#22-validateobject--zod-safeparse)
-   - [Replacing when() with Zod](#23-replacing-when-with-zod)
-   - [Other libraries](#24-other-libraries)
+   - [when() の Zod への置き換え](#23-when-の-zod-への置き換え)
+   - [その他のライブラリ](#24-その他のライブラリ)
 
 ---
 
-## 1. PHP - Migrating SchemaBuilder to Respect/Validation 2.x
+## 1. PHP - SchemaBuilder を Respect/Validation 2.x へ移行
 
-### 1.1 Type mapping quick reference
+### 1.1 型マッピング早見表
 
 | SV API | Respect/Validation 2.x |
 |:--|:--|
@@ -55,12 +55,12 @@ This guide explains how to remove the **SchemaBuilder / Validator core** from th
 | `SV::string()->domain()` | `v::domain()` |
 | `SV::enum(['a', 'b'])` | `v::in(['a', 'b'])` |
 | `SV::array(SV::string())` | `v::each(v::stringType())` |
-| `SV::respect(v::...)` | Use `v::...` directly |
+| `SV::respect(v::...)` | `v::...` をそのまま使用 |
 | `SV::postalCode('JP')` | `v::postalCode('JP')` |
 | `SV::creditCard()` | `v::creditCard()` |
 | `SV::iban()` | `v::iban()` |
 
-### 1.2 Using Validator directly
+### 1.2 Validator の直接利用
 
 **Before:**
 
@@ -101,8 +101,8 @@ foreach ($schema as $field => $rule) {
 }
 ```
 
-> **Array fields**  
-> `SV::array(SV::string())->minItems(1)->maxItems(5)` has no direct equivalent rule in Respect/Validation 2.x. Use `v::each(v::stringType())` to validate individual elements, and check the element count manually in PHP.
+> **array フィールド**  
+> `SV::array(SV::string())->minItems(1)->maxItems(5)` は Respect/Validation 2.x に直接対応するルールがありません。`v::each(v::stringType())` で要素検証を行い、要素数のチェックは PHP で手動で行ってください。
 >
 > ```php
 > $items = $_POST['tags'] ?? [];
@@ -118,7 +118,7 @@ foreach ($schema as $field => $rule) {
 > }
 > ```
 
-### 1.3 Handling optional / nullable
+### 1.3 optional / nullable の扱い
 
 | SV | Respect/Validation 2.x |
 |:--|:--|
@@ -126,13 +126,13 @@ foreach ($schema as $field => $rule) {
 | `SV::string()->nullable()` | `v::nullable(v::stringType())` |
 | `SV::string()->optional()->nullable()` | `v::nullable(v::optional(v::stringType()))` |
 
-`v::optional()` skips `null` and empty string `''`. `v::nullable()` skips `null` but validates `''`.
+`v::optional()` は `null` と空文字列 `''` をスキップします。`v::nullable()` は `null` をスキップしますが `''` は検証されます。
 
-### 1.4 Replacing when() conditional branching
+### 1.4 when() 条件分岐の置き換え
 
-`when()` has no native equivalent rule in Respect/Validation 2.x. **Implement it using PHP conditional logic after validation.**
+`when()` は Respect/Validation 2.x にネイティブな対応ルールがありません。**バリデーション後に PHP の条件分岐で実装**してください。
 
-#### Pattern A - Simple equality condition
+#### パターン A - 単純な等値条件
 
 ```php
 // Before
@@ -147,10 +147,10 @@ $schema = [
     'company_name' => v::optional(v::stringType()->length(1, 100)),
 ];
 
-// 1. Run the standard validation
-$result = validateFields($schema, $_POST); // loop function from the previous section
+// 1. 通常バリデーションを実行
+$result = validateFields($schema, $_POST); // 前節のループ関数
 
-// 2. Apply conditional logic as a post-processing step
+// 2. 条件分岐を後追いで適用
 if (($_POST['type'] ?? null) === 'company') {
     $val = $_POST['company_name'] ?? null;
     if ($val === null || $val === '') {
@@ -163,7 +163,7 @@ if (($_POST['type'] ?? null) === 'company') {
 }
 ```
 
-#### Pattern B - Inequality condition (SV::notEqual)
+#### パターン B - 不等値条件 (SV::notEqual)
 
 ```php
 // Before
@@ -185,7 +185,7 @@ if (($_POST['role'] ?? null) !== 'guest') {
 }
 ```
 
-#### Pattern C - Numeric comparison condition (SV::greaterThanOrEqual, etc.)
+#### パターン C - 数値比較条件 (SV::greaterThanOrEqual 等)
 
 ```php
 // Before
@@ -208,16 +208,16 @@ if ($age < 18) {
 }
 ```
 
-| SV condition | PHP equivalent |
+| SV 条件式 | PHP 等価条件 |
 |:--|:--|
-| `SV::equal('x')` or direct scalar value | `=== 'x'` |
+| `SV::equal('x')` または スカラー直接指定 | `=== 'x'` |
 | `SV::notEqual('x')` | `!== 'x'` |
-| `SV::greaterThanOrEqual(18)` | `>= 18` (after numeric cast) |
-| `SV::lessThanOrEqual(100)` | `<= 100` (after numeric cast) |
-| `SV::greaterThan(0)` | `> 0` (after numeric cast) |
-| `SV::lessThan(18)` | `< 18` (after numeric cast) |
+| `SV::greaterThanOrEqual(18)` | `>= 18` (数値キャスト後) |
+| `SV::lessThanOrEqual(100)` | `<= 100` (数値キャスト後) |
+| `SV::greaterThan(0)` | `> 0` (数値キャスト後) |
+| `SV::lessThan(18)` | `< 18` (数値キャスト後) |
 
-#### Pattern D - Cross-field reference (SV::field)
+#### パターン D - フィールド間参照 (SV::field)
 
 ```php
 // Before
@@ -225,10 +225,10 @@ SV::object([
     'password'         => SV::string()->length(8, 255),
     'password_confirm' => SV::string()->optional(),
 ])->when('password', SV::notEqual(SV::field('password_confirm')), ['password_confirm']);
-// Note: This pattern means "make password_confirm required when password and password_confirm differ",
-//       but in practice it is more natural to simply verify that the two fields match.
+// ※ これは「password と password_confirm が異なる場合に password_confirm を必須にする」という
+//    パターンであり、実際には「2 つのフィールドが一致すること」を検証する方が自然です。
 
-// After - replace with a match check
+// After - 一致検証に置き換える
 $pw  = $_POST['password']         ?? '';
 $pwc = $_POST['password_confirm'] ?? '';
 if ($pw !== $pwc) {
@@ -240,19 +240,19 @@ if ($pw !== $pwc) {
 }
 ```
 
-#### Consolidating multiple conditions
+#### 複数条件のまとめ方
 
-When multiple `when()` conditions are chained, it is recommended to extract them together as a post-processing function.
+複数の `when()` 条件が連鎖する場合は、まとめて後処理関数として抽出することを推奨します。
 
 ```php
 function applyConditionals(array &$result, array $data): void
 {
-    // Condition 1: company_name is required when type === 'company'
+    // 条件 1: type === 'company' のとき company_name 必須
     if (($data['type'] ?? null) === 'company') {
         requireField($result, $data, 'company_name');
     }
 
-    // Condition 2: guardian is required when age < 18
+    // 条件 2: age < 18 のとき guardian 必須
     if ((int) ($data['age'] ?? 0) < 18) {
         requireField($result, $data, 'guardian');
     }
@@ -271,36 +271,36 @@ function requireField(array &$result, array $data, string $field): void
 }
 ```
 
-### 1.5 Validation result format changes
+### 1.5 バリデーション結果の形式変更
 
-SV's `getResult()` returns the following format:
+SV の `getResult()` は次の形式を返します。
 
 ```php
 [
     'field_name' => [
-        'value'    => mixed,   // raw input value
+        'value'    => mixed,   // 入力値そのまま
         'is_valid' => bool,
-        'errors'   => string|null,  // Respect/Validation full message or null
+        'errors'   => string|null,  // Respect/Validation のフルメッセージまたは null
     ],
     // ...
 ]
 ```
 
-When using Respect/Validation directly, this format does not exist. If you are passing the result to a frontend or downstream process, update those call sites accordingly.
+Respect/Validation を直接使う場合、この形式は存在しません。結果をフロントエンドや後続処理に渡している場合はその呼び出し元も合わせて変更してください。
 
 ---
 
-## 2. Client - Migrating TypeScript/JavaScript to Zod
+## 2. クライアント - TypeScript/JavaScript を Zod へ移行
 
-The SV client package receives a JSON Schema output from `SchemaBuilder::toJsonSchema()` and validates form fields against it. Migrating to Zod removes the JSON Schema adapter layer so you define Zod schemas directly.
+SV のクライアントパッケージは `SchemaBuilder::toJsonSchema()` が出力した JSON Schema を受け取り、フォームフィールドを検証します。Zod へ移行する場合は JSON Schema 経由のアダプター層をなくし、Zod スキーマをそのまま定義します。
 
 ```bash
 npm install zod
-# or
+# または
 pnpm add zod
 ```
 
-### 2.1 Type mapping quick reference
+### 2.1 型マッピング早見表
 
 | SV (PHP) | Zod |
 |:--|:--|
@@ -318,7 +318,7 @@ pnpm add zod
 | `SV::enum(['a', 'b'])` | `z.enum(['a', 'b'])` |
 | `SV::array(SV::string())` | `z.array(z.string())` |
 | `SV::array(SV::string()).minItems(1)` | `z.array(z.string()).min(1)` |
-| `SV::string()->optional()` | Make the field itself `.optional()` |
+| `SV::string()->optional()` | フィールド自体を `.optional()` にする |
 | `SV::string()->nullable()` | `z.string().nullable()` |
 
 ### 2.2 validateObject → Zod safeParse
@@ -329,12 +329,12 @@ pnpm add zod
 import { validateObject, isAllValid } from '@schemable-validator/client'
 import type { ObjectSchema } from '@schemable-validator/client'
 
-// Fetch the schema generated by SchemaBuilder::toJsonSchema() and use it
+// SchemaBuilder::toJsonSchema() で生成したスキーマを fetch して使用
 const schema: ObjectSchema = await fetchSchema('/api/schema')
 
 const result = validateObject(formData, schema)
 if (isAllValid(result)) {
-  // Submit
+  // 送信処理
 }
 ```
 
@@ -351,20 +351,20 @@ const schema = z.object({
 
 const result = schema.safeParse(formData)
 if (result.success) {
-  // Submit (result.data is typed)
+  // 送信処理（result.data は型付き）
 } else {
-  // Retrieve error details from result.error.issues
+  // result.error.issues でエラー詳細を取得
   const errors = Object.fromEntries(
     result.error.issues.map((issue) => [issue.path.join('.'), issue.message])
   )
 }
 ```
 
-### 2.3 Replacing when() with Zod
+### 2.3 when() の Zod への置き換え
 
-#### Pattern A - Using `superRefine`
+#### パターン A - `superRefine` を使う方法
 
-This is the most flexible approach and handles multiple conditions and cross-field references.
+最も汎用的なアプローチです。複数条件・フィールド間参照にも対応します。
 
 ```typescript
 import { z } from 'zod'
@@ -387,9 +387,9 @@ const schema = z.object({
 })
 ```
 
-#### Pattern B - Using `z.discriminatedUnion`
+#### パターン B - `z.discriminatedUnion` を使う方法
 
-When type branching based on a field value is clear-cut, this provides stronger type safety.
+フィールド値による型の分岐が明確な場合、型安全性が高くなります。
 
 ```typescript
 // Before (SV):
@@ -410,7 +410,7 @@ const schema = z.discriminatedUnion('type', [
 ])
 ```
 
-#### Pattern C - Numeric comparison condition
+#### パターン C - 数値比較条件
 
 ```typescript
 // Before (SV):
@@ -431,7 +431,7 @@ const schema = z.object({
 })
 ```
 
-#### Pattern D - Cross-field reference (password confirmation, etc.)
+#### パターン D - フィールド間参照 (パスワード確認など)
 
 ```typescript
 // Before (SV):
@@ -452,9 +452,9 @@ const schema = z.object({
 })
 ```
 
-#### Chaining multiple conditions
+#### 複数条件の連鎖
 
-`superRefine` allows you to write multiple conditions within a single schema.
+`superRefine` は一つのスキーマに複数の条件を書けます。
 
 ```typescript
 const schema = z.object({
@@ -480,13 +480,13 @@ const schema = z.object({
 })
 ```
 
-### 2.4 Other libraries
+### 2.4 その他のライブラリ
 
-Reference information for cases where you prefer a library other than Zod.
+Zod 以外を使う場合の参考情報です。
 
 #### Valibot
 
-Provides the same declarative schema approach as Zod but with a lighter footprint. A good choice when bundle size is a priority.
+Zod と同様の宣言的スキーマをより軽量に実現します。バンドルサイズを重視する場合に適しています。
 
 ```typescript
 import * as v from 'valibot'
@@ -497,7 +497,7 @@ const schema = v.object({
   type:  v.picklist(['personal', 'company']),
 })
 
-// when() alternative - implement conditional requirements with check
+// when() の代替 - check で条件付き必須を実装
 const schemaWithConditional = v.pipe(
   schema,
   v.check(
@@ -511,7 +511,7 @@ const result = v.safeParse(schemaWithConditional, formData)
 
 #### Yup
 
-Natively supports `when()`, allowing a coding style close to SV's conditional structure.
+`when()` をネイティブにサポートしており、SV の条件構造に近い書き方ができます。
 
 ```typescript
 import * as yup from 'yup'
@@ -528,15 +528,15 @@ const schema = yup.object({
 
 ---
 
-## Note: toJsonSchema() / JSON Schema handling
+## 補足: toJsonSchema() / JSON Schema の扱い
 
-The JSON Schema output by `SchemaBuilder::toJsonSchema()` conforms to the standard draft 2020-12 (`x-when` is an extension key). You can continue to use it alongside a different JSON Schema validator, but if you switch to a library like Zod, the JSON Schema is no longer needed and can be removed.
+`SchemaBuilder::toJsonSchema()` が出力する JSON Schema は標準の draft 2020-12 に準拠しています（`x-when` は拡張キーです）。別の JSON Schema バリデーターと組み合わせて使い続けることもできますが、Zod などのライブラリを使う場合は JSON Schema は不要になるため削除して構いません。
 
 ---
 
-## Related documentation
+## 関連ドキュメント
 
 - [Respect/Validation 2.x - List of Rules](https://respect-validation.readthedocs.io/en/2.4/08-list-of-rules-by-category/)
-- [Respect/Validation 2.x → 3.x Migration Guide](https://github.com/Respect/Validation/blob/main/docs/migration-guide.md) *(refer when migrating to 3.x)*
-- [Zod documentation](https://zod.dev)
-- [Valibot documentation](https://valibot.dev)
+- [Respect/Validation 2.x → 3.x Migration Guide](https://github.com/Respect/Validation/blob/main/docs/migration-guide.md) *(3.x 移行時に参照)*
+- [Zod ドキュメント](https://zod.dev)
+- [Valibot ドキュメント](https://valibot.dev)

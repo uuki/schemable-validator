@@ -1,5 +1,111 @@
 import { defineConfig } from 'vitepress'
 
+const sidebarEn = [
+  {
+    text: 'Getting Started',
+    items: [
+      { text: 'Installation', link: '/installation' },
+    ],
+  },
+  {
+    text: 'Guide',
+    items: [
+      { text: 'Feature Guide',      link: '/feature-guide' },
+      { text: 'Interfaces',         link: '/interfaces' },
+      { text: 'SchemaBuilder',      link: '/schema-builder' },
+      { text: 'Custom Validation',  link: '/custom-validation' },
+      { text: 'MessageDict (i18n)', link: '/message-dict' },
+    ],
+  },
+  {
+    text: 'Examples',
+    items: [
+      { text: 'Core',      link: '/examples/core' },
+      { text: 'WordPress', link: '/examples/wordpress' },
+      { text: 'Client',    link: '/examples/client' },
+    ],
+  },
+  {
+    text: 'Schema Reference',
+    collapsed: false,
+    items: [
+      { text: 'Index',            link: '/reference/' },
+      { text: 'String',           link: '/reference/string' },
+      { text: 'Integer / Number', link: '/reference/number' },
+      { text: 'Boolean / Enum',   link: '/reference/scalar' },
+      { text: 'Modifiers',        link: '/reference/modifiers' },
+      { text: 'Array',            link: '/reference/array' },
+      { text: 'File / Respect',   link: '/reference/extended' },
+      { text: 'Object & Output',  link: '/reference/object' },
+    ],
+  },
+  {
+    text: 'Migration',
+    items: [
+      { text: 'Removal Guide', link: '/removal-guide' },
+    ],
+  },
+  {
+    text: 'Contributing',
+    items: [
+      { text: 'Development', link: '/development' },
+    ],
+  },
+]
+
+const sidebarJa = [
+  {
+    text: 'はじめに',
+    items: [
+      { text: 'インストール', link: '/ja/installation' },
+    ],
+  },
+  {
+    text: 'ガイド',
+    items: [
+      { text: 'Feature Guide',      link: '/ja/feature-guide' },
+      { text: 'Interfaces',         link: '/ja/interfaces' },
+      { text: 'SchemaBuilder',      link: '/ja/schema-builder' },
+      { text: 'Custom Validation',  link: '/ja/custom-validation' },
+      { text: 'MessageDict (i18n)', link: '/ja/message-dict' },
+    ],
+  },
+  {
+    text: 'サンプル',
+    items: [
+      { text: 'Core',      link: '/ja/examples/core' },
+      { text: 'WordPress', link: '/ja/examples/wordpress' },
+      { text: 'Client',    link: '/ja/examples/client' },
+    ],
+  },
+  {
+    text: 'スキーマリファレンス',
+    collapsed: false,
+    items: [
+      { text: 'Index',            link: '/ja/reference/' },
+      { text: 'String',           link: '/ja/reference/string' },
+      { text: 'Integer / Number', link: '/ja/reference/number' },
+      { text: 'Boolean / Enum',   link: '/ja/reference/scalar' },
+      { text: 'Modifiers',        link: '/ja/reference/modifiers' },
+      { text: 'Array',            link: '/ja/reference/array' },
+      { text: 'File / Respect',   link: '/ja/reference/extended' },
+      { text: 'Object & Output',  link: '/ja/reference/object' },
+    ],
+  },
+  {
+    text: 'マイグレーション',
+    items: [
+      { text: '移行ガイド', link: '/ja/removal-guide' },
+    ],
+  },
+  {
+    text: '開発',
+    items: [
+      { text: '開発ガイド', link: '/ja/development' },
+    ],
+  },
+]
+
 export default defineConfig({
   title: 'Schemable Validator',
   description: 'Define validation constraints once in PHP — export to JSON Schema and consume from any JavaScript framework.',
@@ -8,68 +114,35 @@ export default defineConfig({
   srcDir: '../../docs',
   outDir: './.vitepress/dist',
 
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en',
+      themeConfig: {
+        nav: [
+          { text: 'Guide', link: '/installation' },
+          { text: 'GitHub', link: 'https://github.com/uuki/schemable-validator' },
+        ],
+        sidebar: sidebarEn,
+        outline: { level: [2, 3], label: 'On this page' },
+      },
+    },
+    ja: {
+      label: '日本語',
+      lang: 'ja',
+      themeConfig: {
+        nav: [
+          { text: 'ガイド', link: '/ja/installation' },
+          { text: 'GitHub', link: 'https://github.com/uuki/schemable-validator' },
+        ],
+        sidebar: sidebarJa,
+        outline: { level: [2, 3], label: '目次' },
+      },
+    },
+  },
+
   themeConfig: {
     search: { provider: 'local' },
-    outline: { level: [2, 3], label: '目次' },
-
-    nav: [
-      { text: 'Guide', link: '/installation' },
-      { text: 'GitHub', link: 'https://github.com/uuki/schemable-validator' },
-    ],
-
-    sidebar: [
-      {
-        text: 'Getting Started',
-        items: [
-          { text: 'Installation', link: '/installation' },
-        ],
-      },
-      {
-        text: 'Guide',
-        items: [
-          { text: 'Feature Guide',      link: '/feature-guide' },
-          { text: 'Interfaces',         link: '/interfaces' },
-          { text: 'SchemaBuilder',      link: '/schema-builder' },
-          { text: 'Custom Validation',  link: '/custom-validation' },
-          { text: 'MessageDict (i18n)', link: '/message-dict' },
-        ],
-      },
-      {
-        text: 'Examples',
-        items: [
-          { text: 'Core',      link: '/examples/core' },
-          { text: 'WordPress', link: '/examples/wordpress' },
-          { text: 'Client',    link: '/examples/client' },
-        ],
-      },
-      {
-        text: 'Schema Reference',
-        collapsed: false,
-        items: [
-          { text: 'Index',            link: '/reference/' },
-          { text: 'String',           link: '/reference/string' },
-          { text: 'Integer / Number', link: '/reference/number' },
-          { text: 'Boolean / Enum',   link: '/reference/scalar' },
-          { text: 'Modifiers',        link: '/reference/modifiers' },
-          { text: 'Array',            link: '/reference/array' },
-          { text: 'File / Respect',   link: '/reference/extended' },
-          { text: 'Object & Output',  link: '/reference/object' },
-        ],
-      },
-      {
-        text: 'Migration',
-        items: [
-          { text: 'Removal Guide', link: '/removal-guide' },
-        ],
-      },
-      {
-        text: 'Contributing',
-        items: [
-          { text: 'Development', link: '/development' },
-        ],
-      },
-    ],
-
     socialLinks: [
       { icon: 'github', link: 'https://github.com/uuki/schemable-validator' },
     ],

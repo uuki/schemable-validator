@@ -1,40 +1,40 @@
-# MessageDict - エラーメッセージの多言語化
+# MessageDict - Multilingual Error Messages
 
-`MessageDict` は、バリデーションエラーメッセージをフィールド×ルール単位で辞書的に定義できる値オブジェクトです。
+`MessageDict` is a value object that lets you define validation error messages as a dictionary, keyed by field and rule.
 
 ---
 
-## 基本的な使い方
+## Basic Usage
 
 ```php
 use SchemableValidator\I18n\MessageDict;
 
-// 日本語プリセット（デフォルトメッセージを一括適用）
+// Japanese preset (applies default messages in bulk)
 $dict = MessageDict::ja();
 
-// 英語（Respect デフォルトへのパススルー）
+// English (pass-through to Respect defaults)
 $dict = MessageDict::en();
 ```
 
-### カスタム定義を追加する
+### Adding Custom Definitions
 
 ```php
 $dict = MessageDict::ja([
-  // フィールド全体を上書き（ルール問わず同じメッセージ）
-  'email' => 'メールアドレスが無効です',
+  // Override the entire field (same message regardless of rule)
+  'email' => 'The email address is invalid',
 
-  // ルール単位で上書き
+  // Override per rule
   'name' => [
-    'length' => '名前は2〜50文字で入力してください',
+    'length' => 'Name must be between 2 and 50 characters',
   ],
 ]);
 ```
 
 ---
 
-## Validator への渡し方
+## Passing to a Validator
 
-### 直接コンストラクタ
+### Direct Constructor
 
 ```php
 use SchemableValidator\Validator;
@@ -43,7 +43,7 @@ use SchemableValidator\I18n\MessageDict;
 $validator = new Validator($schema, [], [], MessageDict::ja());
 ```
 
-### SchemaBuilder 経由
+### Via SchemaBuilder
 
 ```php
 use SchemableValidator\SV;
@@ -53,7 +53,7 @@ $schema = SV::object([
   'name'  => SV::string()->min(2)->max(50),
   'email' => SV::string()->email(),
 ])->withMessages(MessageDict::ja([
-  'email' => 'メールアドレスが無効です',
+  'email' => 'The email address is invalid',
 ]));
 
 $result = $schema->toValidator()->validate($_POST)->getResult();
@@ -61,103 +61,103 @@ $result = $schema->toValidator()->validate($_POST)->getResult();
 
 ---
 
-## WordPress ヘルパー
+## WordPress Helpers
 
-### 個別指定
+### Per-call Override
 
-`schv_validator()` の第3引数に渡します。
+Pass as the third argument to `schv_validator()`.
 
 ```php
 use SchemableValidator\I18n\MessageDict;
 
 $validator = schv_validator($schema, [], MessageDict::ja([
-  'email' => 'メールアドレスが無効です',
+  'email' => 'The email address is invalid',
 ]));
 ```
 
-### サイト全体のデフォルト（フィルター）
+### Site-wide Default (Filter)
 
-`schv_message_dict` フィルターで辞書を上書きすると、`schv_validator()` 呼び出し時に自動で適用されます。
+Overriding the dictionary via the `schv_message_dict` filter applies it automatically whenever `schv_validator()` is called.
 
 ```php
 add_filter('schv_message_dict', function (MessageDict $dict): MessageDict {
   return $dict->merge([
-    'email' => 'メールアドレスを正しく入力してください',
-    'name'  => ['length' => '名前は2〜50文字です'],
+    'email' => 'Please enter a valid email address',
+    'name'  => ['length' => 'Name must be between 2 and 50 characters'],
   ]);
 });
 
-// 以降の schv_validator() 呼び出しにフィルターが適用される
+// The filter is applied to subsequent schv_validator() calls
 $validator = schv_validator($schema);
 ```
 
-> 個別指定（第3引数）はフィルターより優先されます。
+> A per-call override (third argument) takes priority over the filter.
 
 ---
 
-## メッセージ解決の優先順位
+## Message Resolution Priority
 
-`resolve(field, ruleId, fallback)` は次の順で解決します。
+`resolve(field, ruleId, fallback)` resolves messages in the following order.
 
-| 優先度 | 条件 | 使用するメッセージ |
+| Priority | Condition | Message Used |
 |:--|:--|:--|
-| 1 | `$definitions[$field][$ruleId]` が存在する | フィールド×ルール固有 |
-| 2 | `$definitions[$field]` が文字列 | フィールド全体の省略形 |
-| 3 | `$defaults[$ruleId]` が存在する | ロケールプリセット |
-| 4 | 上記いずれも該当しない | Respect デフォルト（英語） |
+| 1 | `$definitions[$field][$ruleId]` exists | Field + rule specific |
+| 2 | `$definitions[$field]` is a string | Field-level shorthand |
+| 3 | `$defaults[$ruleId]` exists | Locale preset |
+| 4 | None of the above match | Respect default (English) |
 
 ---
 
-## merge() - イミュータブルな合成
+## merge() - Immutable Composition
 
-`merge()` は元のインスタンスを変更せず、新しい `MessageDict` を返します。
+`merge()` returns a new `MessageDict` without modifying the original instance.
 
 ```php
 $base  = MessageDict::ja();
-$extra = $base->merge(['tel' => '電話番号の形式が正しくありません']);
+$extra = $base->merge(['tel' => 'The phone number format is invalid']);
 
-// $base は変更されない
+// $base is unchanged
 ```
 
-### フィールド内のルール定義は保持される
+### Rule Definitions Within a Field Are Preserved
 
-両辺のフィールド値が配列の場合、1段階深くマージされます。既存のルール定義は上書きされません。
+When both sides have an array value for a field, they are merged one level deep. Existing rule definitions are not overwritten.
 
 ```php
 $base = new MessageDict([
   'name' => [
-    'length' => '文字数が範囲外です',
-    'email'  => '無効なメールです',
+    'length' => 'Length is out of range',
+    'email'  => 'Invalid email',
   ],
 ]);
 
 $next = $base->merge([
-  'name' => ['length' => '名前は2〜50文字で入力してください'],
+  'name' => ['length' => 'Name must be between 2 and 50 characters'],
 ]);
 
-// 'length' は新しい値に、'email' は元の値を保持
-// $next->resolve('name', 'length', '') → '名前は2〜50文字で入力してください'
-// $next->resolve('name', 'email',  '') → '無効なメールです'
+// 'length' takes the new value; 'email' retains the original
+// $next->resolve('name', 'length', '') → 'Name must be between 2 and 50 characters'
+// $next->resolve('name', 'email',  '') → 'Invalid email'
 ```
 
-フィールドの型が変わる場合（文字列→配列、配列→文字列）は、`merge()` 側が優先されます。
+When a field's type changes (string to array, or array to string), the `merge()` side takes priority.
 
 ---
 
-## 日本語プリセット一覧
+## Japanese Preset Reference
 
-`MessageDict::ja()` が適用するデフォルトメッセージです。
+Default messages applied by `MessageDict::ja()`.
 
-| ルール ID | デフォルトメッセージ |
+| Rule ID | Default Message |
 |:--|:--|
-| `stringType` | 文字列で入力してください |
-| `length` | 文字数が範囲外です |
-| `email` | 有効なメールアドレスを入力してください |
-| `notEmpty` | 入力必須です |
-| `notOptional` | 入力必須です |
-| `integer` / `intType` | 整数で入力してください |
-| `numeric` | 数値で入力してください |
-| `url` | 有効なURLを入力してください |
-| `regex` | 入力形式が正しくありません |
-| `in` / `anyOf` | 選択肢から選んでください |
-| `required` | 必須項目です（条件付き必須時） |
+| `stringType` | Please enter a string |
+| `length` | Length is out of range |
+| `email` | Please enter a valid email address |
+| `notEmpty` | This field is required |
+| `notOptional` | This field is required |
+| `integer` / `intType` | Please enter an integer |
+| `numeric` | Please enter a number |
+| `url` | Please enter a valid URL |
+| `regex` | The input format is invalid |
+| `in` / `anyOf` | Please select from the available options |
+| `required` | This field is required (for conditional required) |

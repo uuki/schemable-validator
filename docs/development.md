@@ -2,41 +2,41 @@
 
 ## Requirements
 
-- Node.js 22+（`~/.nvm_arm64` に v22.13.0 推奨）
+- Node.js 22+ (v22.13.0 recommended at `~/.nvm_arm64`)
 - PHP 8.x + Composer
 - pnpm
 
 ## Setup
 
 ```sh
-# 1. 依存パッケージをインストール
-composer install                          # core ライブラリ
+# 1. Install dependencies
+composer install                          # core library
 cd packages/wp-schemable-validator && composer install --no-dev
 
-# 2. Node.js パッケージをインストール
+# 2. Install Node.js packages
 pnpm install
 ```
 
-## ローカル開発（WP Playground）
+## Local development (WP Playground)
 
 ```sh
-# Node.js 22 に切り替え（Int8Array バグ回避のため必須）
+# Switch to Node.js 22 (required to avoid the Int8Array bug)
 export NVM_DIR=~/.nvm_arm64 && source ~/.nvm_arm64/nvm.sh && nvm use 22.13.0
 
 cd playground
-pnpm dev   # http://127.0.0.1:9400 で起動
+pnpm dev   # starts at http://127.0.0.1:9400
 ```
 
-`pnpm dev` の内部処理:
+What `pnpm dev` does internally:
 
-1. `sync-core` - `packages/core/` を `packages/wp-schemable-validator/lib/core/` へ rsync
-2. `composer install --no-dev` - プラグインの依存を解決
-3. `wp-playground-cli start` - WP Playground を起動
+1. `sync-core` - rsync `packages/core/` to `packages/wp-schemable-validator/lib/core/`
+2. `composer install --no-dev` - resolve plugin dependencies
+3. `wp-playground-cli start` - launch WP Playground
 
 ### blueprint.json
 
-`playground/blueprint.json` で PHP バージョン・プラグイン有効化・初期設定を定義している。  
-メールテンプレートの初期値も `setSiteOptions` ステップで設定する。
+`playground/blueprint.json` defines the PHP version, plugin activation, and initial settings.  
+Initial email template values are also set in the `setSiteOptions` step.
 
 ```json
 {
@@ -51,31 +51,30 @@ pnpm dev   # http://127.0.0.1:9400 で起動
 }
 ```
 
-### サンプルページ
+### Sample pages
 
-`WP_ENVIRONMENT_TYPE === 'local'` のとき、プラグインが自動でサンプルページを作成する。
+When `WP_ENVIRONMENT_TYPE === 'local'`, the plugin automatically creates sample pages.
 
-| URL | 内容 |
+| URL | Content |
 |:--|:--|
-| `/schv-validate/` | テキストフィールドの基本バリデーション |
-| `/schv-contact/` | 正規表現スキーマ・電話番号・選択肢 |
-| `/schv-files/` | ファイルアップロードのバリデーション |
-| `/schv-csrf/` | CSRF トークンの生成・検証 |
-| `/schv-template/` | メールテンプレートのプレースホルダー展開 |
-| `/schv-form-input/` | マルチページフォーム（入力） |
-| `/schv-form-confirm/` | マルチページフォーム（確認） |
-| `/schv-form-complete/` | マルチページフォーム（完了） |
+| `/schv-validate/` | Basic validation for text fields |
+| `/schv-contact/` | Regex schema, phone number, and select options |
+| `/schv-files/` | File upload validation |
+| `/schv-csrf/` | CSRF token generation and verification |
+| `/schv-template/` | Email template placeholder expansion |
+| `/schv-form-input/` | Multi-page form (input step) |
+| `/schv-form-confirm/` | Multi-page form (confirmation step) |
+| `/schv-form-complete/` | Multi-page form (completion step) |
 
-既存サイトでページが増えた場合は `schv_contact_page_created` 等の個別オプションで  
-インクリメンタルに追加される（`setup.php` 参照）。
+When new pages are added on an existing site they are created incrementally via individual options such as `schv_contact_page_created` (see `setup.php`).
 
-### Playground でカスタム Constraint を試す
+### Testing custom constraints in Playground
 
-`/schv-schema-client/` の Zod スキーマに `superRefine()` を追加することで、`x-unmapped-fields` のカスタム検証を Playground 上で動作確認できる。  
-`schema-client.php` の `buildZodSchema()` 呼び出し直後に以下を挿入する。
+You can verify custom validation for `x-unmapped-fields` in the Playground by adding `superRefine()` to the Zod schema at `/schv-schema-client/`.  
+Insert the following immediately after the `buildZodSchema()` call in `schema-client.php`.
 
 ```javascript
-// esm.sh import を script タグ先頭に追加:
+// Add the esm.sh import at the top of the script tag:
 // import { isValidPhoneNumber } from 'https://esm.sh/libphonenumber-js@1'
 
 zodSchema = buildZodSchema(jsonSchema).extend({
@@ -90,55 +89,51 @@ zodSchema = buildZodSchema(jsonSchema).extend({
 
 ---
 
-## E2E テスト（Playwright）
+## E2E Tests (Playwright)
 
 ```sh
 export NVM_DIR=~/.nvm_arm64 && source ~/.nvm_arm64/nvm.sh && nvm use 22.13.0
 pnpm --filter @schemable-validator/e2e run test
 ```
 
-### テスト構成
+### Test structure
 
-| ファイル | テスト数 | 対象 |
+| File | Tests | Coverage |
 |:--|:--|:--|
-| `tests/contact.spec.js` | 9 | 正規表現バリデーション・電話番号・種別選択 |
-| `tests/csrf.spec.js` | 4 | CSRF トークン生成・検証 |
-| `tests/files.spec.js` | 4 | ファイルアップロード検証 |
-| `tests/multipage.spec.js` | 6 | マルチページフォーム・セッション管理 |
-| `tests/template.spec.js` | 4 | メールテンプレート展開 |
-| `tests/validate.spec.js` | 5 | 基本バリデーション・選択肢 |
+| `tests/contact.spec.js` | 9 | Regex validation, phone number, type selection |
+| `tests/csrf.spec.js` | 4 | CSRF token generation and verification |
+| `tests/files.spec.js` | 4 | File upload validation |
+| `tests/multipage.spec.js` | 6 | Multi-page form and session management |
+| `tests/template.spec.js` | 4 | Email template expansion |
+| `tests/validate.spec.js` | 5 | Basic validation and select options |
 
-### globalSetup の仕組み
+### How globalSetup works
 
-`packages/e2e/globalSetup.js` がテスト前に以下を実行する:
+`packages/e2e/globalSetup.js` runs the following before tests:
 
-1. `sync-core`（core → wp-schemable-validator/lib/core/ rsync）
+1. `sync-core` (rsync core → wp-schemable-validator/lib/core/)
 2. `composer install --no-dev`
-3. `wp-playground-cli start` を spawn（stdout のみ pipe）
-4. stdout から `"Ready!"` バナーを検出
-5. `/` と `/schv-validate/` をポーリングして準備完了を確認
+3. Spawn `wp-playground-cli start` (stdout pipe only)
+4. Detect the `"Ready!"` banner from stdout
+5. Poll `/` and `/schv-validate/` to confirm readiness
 
-**Node.js 22 が必須な理由:**  
-`@wp-playground/cli@3.x` は Node.js 20 の WebStreams アダプターで  
-`Int8Array` エラーを起こしクラッシュする。Node.js 22 で解消。
+**Why Node.js 22 is required:**  
+`@wp-playground/cli@3.x` crashes with an `Int8Array` error in the Node.js 20 WebStreams adapter. Node.js 22 resolves this.
 
-### WP Playground 固有の制約
+### WP Playground-specific constraints
 
-- **6 ワーカー並列**: セッションの保存先を NodeFS バックエンドの  
-  `/wordpress/wp-content/schv-sessions` に向けることでワーカー間共有を実現
-- **PHP WASM の session_start() バグ**: 同一リクエスト内で `session_status()` が  
-  `PHP_SESSION_NONE` を誤返却するため、`static bool $started` フラグで防御
-- **`name` フィールドの 404**: WordPress の `$_REQUEST` ルーティングと衝突するため  
-  `request` フィルターで POST 時に `name` クエリ変数を除去
+- **6 parallel workers**: Worker-to-worker session sharing is achieved by pointing the session storage to `/wordpress/wp-content/schv-sessions` on the NodeFS backend
+- **PHP WASM session_start() bug**: `session_status()` incorrectly returns `PHP_SESSION_NONE` within the same request, so a `static bool $started` flag is used as a guard
+- **`name` field 404**: Conflicts with WordPress `$_REQUEST` routing, so the `name` query variable is removed on POST via the `request` filter
 
 ---
 
-## ディレクトリ構成
+## Directory structure
 
 ```
 .
 ├── packages/
-│   ├── core/                      # PHP コアライブラリ
+│   ├── core/                      # PHP core library
 │   │   ├── Validator.php
 │   │   ├── Template.php
 │   │   ├── Controllers/
@@ -151,14 +146,14 @@ pnpm --filter @schemable-validator/e2e run test
 │   │   └── Helpers/
 │   │       ├── Security.php
 │   │       └── Environment.php
-│   ├── wp-schemable-validator/    # WordPress プラグイン
+│   ├── wp-schemable-validator/    # WordPress plugin
 │   │   ├── index.php
-│   │   ├── setup.php              # ローカル用サンプルページ生成
-│   │   ├── lib/core/              # core の rsync コピー
+│   │   ├── setup.php              # sample page generation for local use
+│   │   ├── lib/core/              # rsync copy of core
 │   │   ├── src/Interfaces/WordPress/
-│   │   │   ├── Plugin.php         # 管理画面・設定登録
-│   │   │   └── helpers.php        # schv_* グローバル関数
-│   │   └── examples/              # ローカル開発用ショートコード
+│   │   │   ├── Plugin.php         # admin screen and settings registration
+│   │   │   └── helpers.php        # schv_* global functions
+│   │   └── examples/              # shortcodes for local development
 │   │       ├── loader.php
 │   │       ├── validate.php
 │   │       ├── contact.php
@@ -166,11 +161,11 @@ pnpm --filter @schemable-validator/e2e run test
 │   │       ├── csrf.php
 │   │       ├── template.php
 │   │       └── multipage.php
-│   └── e2e/                       # Playwright E2E テスト
+│   └── e2e/                       # Playwright E2E tests
 │       ├── playwright.config.js
 │       ├── globalSetup.js
 │       └── tests/
-├── playground/                    # WP Playground 設定
+├── playground/                    # WP Playground configuration
 │   ├── blueprint.json
 │   ├── package.json
 │   └── .nvmrc                     # 22.13.0

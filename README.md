@@ -1,12 +1,16 @@
 # Schemable Validator
 
+[![Packagist](https://img.shields.io/packagist/v/uuki/schemable-validator)](https://packagist.org/packages/uuki/schemable-validator)
+[![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-8892BF?logo=php&logoColor=white)](https://packagist.org/packages/uuki/schemable-validator)
+[![WordPress](https://img.shields.io/badge/WordPress-%3E%3D5.9-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
+
 A PHP-first validation library whose core purpose is **defining and executing validation constraints on the server**. Its distinguishing feature is the ability to export those constraints as [JSON Schema draft 2020-12](https://json-schema.org/), making the same rules available to any JavaScript framework on the client — without maintaining duplicate definitions across the stack.
 
 The name reflects this: *validator* is the primary role, *schemable* is its defining feature.
 
 ---
 
-## How it works
+## ⚙️ How it works
 
 ```
 SV::object([...])          ← PHP: single source of truth
@@ -25,7 +29,7 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 
 ---
 
-## Packages
+## 📦 Packages
 
 | Package | Description |
 |:--|:--|
@@ -35,7 +39,7 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### 1. Define constraints (PHP)
 
@@ -92,7 +96,7 @@ const parsed = zodSchema.safeParse(formData)
 
 ---
 
-## JSON Schema output
+## 🗂️ JSON Schema output
 
 `toJson()` converts the PHP schema definition to JSON Schema draft 2020-12:
 
@@ -113,7 +117,7 @@ const parsed = zodSchema.safeParse(formData)
 
 ---
 
-## Installation
+## 🔧 Installation
 
 ```shell
 # PHP core
@@ -130,7 +134,7 @@ See [docs/01-installation.md](docs/01-installation.md) for full setup.
 
 ---
 
-## Documentation
+## 📖 Documentation
 
 | | |
 |:--|:--|
@@ -143,6 +147,12 @@ See [docs/01-installation.md](docs/01-installation.md) for full setup.
 
 ---
 
-## Dependencies
+## 🔗 Dependencies
 
 - [Respect/Validation](https://packagist.org/packages/respect/validation) ^2.2
+
+---
+
+## 📄 License
+
+This project is open-sourced software licensed under the [MIT License](LICENSE).

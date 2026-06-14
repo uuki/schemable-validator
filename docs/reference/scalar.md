@@ -1,21 +1,21 @@
-# SV::boolean() / SV::enum() - 真偽値・選択肢型
+# SV::boolean() / SV::enum() - Boolean and Enum Types
 
 ---
 
 ## SV::boolean()
 
-真偽値を検証する。`true` / `false` のほか、フォーム入力として `"1"` / `"0"` / `"on"` / `"off"` / `"yes"` / `"no"` も受け付ける。
+Validates boolean values. In addition to `true` / `false`, also accepts `"1"` / `"0"` / `"on"` / `"off"` / `"yes"` / `"no"` as form input.
 
 ```php
 SV::boolean()
 ```
 
-**JSON Schema 出力:**
+**JSON Schema output:**
 ```json
 { "type": "boolean" }
 ```
 
-**用途:** 利用規約への同意チェックボックス、フラグ入力。
+**Use case:** Terms of service agreement checkbox, flag input.
 
 ```php
 $schema = SV::object([
@@ -34,34 +34,34 @@ $schema = SV::object([
 }
 ```
 
-> HTML の `<input type="checkbox">` は未チェック時に値が送信されないため、サーバー側では `$_POST['agreement'] ?? ''` のように扱ってください。
+> Because HTML `<input type="checkbox">` does not submit a value when unchecked, handle it server-side as `$_POST['agreement'] ?? ''`.
 
 ---
 
 ## SV::enum(values)
 
-定義した選択肢のいずれかであることを検証する。
+Validates that the value is one of the defined choices.
 
 ```php
 SV::enum(array $values)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$values` | `string[]` | 許容する文字列の配列 |
+| `$values` | `string[]` | Array of allowed strings |
 
-**JSON Schema 出力:**
+**JSON Schema output:**
 ```json
 { "type": "string", "enum": ["a", "b", "c"] }
 ```
 
-**用途:** `<select>` や radio ボタンの選択肢。DB に格納する区分値の検証。
+**Use case:** `<select>` or radio button choices. Validating categorical values stored in a database.
 
 ```php
-// お問い合わせ種別
+// Inquiry type
 SV::enum(['general', 'support', 'sales', 'other'])
 
-// 任意のステータス選択
+// Optional status selection
 SV::enum(['draft', 'published', 'archived'])->optional()
 ```
 
@@ -69,21 +69,21 @@ SV::enum(['draft', 'published', 'archived'])->optional()
 { "type": "string", "enum": ["general", "support", "sales", "other"] }
 ```
 
-### 注意: 空文字の扱い
+### Note: Handling empty strings
 
-HTML の `<select>` で「選択してください」を `value=""` として配置している場合、`optional()` を付けると空文字がバリデーションをスキップする。必須にする場合は `optional()` を付けないこと。
+If a `<select>` element has a "Please select" option with `value=""`, adding `.optional()` causes the empty string to skip validation. Do not use `.optional()` if selection is required.
 
 ```php
-// 空文字は不可（選択必須）
+// Empty string not allowed (selection required)
 SV::enum(['general', 'support', 'other'])
 
-// 未選択（空文字）を許容する
+// Empty string (no selection) is allowed
 SV::enum(['general', 'support', 'other'])->optional()
 ```
 
 ---
 
-## 組み合わせ例
+## Combination Examples
 
 ```php
 $schema = SV::object([

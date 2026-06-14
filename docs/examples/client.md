@@ -1,45 +1,45 @@
 # Examples - Client
 
-`@schemable-validator/client` を使ったクライアントサイドの実装例です。
+Client-side implementation examples using `@schemable-validator/client`.
 
-> ソースコード: [`packages/client/examples/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/client/examples)
+> Source code: [`packages/client/examples/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/client/examples)
 
 ---
 
-## 1. 基本的な使い方
+## 1. Basic Usage
 
-`validateObject` でオブジェクトをスキーマに照合し、`isAllValid` / `extractErrors` で結果を取得します。
+Match an object against a schema with `validateObject`, then retrieve results using `isAllValid` / `extractErrors`.
 
 <<< ../../packages/client/examples/01-basic.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/01-basic.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/01-basic.ts)
 
 ---
 
-## 2. fetch との組み合わせ
+## 2. Using with fetch
 
-REST エンドポイントからスキーマを取得し、フォーム送信時にバリデーションを実行します。
+Fetch a schema from a REST endpoint and run validation on form submission.
 
 <<< ../../packages/client/examples/02-with-fetch.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/02-with-fetch.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/02-with-fetch.ts)
 
 ---
 
-## 3. カスタム Constraint の追加
+## 3. Adding a Custom Constraint
 
-`Constraint`（`FieldState → FieldState` の純関数）を定義し、組み込みバリデーションに追加検証を合成します。
+Define a `Constraint` (a pure function of `FieldState → FieldState`) and compose it with the built-in validation as additional verification.
 
 <<< ../../packages/client/examples/03-custom-constraint.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/03-custom-constraint.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/03-custom-constraint.ts)
 
 ---
 
-## 4. Result 型でのチェーン
+## 4. Chaining with the Result Type
 
-`validateObject` の結果を `Result` 型でラップし、`flatMap` で成功/失敗を連鎖させます。
+Wrap the result of `validateObject` in the `Result` type and chain success/failure paths with `flatMap`.
 
 <<< ../../packages/client/examples/04-result-chaining.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/04-result-chaining.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/04-result-chaining.ts)

@@ -1,20 +1,20 @@
-# SV::object() - オブジェクト定義と出力
+# SV::object() - Object Definition and Output
 
 ---
 
 ## SV::object(fields) {#object}
 
-フィールドの集合からスキーマを定義します。すべてのフィールド定義はここに集約されます。
+Defines a schema from a set of fields. All field definitions are aggregated here.
 
 ```php
 SV::object(array<string, AbstractFieldSchema> $fields): SchemaBuilder
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$fields` | `array<string, AbstractFieldSchema>` | フィールド名 → フィールドスキーマの連想配列 |
+| `$fields` | `array<string, AbstractFieldSchema>` | Associative array of field name → field schema |
 
-**用途:** 1つのフォームや API リクエストに対してスキーマを一元定義する起点。
+**Use case:** The central point where you define the schema for a single form or API request.
 
 ```php
 use SchemableValidator\SV;
@@ -31,16 +31,16 @@ $schema = SV::object([
 
 ## .toJsonSchema() {#tojsonschema}
 
-スキーマを **JSON Schema draft 2020-12 の配列**として返す。
+Returns the schema as a **JSON Schema draft 2020-12 array**.
 
 ```php
 $schema->toJsonSchema(): array
 ```
 
-- `SV::file()` / `SV::respect()` フィールドは `properties` から除外され、`x-unmapped-fields` に記録されます
-- `optional()` が付いていないフィールドは `required` 配列に含まれます
+- `SV::file()` / `SV::respect()` fields are excluded from `properties` and recorded in `x-unmapped-fields`
+- Fields without `optional()` are included in the `required` array
 
-**用途:** PHP 側でスキーマを配列として操作したい場合や、REST レスポンスを手動加工する場合。
+**Use case:** When you need to work with the schema as a PHP array, or manually process a REST response.
 
 ```php
 $array = $schema->toJsonSchema();
@@ -56,13 +56,13 @@ $array = $schema->toJsonSchema();
 
 ## .toJson() {#tojson}
 
-スキーマを **JSON 文字列**として返します。`JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES` で出力されます。
+Returns the schema as a **JSON string**. Output uses `JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES`.
 
 ```php
 $schema->toJson(): string
 ```
 
-**用途:** REST エンドポイントのレスポンスボディ、デバッグ表示。
+**Use case:** REST endpoint response body, debug output.
 
 ```php
 echo $schema->toJson();
@@ -86,37 +86,37 @@ echo $schema->toJson();
 
 ## .toValidator() {#tovalidator}
 
-スキーマから Respect/Validation ベースの **`Validator` インスタンス**を生成する。  
-`SV::file()` / `SV::respect()` を含むすべてのフィールドを検証できる。
+Generates a Respect/Validation-based **`Validator` instance** from the schema.  
+Can validate all fields including `SV::file()` / `SV::respect()`.
 
 ```php
 $schema->toValidator(array $options = []): Validator
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$options` | `array` | `Validator` のオプション（reCAPTCHA 設定など） |
+| `$options` | `array` | `Validator` options (e.g. reCAPTCHA configuration) |
 
-**用途:** サーバー側でのフォーム検証。`toJsonSchema()` と組み合わせることで、定義の二重管理を避ける。
+**Use case:** Server-side form validation. Combined with `toJsonSchema()`, avoids maintaining duplicate definitions.
 
 ```php
-// テキスト検証
+// Text validation
 $result = $schema->toValidator()->validate($_POST)->getResult();
 
-// ファイルを含む検証
+// Validation including files
 $result = $schema->toValidator()
   ->validate($_POST)
   ->validateFiles($_FILES)
   ->getResult();
 
-// reCAPTCHA を含む検証
+// Validation including reCAPTCHA
 $result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
   ->validate($_POST)
   ->validateReCaptcha()
   ->getResult();
 ```
 
-### getResult() の戻り値
+### Return value of getResult()
 
 ```json
 {
@@ -129,46 +129,46 @@ $result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
 
 ## .when(field, expr, require) {#when}
 
-あるフィールドが条件を満たすとき、別フィールドを**条件付きで必須**にする。
+Makes another field **conditionally required** when a given field satisfies a condition.
 
 ```php
 $schema->when(string $field, WhenExpr|scalar $expr, array $require): self
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$field` | `string` | 条件を評価するフィールド名 |
-| `$expr` | `WhenExpr` \| `scalar` | 比較式。スカラーを渡した場合は `SV::equal($value)` と等価 |
-| `$require` | `string[]` | 条件を満たすとき必須にするフィールド名の配列 |
+| `$field` | `string` | The field name to evaluate the condition on |
+| `$expr` | `WhenExpr` \| `scalar` | Comparison expression. Passing a scalar is equivalent to `SV::equal($value)` |
+| `$require` | `string[]` | Array of field names to make required when the condition is met |
 
-複数回呼び出せる。  
-**用途:** 「種別が "法人" のとき会社名を必須にする」「年齢が 18 未満のとき保護者同意欄を必須にする」など、フィールド間依存のルール。
+Can be called multiple times.  
+**Use case:** "Make company name required when type is 'company'", "Make parental consent required when age is under 18", and similar cross-field dependency rules.
 
 ---
 
-### 比較式一覧 {#when-expressions}
+### List of Condition Expressions {#when-expressions}
 
-`$expr` には以下の `SV::*` ファクトリを使用します。
+Use the following `SV::*` factories for `$expr`.
 
-| 式 | 比較 | 備考 |
+| Expression | Comparison | Notes |
 |:--|:--|:--|
-| `'value'`（スカラー） | `=== 'value'` | `SV::equal('value')` の省略形 |
-| `SV::equal($value)` | `===` | 文字列一致 |
-| `SV::notEqual($value)` | `!==` | 文字列不一致 |
-| `SV::greaterThanOrEqual($n)` | `>= n` | 数値・以上 |
-| `SV::lessThanOrEqual($n)` | `<= n` | 数値・以下 |
-| `SV::greaterThan($n)` | `> n` | 数値・より大きい |
-| `SV::lessThan($n)` | `< n` | 数値・未満 |
-| `SV::field('name')` | - | 別フィールドの値を参照（上記と組み合わせる） |
+| `'value'` (scalar) | `=== 'value'` | Shorthand for `SV::equal('value')` |
+| `SV::equal($value)` | `===` | String equality |
+| `SV::notEqual($value)` | `!==` | String inequality |
+| `SV::greaterThanOrEqual($n)` | `>= n` | Numeric, greater than or equal |
+| `SV::lessThanOrEqual($n)` | `<= n` | Numeric, less than or equal |
+| `SV::greaterThan($n)` | `> n` | Numeric, strictly greater than |
+| `SV::lessThan($n)` | `< n` | Numeric, strictly less than |
+| `SV::field('name')` | - | Reference another field's value (combine with the above) |
 
-`SV::equal()` / `SV::notEqual()` の引数に `SV::field('name')` を渡すと、**2フィールド間の比較**になります。  
-数値演算子（`>=` / `<=` / `>` / `<`）も同様にフィールド参照を受け取れます。
+Passing `SV::field('name')` as the argument to `SV::equal()` / `SV::notEqual()` enables **comparison between two fields**.  
+Numeric operators (`>=` / `<=` / `>` / `<`) also accept field references.
 
 ---
 
-### 使用例
+### Usage Examples
 
-#### スカラー省略形（=== のみ）
+#### Scalar shorthand (=== only)
 
 ```php
 SV::object([
@@ -177,46 +177,46 @@ SV::object([
 ])->when('type', 'company', ['company_name']);
 ```
 
-#### 明示的な === / !==
+#### Explicit === / !==
 
 ```php
-// type === 'company' のとき company_name を必須
+// Make company_name required when type === 'company'
 ->when('type', SV::equal('company'), ['company_name'])
 
-// role !== 'admin' のとき note を必須
+// Make note required when role !== 'admin'
 ->when('role', SV::notEqual('admin'), ['note'])
 ```
 
-#### 数値比較
+#### Numeric comparison
 
 ```php
-// age >= 18 のとき consent を必須
+// Make consent required when age >= 18
 ->when('age', SV::greaterThanOrEqual(18), ['consent'])
 
-// score <= 50 のとき retry を必須
+// Make retry required when score <= 50
 ->when('score', SV::lessThanOrEqual(50), ['retry'])
 
-// qty < 1 のとき warn を必須（未満）
+// Make warn required when qty < 1 (strictly less than)
 ->when('qty', SV::lessThan(1), ['warn'])
 
-// level > 10 のとき bonus を必須（より大きい）
+// Make bonus required when level > 10 (strictly greater than)
 ->when('level', SV::greaterThan(10), ['bonus'])
 ```
 
-#### フィールド参照（2フィールド間の比較）
+#### Field reference (comparison between two fields)
 
 ```php
-// password === confirm_password のとき hint を必須
+// Make hint required when password === confirm_password
 ->when('password', SV::equal(SV::field('confirm_password')), ['hint'])
 
-// new_password !== old_password のとき change_reason を必須
+// Make change_reason required when new_password !== old_password
 ->when('new_password', SV::notEqual(SV::field('old_password')), ['change_reason'])
 
-// price >= min_price のとき note を必須
+// Make note required when price >= min_price
 ->when('price', SV::greaterThanOrEqual(SV::field('min_price')), ['note'])
 ```
 
-#### 複数条件
+#### Multiple conditions
 
 ```php
 SV::object([...])->
@@ -226,9 +226,9 @@ SV::object([...])->
 
 ---
 
-### JSON Schema 出力 {#when-json-schema}
+### JSON Schema Output {#when-json-schema}
 
-すべての条件は `x-when` 拡張キーに出力されます。リテラル `===` 条件は標準の `if/then`（単一）または `allOf`（複数）も**併記**されます。
+All conditions are output under the `x-when` extension key. Literal `===` conditions are **also written** as standard `if/then` (single) or `allOf` (multiple).
 
 ```json
 {
@@ -242,36 +242,36 @@ SV::object([...])->
 }
 ```
 
-| キー | 内容 |
+| Key | Content |
 |:--|:--|
-| `field` | 比較元フィールド名 |
+| `field` | Source field name |
 | `op` | `===` / `!==` / `>=` / `<=` / `>` / `<` |
-| `equals` | リテラル値（`equalsField` がない場合） |
-| `equalsField` | 比較先フィールド名（`SV::field()` を使った場合） |
-| `require` | 条件成立時に必須とするフィールド名の配列 |
+| `equals` | Literal value (when `equalsField` is absent) |
+| `equalsField` | Target field name (when `SV::field()` is used) |
+| `require` | Array of field names to make required when the condition is met |
 
-> `@schemable-validator/client` の `validateObject` は `x-when` を優先して評価します。`x-when` がない場合は標準の `if/then` / `allOf` にフォールバックします。
+> `@schemable-validator/client`'s `validateObject` evaluates `x-when` first. If `x-when` is absent, it falls back to standard `if/then` / `allOf`.
 
 ---
 
-## WordPress REST エンドポイントへの登録
+## Registering with a WordPress REST Endpoint
 
 ```php
-// GET /wp-json/schv/v1/schema/contact → JSON Schema を返す
+// GET /wp-json/schv/v1/schema/contact → returns JSON Schema
 schv_register_schema('/schema/contact', $schema);
 ```
 
 ```php
-// URL の取得
+// Get the URL
 $url = schv_schema_url('/schema/contact');
 // → https://example.com/wp-json/schv/v1/schema/contact
 ```
 
-ETag と `Cache-Control: public, max-age=3600` が自動で付与されます。
+ETag and `Cache-Control: public, max-age=3600` are added automatically.
 
 ---
 
-## 単一スキーマで全体をまかなう例
+## Example: A Single Schema for Everything
 
 ```php
 $schema = SV::object([
@@ -283,10 +283,10 @@ $schema = SV::object([
   'avatar' => SV::file(['image/jpeg', 'image/png'])->optional(),
 ]);
 
-// 1. REST で公開
+// 1. Expose via REST
 schv_register_schema('/schema/contact', $schema);
 
-// 2. サーバー側検証
+// 2. Server-side validation
 add_action('template_redirect', function () use ($schema) {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 

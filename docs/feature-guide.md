@@ -2,9 +2,9 @@
 
 ## Validator
 
-フィールドスキーマに対して入力値を検証する中核クラスです。テキスト・ファイル・reCAPTCHA の検証をメソッドチェーンで組み合わせられます。
+The core class for validating input values against a field schema. Text, file, and reCAPTCHA validation can be combined via method chaining.
 
-### 1. インスタンス化
+### 1. Instantiation
 
 ::: code-group
 
@@ -20,11 +20,11 @@ $validator = schv_validator($schema);
 
 :::
 
-### 2. スキーマ定義
+### 2. Schema Definition
 
-スキーマは `フィールド名 => バリデーションルール` の連想配列で定義します。[Respect/Validation](https://respect-validation.readthedocs.io/en/latest/validators/) のルールをそのまま使えます。
+A schema is defined as an associative array of `field name => validation rule`. You can use [Respect/Validation](https://respect-validation.readthedocs.io/en/latest/validators/) rules directly.
 
-`name` フィールドを例に取ると:
+Taking the `name` field as an example:
 
 ```php
 use Respect\Validation\Validator as v;
@@ -34,16 +34,16 @@ $schema = [
 ];
 ```
 
-`v::stringType()->length(2, 50)` は「文字列型かつ 2〜50 文字」を意味します。複数のルールはメソッドチェーンで結合でき、左から順に評価されます。
+`v::stringType()->length(2, 50)` means "must be a string and between 2 and 50 characters". Multiple rules can be chained together and are evaluated left to right.
 
-| 値 | 結果 | 理由 |
+| Value | Result | Reason |
 |:--|:--|:--|
-| `'Alice'` | ✓ 通る | 文字列・5文字 |
-| `'A'` | ✗ 弾く | 1文字（最小 2 文字を下回る） |
-| `''` | ✗ 弾く | 0文字 |
-| `123` | ✗ 弾く | 文字列でない |
+| `'Alice'` | ✓ passes | String, 5 characters |
+| `'A'` | ✗ rejected | 1 character (below the minimum of 2) |
+| `''` | ✗ rejected | 0 characters |
+| `123` | ✗ rejected | Not a string |
 
-よくあるフィールドを定義した例:
+Example defining common fields:
 
 ```php
 $schema = [
@@ -55,37 +55,37 @@ $schema = [
 ];
 ```
 
-通る例・弾く例:
+Passing and failing examples:
 
 ```php
-// ✓ すべて通る
+// ✓ all pass
 $data = [
   'name'  => 'Alice',
   'email' => 'alice@example.com',
   'tel'   => '090-1234-5678',
   'type'  => 'general',
-  'body'  => 'お世話になっております。〜よろしくお願いいたします。',
+  'body'  => 'Thank you for your inquiry. I look forward to hearing from you.',
 ];
 
-// ✗ すべて弾く
+// ✗ all rejected
 $data = [
-  'name'  => 'A',            // 1文字
-  'email' => 'not-an-email', // 形式不正
-  'tel'   => '12345',        // パターン不一致
-  'type'  => 'unknown',      // 許可外の値
-  'body'  => '短い',         // 10文字未満
+  'name'  => 'A',            // 1 character
+  'email' => 'not-an-email', // invalid format
+  'tel'   => '12345',        // pattern mismatch
+  'type'  => 'unknown',      // value not allowed
+  'body'  => 'short',        // fewer than 10 characters
 ];
 ```
 
-### 3. フィールドの検証
+### 3. Field Validation
 
-`validate()` に入力配列を渡し、`getResult()` で結果を取得します。入力値は自動的にサニタイズ（`strip_tags` + `htmlspecialchars`）されます。
+Pass the input array to `validate()` and retrieve the result with `getResult()`. Input values are automatically sanitized (`strip_tags` + `htmlspecialchars`).
 
 ```php
 $result = $validator->validate($_POST)->getResult();
 ```
 
-上記のスキーマで `name` が通り `email` が弾かれた場合の結果構造:
+Result structure when `name` passes and `email` fails with the schema above:
 
 ```php
 [
@@ -104,29 +104,29 @@ $result = $validator->validate($_POST)->getResult();
     'is_valid' => true,
     'errors'   => null,
   ],
-  // 以下同形式で続く
+  // remaining fields follow the same structure
 ]
 ```
 
-すべてのフィールドが有効かどうかを確認する:
+Check whether all fields are valid:
 
 ```php
 $all_valid = array_reduce($result, fn($carry, $field) => $carry && $field['is_valid'], true);
 ```
 
-### 4. 高度な検証
+### 4. Advanced Validation
 
-ファイルのアップロード検証には `validateFiles()` を使います。
+Use `validateFiles()` for file upload validation.
 
 ```php
-// $_FILES をそのまま渡す
+// pass $_FILES directly
 $result = $validator->validateFiles($_FILES)->getResult();
 
-// $_FILES 以外の配列を渡す場合
+// pass an array other than $_FILES
 $result = $validator->validateFiles($data, ['native_files' => false])->getResult();
 ```
 
-`FileExtension` カスタムルールで許可する MIME タイプを制限できます:
+Use the `FileExtension` custom rule to restrict allowed MIME types:
 
 ```php
 use SchemableValidator\Rules\FileExtension;
@@ -137,10 +137,10 @@ $schema = [
 ```
 
 ::: tip
-住所やクレジットカード検証など、独自ルールの定義に類する高度な利用については [Custom Validation](/custom-validation) を参照してください。
+For advanced usage such as defining custom rules for address or credit card validation, see [Custom Validation](/custom-validation).
 :::
 
-### メソッドチェーン
+### Method Chaining
 
 ```php
 $result = $validator
@@ -154,11 +154,11 @@ $result = $validator
 
 ## SchemaBuilder
 
-`SV::object()` を起点とする宣言的なスキーマ定義 API です。同一の定義から **JSON Schema (draft 2020-12) への出力** と **Validator インスタンスの生成** の両方を行えます。Validator を直接定義する場合と異なり、クライアントサイドのバリデーションライブラリや OpenAPI ツールとの連携が可能になります。
+A declarative schema definition API starting from `SV::object()`. From the same definition, you can both **output JSON Schema (draft 2020-12)** and **generate a Validator instance**. Unlike defining a Validator directly, this enables integration with client-side validation libraries and OpenAPI tools.
 
-### フィールド定義
+### Field Definition
 
-`SV::object()` にフィールド名とフィールドスキーマの連想配列を渡して定義します。
+Pass an associative array of field names and field schemas to `SV::object()`.
 
 ```php
 use SchemableValidator\SV;
@@ -174,30 +174,30 @@ $schema = SV::object([
 ]);
 ```
 
-主なフィールド型:
+Main field types:
 
-| メソッド | JSON Schema `type` | 主な制約メソッド |
+| Method | JSON Schema `type` | Main constraint methods |
 |:--|:--|:--|
 | `SV::string()` | `"string"` | `.min()` `.max()` `.email()` `.url()` `.pattern()` |
 | `SV::integer()` | `"integer"` | `.min()` `.max()` |
 | `SV::number()` | `"number"` | `.min()` `.max()` |
 | `SV::boolean()` | `"boolean"` | - |
 | `SV::enum(['a', 'b'])` | `"string"` + `enum` | - |
-| `SV::file(['image/jpeg'])` | - ※JSON Schema 変換不可 | - |
-| `SV::respect(v::...)` | - ※JSON Schema 変換不可 | - |
+| `SV::file(['image/jpeg'])` | - *Cannot be converted to JSON Schema* | - |
+| `SV::respect(v::...)` | - *Cannot be converted to JSON Schema* | - |
 
-修飾子:
+Modifiers:
 
-| 修飾子 | 効果 |
+| Modifier | Effect |
 |:--|:--|
-| `.optional()` | `required` 配列から除外 |
-| `.nullable()` | `null` を許容する型に拡張 |
+| `.optional()` | Excludes the field from the `required` array |
+| `.nullable()` | Extends the type to allow `null` |
 
-### JSON Schema への出力
+### JSON Schema Output
 
 ```php
-echo $schema->toJson();          // JSON 文字列
-$array = $schema->toJsonSchema(); // 配列
+echo $schema->toJson();          // JSON string
+$array = $schema->toJsonSchema(); // array
 ```
 
 ```json
@@ -213,13 +213,13 @@ $array = $schema->toJsonSchema(); // 配列
 }
 ```
 
-::: info フロントエンドとのルール共有
-フロントエンドとバリデーションルールを共有したい場合は SchemaBuilder を使います。`toJson()` で出力した JSON Schema を REST API 経由でフロントエンドに渡せば、PHP 側のルール定義を唯一の情報源として管理できます。重複定義や実装の乖離を防げます。
+::: info Sharing rules with the frontend
+Use SchemaBuilder when you want to share validation rules with the frontend. By passing the JSON Schema output from `toJson()` to the frontend via a REST API, you can manage the PHP-side rule definitions as the single source of truth, preventing duplicate definitions and implementation drift.
 :::
 
-### Validator への変換
+### Converting to Validator
 
-`toValidator()` で `Validator` インスタンスを生成します。`validateFiles()` や `validateReCaptcha()` をそのままチェーンできます。
+Generate a `Validator` instance with `toValidator()`. You can chain `validateFiles()` and `validateReCaptcha()` directly onto it.
 
 ```php
 $result = $schema->toValidator()
@@ -229,18 +229,18 @@ $result = $schema->toValidator()
 ```
 
 ::: tip
-条件付き必須（`.when()`）・WordPress REST エンドポイント登録（`schv_register_schema()`）など詳細は [SchemaBuilder](/schema-builder) を参照してください。
+For details on conditional required fields (`.when()`) and WordPress REST endpoint registration (`schv_register_schema()`), see [SchemaBuilder](/schema-builder).
 :::
 
 ---
 
-## エラーメッセージ
+## Error Messages
 
-バリデーション結果に含まれるエラーメッセージの確認方法と、ロケールに合わせたカスタマイズ方法を説明します。
+This section explains how to access error messages included in the validation result and how to customize them to match your locale.
 
-### エラーメッセージの取得
+### Retrieving Error Messages
 
-`getResult()` の各フィールドに `errors` キーが含まれます。値は検証が通った場合 `null`、失敗した場合はメッセージ文字列です。デフォルトは Respect/Validation が生成する英語メッセージです。
+Each field in `getResult()` contains an `errors` key. The value is `null` when validation passes and an error message string when it fails. The default is the English message generated by Respect/Validation.
 
 ```php
 $result = $validator->validate($_POST)->getResult();
@@ -252,121 +252,121 @@ foreach ($result as $field => $state) {
 }
 ```
 
-複数のルールが失敗した場合、エラーは `"\n"` で結合された文字列として返されます。
+When multiple rules fail, errors are returned as a string joined by `"\n"`.
 
 ```php
-// name が stringType と length の両方に失敗した場合
+// when name fails both stringType and length
 $result['name']['errors'];
 // → '"123" must be a string
 //    "123" must have a length between 2 and 50'
 ```
 
-### ルールへの直接指定
+### Inline Rule Override
 
-Respect/Validation の `setTemplate()` をルールにチェーンすると、メッセージを上書きできます。
+Chaining `setTemplate()` from Respect/Validation onto a rule overrides the message.
 
 ```php
 $schema = [
-  'email' => v::email()->setTemplate('有効なメールアドレスを入力してください'),
-  'name'  => v::stringType()->length(2, 50)->setTemplate('名前は2〜50文字で入力してください'),
+  'email' => v::email()->setTemplate('Please enter a valid email address'),
+  'name'  => v::stringType()->length(2, 50)->setTemplate('Name must be between 2 and 50 characters'),
 ];
 ```
 
-`setName()` を組み合わせると、メッセージ内のフィールド識別子も変更できます。
+Combining with `setName()` also changes the field identifier within the message.
 
 ```php
-'name' => v::stringType()->setName('お名前')->length(2, 50),
-// → "お名前" must have a length between 2 and 50
+'name' => v::stringType()->setName('Full Name')->length(2, 50),
+// → "Full Name" must have a length between 2 and 50
 ```
 
 ::: info
-複数ルールをチェーンした場合、`setTemplate()` が適用されるのは最後に失敗したルールのメッセージ 1 件のみです。フィールド×ルール単位で個別に制御したい場合は MessageDict を使ってください。
+When multiple rules are chained, `setTemplate()` applies only to the message of the last failing rule. Use MessageDict if you need per-field, per-rule control.
 :::
 
-### 多言語化
+### Internationalization
 
-`MessageDict` を使うと、フィールド×ルール単位でエラーメッセージを辞書的に定義できます。日本語プリセットや WordPress フィルターによるサイト全体への適用もサポートしています。
+`MessageDict` lets you define error messages as a dictionary on a per-field, per-rule basis. It also supports a Japanese preset and site-wide application via WordPress filters.
 
-#### Step 1: 辞書ファイルの用意
+#### Step 1: Prepare dictionary files
 
-`MessageDict` には **ロケールデフォルト** と **フィールド定義** の2種類を渡せます。それぞれ PHP ファイルとして用意しておくと管理しやすくなります。
+`MessageDict` accepts two kinds of input: **locale defaults** and **field definitions**. Keeping each as a separate PHP file makes them easier to manage.
 
-**ロケールデフォルト** - ルール ID をキーとし、フィールドを問わず共通で使うメッセージを定義します。
+**Locale defaults** — keyed by rule ID, defines messages shared across all fields regardless of which field they apply to.
 
 ```php
 // messages/ja.php
 return [
-  'stringType'  => '文字列で入力してください',
-  'length'      => '文字数が範囲外です',
-  'email'       => '有効なメールアドレスを入力してください',
-  'notEmpty'    => '入力必須です',
-  'notOptional' => '入力必須です',
-  'integer'     => '整数で入力してください',
-  'intType'     => '整数で入力してください',
-  'numeric'     => '数値で入力してください',
-  'url'         => '有効なURLを入力してください',
-  'regex'       => '入力形式が正しくありません',
-  'in'          => '選択肢から選んでください',
-  'anyOf'       => '選択肢から選んでください',
-  'required'    => '必須項目です',
+  'stringType'  => 'Please enter a string',
+  'length'      => 'The length is out of range',
+  'email'       => 'Please enter a valid email address',
+  'notEmpty'    => 'This field is required',
+  'notOptional' => 'This field is required',
+  'integer'     => 'Please enter an integer',
+  'intType'     => 'Please enter an integer',
+  'numeric'     => 'Please enter a number',
+  'url'         => 'Please enter a valid URL',
+  'regex'       => 'The input format is incorrect',
+  'in'          => 'Please choose from the available options',
+  'anyOf'       => 'Please choose from the available options',
+  'required'    => 'This field is required',
 ];
 ```
 
-**フィールド定義** - フィールド名をキーとし、フィールド固有のメッセージを上書きします。3つの書き方があります。
+**Field definitions** — keyed by field name, overrides messages specific to each field. There are three ways to write them.
 
 ```php
 // messages/fields.php
 return [
-  // パターン1: フィールド全体（どのルールが失敗しても同じメッセージ）
-  'email' => 'メールアドレスを正しく入力してください',
+  // Pattern 1: field-wide (same message regardless of which rule fails)
+  'email' => 'Please enter your email address correctly',
 
-  // パターン2: フィールド×ルール固有（ルールごとに個別指定）
+  // Pattern 2: field × rule specific (individual message per rule)
   'name' => [
-    'length' => '名前は2〜50文字で入力してください',
+    'length' => 'Name must be between 2 and 50 characters',
   ],
 
-  // パターン3: 複数ルールをまとめて個別指定
+  // Pattern 3: multiple rules specified individually
   'body' => [
-    'notEmpty' => '本文を入力してください',
-    'regex'    => '本文は10文字以上で入力してください',
+    'notEmpty' => 'Please enter the message body',
+    'regex'    => 'Message body must be at least 10 characters',
   ],
 ];
 ```
 
-::: info 優先順位
-同一フィールド・ルールに複数の定義が存在する場合、以下の順で解決されます。
+::: info Priority
+When multiple definitions exist for the same field and rule, they are resolved in the following order:
 
-1. フィールド×ルール固有 - `['name' => ['length' => '...']]`
-2. フィールド全体 - `['email' => '...']`
-3. ロケールデフォルト - `messages/ja.php` の内容
-4. Respect デフォルトメッセージ（英語）
+1. Field × rule specific — `['name' => ['length' => '...']]`
+2. Field-wide — `['email' => '...']`
+3. Locale default — contents of `messages/ja.php`
+4. Respect default message (English)
 :::
 
-#### Step 2: 読み込み
+#### Step 2: Loading
 
-用意したファイルを `MessageDict` に渡してインスタンスを生成します。
+Pass the prepared files to `MessageDict` to create an instance.
 
 ```php
 use SchemableValidator\I18n\MessageDict;
 
-// 組み込みの日本語プリセットをそのまま使う
+// use the built-in Japanese preset as-is
 $dict = MessageDict::ja();
 
-// カスタム辞書ファイルを使う
+// use a custom dictionary file
 $dict = new MessageDict(
-  require __DIR__ . '/messages/fields.php', // フィールド定義
-  require __DIR__ . '/messages/ja.php'       // ロケールデフォルト
+  require __DIR__ . '/messages/fields.php', // field definitions
+  require __DIR__ . '/messages/ja.php'       // locale defaults
 );
 
-// 日本語プリセット + フィールド定義を組み合わせる
+// combine the Japanese preset with field definitions
 $dict = MessageDict::ja(
   require __DIR__ . '/messages/fields.php'
 );
 ```
 
-`MessageDict::en()` は Respect デフォルトのメッセージをそのまま返します。
+`MessageDict::en()` returns the Respect default messages as-is.
 
-#### Step 3: Validator への渡し方
+#### Step 3: Passing to Validator
 
 ::: code-group
 
@@ -389,7 +389,7 @@ $validator = schv_validator($schema, [], $dict);
 
 :::
 
-SchemaBuilder 経由で渡す場合:
+When passing via SchemaBuilder:
 
 ```php
 use SchemableValidator\SV;
@@ -406,56 +406,56 @@ $result = SV::object([
   ->getResult();
 ```
 
-#### サイト全体のデフォルト（WordPress）
+#### Site-wide default (WordPress)
 
-`schv_message_dict` フィルターで辞書を上書きすると、`schv_validator()` 呼び出し時に自動で適用されます。
+Overriding the dictionary via the `schv_message_dict` filter causes it to be automatically applied whenever `schv_validator()` is called.
 
 ```php
 add_filter('schv_message_dict', function (MessageDict $dict): MessageDict {
   return $dict->merge(require __DIR__ . '/messages/fields.php');
 });
 
-// $dict を省略すると schv_message_dict フィルターの結果が自動適用される
+// omitting $dict automatically applies the result of the schv_message_dict filter
 $validator = schv_validator($schema);
 ```
 
 ---
 
-## セキュリティ
+## Security
 
-フォームのセキュリティに関わる機能とベストプラクティスを説明します。
+This section explains security-related features and best practices for forms.
 
-### CSRF トークン
+### CSRF Token
 
-`Validator` に内蔵されたトークン生成・照合機能です。フォームごとにスコープされたトークンをセッションに保存し、送信時に照合することでリクエスト偽造を防ぎます。
+A token generation and verification feature built into `Validator`. It prevents request forgery by storing a form-scoped token in the session and verifying it on submission.
 
 ```php
-// フォーム表示時: トークンを生成してセッションに保存
+// on form display: generate a token and store it in the session
 $token = $validator->createToken();
 
-// フォーム送信時: トークンを検証
+// on form submission: verify the token
 $is_valid = $validator->checkToken($_POST['schv_csrf_token'] ?? '');
 ```
 
-フォーム内に hidden フィールドとして埋め込む:
+Embed it as a hidden field in the form:
 
 ```html
 <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
 ```
 
-### ベストプラクティス
+### Best Practices
 
-| 項目 | 説明 |
+| Item | Description |
 |:--|:--|
-| CSRF トークンの使用 | すべての POST フォームで `createToken()` / `checkToken()` を有効にする |
-| reCAPTCHA の活用 | 公開フォームには `validateReCaptcha()` を組み合わせてスパムや自動送信を防止する |
-| 出力のエスケープ | `getResult()` の `value` は `strip_tags` + `htmlspecialchars` 済みだが、HTML に出力する際は改めてエスケープする |
+| Use CSRF tokens | Enable `createToken()` / `checkToken()` on all POST forms |
+| Use reCAPTCHA | Combine `validateReCaptcha()` on public forms to prevent spam and automated submissions |
+| Escape output | Although `value` in `getResult()` has already been processed with `strip_tags` + `htmlspecialchars`, escape it again when outputting to HTML |
 
 ---
 
-## セッション管理
+## Session Management
 
-`FormController` 機能により、検証済みデータをセッションに保存し、入力→確認→完了のようなマルチページフォームをまたいで状態を保持します。
+The `FormController` feature stores validated data in the session, maintaining state across multi-page forms such as input → confirm → complete flows.
 
 ::: code-group
 
@@ -471,18 +471,18 @@ $form = schv_form();
 
 :::
 
-| メソッド | 説明 |
+| Method | Description |
 |:--|:--|
-| `save(array $data): void` | `getResult()` の返り値をセッションに保存 |
-| `get(): ?array` | 保存済みデータを取得。未保存なら `null` |
-| `clear(): void` | セッションからデータを削除 |
+| `save(array $data): void` | Saves the return value of `getResult()` to the session |
+| `get(): ?array` | Retrieves saved data. Returns `null` if nothing has been saved |
+| `clear(): void` | Removes data from the session |
 
 ::: code-group
 
 ```php [Core]
 use SchemableValidator\Controllers\FormController;
 
-// Step 1: 検証 → 保存 → リダイレクト
+// Step 1: validate → save → redirect
 $result = $validator->validate($_POST)->getResult();
 $all_valid = array_reduce($result, fn($c, $i) => $c && $i['is_valid'], true);
 
@@ -492,15 +492,15 @@ if ($all_valid) {
   exit;
 }
 
-// Step 2: 確認画面で取得
+// Step 2: retrieve on the confirmation screen
 $data = (new FormController())->get();
 
-// Step 3: 完了後にクリア
+// Step 3: clear after completion
 (new FormController())->clear();
 ```
 
 ```php [WordPress]
-// Step 1: 検証 → 保存 → リダイレクト
+// Step 1: validate → save → redirect
 $result = $validator->validate($_POST)->getResult();
 $all_valid = array_reduce($result, fn($c, $i) => $c && $i['is_valid'], true);
 
@@ -510,10 +510,10 @@ if ($all_valid) {
   exit;
 }
 
-// Step 2: 確認画面で取得
+// Step 2: retrieve on the confirmation screen
 $data = schv_form()->get();
 
-// Step 3: 完了後にクリア
+// Step 3: clear after completion
 schv_form()->clear();
 ```
 
@@ -523,33 +523,33 @@ schv_form()->clear();
 
 ## Template
 
-プレースホルダー付きテンプレート文字列に検証済みデータを差し込みます。メール本文の生成などに使います。
+Inserts validated data into a template string with placeholders. Useful for generating email body content.
 
-テンプレートファイルの例 (`templates/user.txt`, `templates/admin.txt`):
+Example template files (`templates/user.txt`, `templates/admin.txt`):
 
 ```
-お問い合わせを受け付けました。
+Thank you for your inquiry.
 
-お名前: {name}
-メールアドレス: {email}
+Name: {name}
+Email: {email}
 
-ご連絡内容:
+Message:
 {body}
 
-折り返しご連絡いたします。
+We will get back to you shortly.
 ```
 
 ```
-新しいお問い合わせが届きました。
+A new inquiry has been received.
 
-氏名: {name}
-返信先: {email}
+Name: {name}
+Reply to: {email}
 
-内容:
+Message:
 {body}
 ```
 
-テンプレートファイルをインクルードしてインスタンス化する:
+Instantiate by including the template files:
 
 ::: code-group
 
@@ -558,7 +558,7 @@ use SchemableValidator\Template;
 
 $template = new Template([
   'aliases'   => [
-    'name'  => 'name',   // テンプレートの {name} → $data['name']['value']
+    'name'  => 'name',   // {name} in template → $data['name']['value']
     'email' => 'email',
     'body'  => 'body',
   ],
@@ -573,7 +573,7 @@ $template = new Template([
 $template = schv_template([
   'aliases'   => ['name' => 'name', 'email' => 'email', 'body' => 'body'],
   'templates' => [
-    'user'  => 'SCHV_REPLY_FORMAT_FOR_user',   // WP オプション名
+    'user'  => 'SCHV_REPLY_FORMAT_FOR_user',   // WP option name
     'admin' => 'SCHV_REPLY_FORMAT_FOR_admin',
   ],
 ]);
@@ -588,20 +588,20 @@ $all        = $template->getAll();
 ```
 
 ::: info
-`aliases` は `テンプレート内キー => $data のフィールド名` のマッピングです。フォームフィールド名とテンプレートプレースホルダー名が異なる場合に使います。
+`aliases` is a mapping of `template key => field name in $data`. Use this when form field names differ from template placeholder names.
 :::
 
 ::: warning WordPress
-`templates` の値は WP オプション名として解釈され、`get_option()` で本文を取得します。テンプレート文字列を直接渡さないでください。
+The value of `templates` is interpreted as a WP option name and the body is retrieved with `get_option()`. Do not pass template strings directly.
 :::
 
 ---
 
-## その他機能
+## Other Features
 
 ### reCAPTCHA v3
 
-フロントエンドから `$_POST['recaptcha_token']` を送信してください。
+Send `$_POST['recaptcha_token']` from the frontend.
 
 ::: code-group
 
@@ -625,7 +625,7 @@ $validator = schv_validator($schema, [
 $result = $validator
   ->validate($_POST)
   ->validateReCaptcha([
-    'action' => 'contact', // オプション: action 名の一致も検証
+    'action' => 'contact', // optional: also verify that the action name matches
   ])
   ->getResult();
 ```

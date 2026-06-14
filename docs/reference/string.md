@@ -1,12 +1,12 @@
-# SV::string() - 文字列型
+# SV::string() - String Type
 
-テキスト入力に使う基本型。長さ・フォーマット・正規表現の制約をチェーンで付与できます。
+The base type for text input. Supports chaining constraints for length, format, and regular expressions.
 
 ```php
 SV::string()
 ```
 
-**JSON Schema 出力:**
+**JSON Schema output:**
 ```json
 { "type": "string" }
 ```
@@ -15,25 +15,25 @@ SV::string()
 
 ## .min(n) {#min}
 
-**最小文字数**を設定します。
+Sets the **minimum character length**.
 
 ```php
 SV::string()->min(int $n)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$n` | `int` | 許容する最小文字数（以上） |
+| `$n` | `int` | Minimum number of characters allowed (inclusive) |
 
-**JSON Schema キーワード:** `minLength`
+**JSON Schema keyword:** `minLength`
 
-**用途:** 必須入力の空文字を防ぐ、本文に最低文字数を設ける。
+**Use case:** Prevent empty strings on required inputs, enforce a minimum body length.
 
 ```php
-// 1文字以上（実質 required 相当）
+// At least 1 character (effectively equivalent to required)
 SV::string()->min(1)
 
-// 10文字以上の本文
+// Body with at least 10 characters
 SV::string()->min(10)
 ```
 
@@ -45,25 +45,25 @@ SV::string()->min(10)
 
 ## .max(n) {#max}
 
-**最大文字数**を設定します。
+Sets the **maximum character length**.
 
 ```php
 SV::string()->max(int $n)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$n` | `int` | 許容する最大文字数（以下） |
+| `$n` | `int` | Maximum number of characters allowed (inclusive) |
 
-**JSON Schema キーワード:** `maxLength`
+**JSON Schema keyword:** `maxLength`
 
-**用途:** DB カラム長に合わせる、表示領域に収める。
+**Use case:** Match a database column length, fit within a display area.
 
 ```php
-// 100文字以内の名前
+// Name up to 100 characters
 SV::string()->min(1)->max(100)
 
-// 255文字以内のタイトル
+// Title up to 255 characters
 SV::string()->max(255)
 ```
 
@@ -75,15 +75,15 @@ SV::string()->max(255)
 
 ## .email() {#email}
 
-メールアドレス形式を検証します。
+Validates email address format.
 
 ```php
 SV::string()->email()
 ```
 
-**JSON Schema キーワード:** `format: "email"`
+**JSON Schema keyword:** `format: "email"`
 
-**用途:** 問い合わせフォームのメールアドレス欄。
+**Use case:** Email address field on a contact form.
 
 ```php
 SV::string()->email()
@@ -93,21 +93,21 @@ SV::string()->email()
 { "type": "string", "format": "email" }
 ```
 
-> クライアントの `checkFormat` は `^[^\s@]+@[^\s@]+\.[^\s@]+$` で事前検証する。より厳密な検証はサーバー側（Respect `v::email()`）で行われる。
+> The client's `checkFormat` performs a pre-check using `^[^\s@]+@[^\s@]+\.[^\s@]+$`. Stricter validation is handled server-side (Respect `v::email()`).
 
 ---
 
 ## .url() {#url}
 
-URL 形式（`https://` または `http://` から始まる）を検証します。
+Validates URL format (must start with `https://` or `http://`).
 
 ```php
 SV::string()->url()
 ```
 
-**JSON Schema キーワード:** `format: "uri"`
+**JSON Schema keyword:** `format: "uri"`
 
-**用途:** ウェブサイト URL、SNS プロフィール URL の入力欄。
+**Use case:** Website URL, social media profile URL input.
 
 ```php
 SV::string()->url()->optional()
@@ -121,28 +121,28 @@ SV::string()->url()->optional()
 
 ## .pattern(p) {#pattern}
 
-**正規表現**によるフォーマット検証。
+Validates format using a **regular expression**.
 
 ```php
 SV::string()->pattern(string $p)
 ```
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |:--|:--|:--|
-| `$p` | `string` | 正規表現パターン（区切り文字なし） |
+| `$p` | `string` | Regular expression pattern (without delimiters) |
 
-**JSON Schema キーワード:** `pattern`
+**JSON Schema keyword:** `pattern`
 
-**用途:** 電話番号・郵便番号・ユーザー名など、既定のフォーマットが存在する入力。
+**Use case:** Inputs with a defined format such as phone numbers, postal codes, or usernames.
 
 ```php
-// 日本の電話番号
+// Japanese phone number
 SV::string()->pattern('^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$')->optional()
 
-// 半角英数字とアンダースコア（ユーザー名）
+// Alphanumeric and underscore (username)
 SV::string()->min(3)->max(20)->pattern('^[a-zA-Z0-9_]+$')
 
-// 日本の郵便番号
+// Japanese postal code
 SV::string()->pattern('^\d{3}-\d{4}$')
 ```
 
@@ -150,54 +150,54 @@ SV::string()->pattern('^\d{3}-\d{4}$')
 { "type": "string", "pattern": "^[a-zA-Z0-9_]+$", "minLength": 3, "maxLength": 20 }
 ```
 
-> パターンは区切り文字（`/`）なしで渡す。JSON Schema では `u` フラグが適用される。
+> Pass the pattern without delimiters (`/`). The `u` flag is applied in JSON Schema.
 
-### ReDoS（正規表現 DoS）防止ガイドライン
+### ReDoS (Regular Expression DoS) Prevention Guidelines
 
-クライアント側バリデーターは入力のキーストロークごとにパターンを評価します。**カタストロフィックなバックトラッキング**を持つパターンはブラウザを長時間ブロックします（ReDoS）。
+The client-side validator evaluates patterns on every keystroke. Patterns with **catastrophic backtracking** can block the browser for an extended period (ReDoS).
 
-**避けるべきパターン例:**
+**Examples of patterns to avoid:**
 
-| 危険なパターン | 問題 |
+| Dangerous pattern | Problem |
 |:--|:--|
-| `(a+)+b` | 量指定子の入れ子（指数的バックトラック） |
-| `(x|x)+y` | 重複する選択肢の繰り返し |
-| `(\w+\s)+\w+` | 可変長グループの連鎖 |
-| `.*foo.*bar.*` | `.*` の多重連鎖 |
+| `(a+)+b` | Nested quantifiers (exponential backtracking) |
+| `(x|x)+y` | Repeated overlapping alternatives |
+| `(\w+\s)+\w+` | Chained variable-length groups |
+| `.*foo.*bar.*` | Multiple chained `.*` |
 
-**安全な書き方:**
+**Safe alternatives:**
 
 ```
-# NG: 入れ子の繰り返し
+# Bad: nested repetition
 (a+)+$
 
-# OK: 文字クラスで代替
+# Good: use a character class instead
 [a]+$
 
-# NG: 重複選択肢
+# Bad: overlapping alternatives
 (\w|\d)+
 
-# OK: 一つにまとめる
+# Good: combine into one
 [\w\d]+
 ```
 
-**クライアント側の安全ネット:** クライアント実装は入力が `PATTERN_MAX_INPUT_LENGTH`（デフォルト 500 文字）を超えた場合、パターン評価をスキップしてサーバーに委ねます。この閾値を下げたい場合は `checkPattern(pattern, limit)` を直接呼び出すか、`PATTERN_MAX_INPUT_LENGTH` を参照してください。
+**Client-side safety net:** The client implementation skips pattern evaluation and defers to the server when input exceeds `PATTERN_MAX_INPUT_LENGTH` (default: 500 characters). To lower this threshold, call `checkPattern(pattern, limit)` directly or refer to `PATTERN_MAX_INPUT_LENGTH`.
 
-> サーバーサイドバリデーションは常に権威側です。クライアントバリデーションは UX 補助に過ぎません。
+> Server-side validation is always authoritative. Client validation is only a UX aid.
 
 ---
 
 ## .date() {#date}
 
-**日付**（`YYYY-MM-DD` 形式）を検証します。
+Validates a **date** in `YYYY-MM-DD` format.
 
 ```php
 SV::string()->date()
 ```
 
-**JSON Schema キーワード:** `format: "date"`
+**JSON Schema keyword:** `format: "date"`
 
-**用途:** 生年月日、予約日、期限日など。
+**Use case:** Date of birth, reservation date, expiration date.
 
 ```json
 { "type": "string", "format": "date" }
@@ -207,15 +207,15 @@ SV::string()->date()
 
 ## .dateTime() {#datetime}
 
-**日時**（RFC 3339: `YYYY-MM-DDTHH:mm:ssZ` 形式）を検証します。
+Validates a **date-time** in RFC 3339 format (`YYYY-MM-DDTHH:mm:ssZ`).
 
 ```php
 SV::string()->dateTime()
 ```
 
-**JSON Schema キーワード:** `format: "date-time"`
+**JSON Schema keyword:** `format: "date-time"`
 
-**用途:** イベント開始日時、タイムスタンプ入力。
+**Use case:** Event start time, timestamp input.
 
 ```json
 { "type": "string", "format": "date-time" }
@@ -225,15 +225,15 @@ SV::string()->dateTime()
 
 ## .time() {#time}
 
-**時刻**（`HH:mm:ss` 形式）を検証します。
+Validates a **time** in `HH:mm:ss` format.
 
 ```php
 SV::string()->time()
 ```
 
-**JSON Schema キーワード:** `format: "time"`
+**JSON Schema keyword:** `format: "time"`
 
-**用途:** 営業時間、予約時刻など。
+**Use case:** Business hours, reservation time.
 
 ```json
 { "type": "string", "format": "time" }
@@ -243,15 +243,15 @@ SV::string()->time()
 
 ## .uuid() {#uuid}
 
-**UUID** 形式（`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`）を検証します。
+Validates **UUID** format (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`).
 
 ```php
 SV::string()->uuid()
 ```
 
-**JSON Schema キーワード:** `format: "uuid"`
+**JSON Schema keyword:** `format: "uuid"`
 
-**用途:** ID フィールド、外部キーの受け取り口。
+**Use case:** ID fields, receiving foreign key values.
 
 ```json
 { "type": "string", "format": "uuid" }
@@ -261,15 +261,15 @@ SV::string()->uuid()
 
 ## .ipv4() {#ipv4}
 
-**IPv4 アドレス**を検証します。
+Validates an **IPv4 address**.
 
 ```php
 SV::string()->ipv4()
 ```
 
-**JSON Schema キーワード:** `format: "ipv4"`
+**JSON Schema keyword:** `format: "ipv4"`
 
-**用途:** IP アドレス入力、アクセス制限設定など。
+**Use case:** IP address input, access control configuration.
 
 ```json
 { "type": "string", "format": "ipv4" }
@@ -279,13 +279,13 @@ SV::string()->ipv4()
 
 ## .ipv6() {#ipv6}
 
-**IPv6 アドレス**を検証します。
+Validates an **IPv6 address**.
 
 ```php
 SV::string()->ipv6()
 ```
 
-**JSON Schema キーワード:** `format: "ipv6"`
+**JSON Schema keyword:** `format: "ipv6"`
 
 ```json
 { "type": "string", "format": "ipv6" }
@@ -295,15 +295,15 @@ SV::string()->ipv6()
 
 ## .slug() {#slug}
 
-**URL スラッグ**（小文字英数字とハイフンのみ）を検証します。
+Validates a **URL slug** (lowercase alphanumeric characters and hyphens only).
 
 ```php
 SV::string()->slug()
 ```
 
-**JSON Schema キーワード:** `pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"`
+**JSON Schema keyword:** `pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"`
 
-**用途:** パーマリンク、カテゴリスラッグの入力。
+**Use case:** Permalink, category slug input.
 
 ```json
 { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
@@ -313,15 +313,15 @@ SV::string()->slug()
 
 ## .domain() {#domain}
 
-**ドメイン名**（`example.com` 形式）を検証します。
+Validates a **domain name** in `example.com` format.
 
 ```php
 SV::string()->domain()
 ```
 
-**JSON Schema キーワード:** `format: "hostname"`
+**JSON Schema keyword:** `format: "hostname"`
 
-**用途:** 許可ドメインの登録フォーム、サブドメイン設定など。
+**Use case:** Allowed domain registration form, subdomain configuration.
 
 ```json
 { "type": "string", "format": "hostname" }
@@ -329,23 +329,23 @@ SV::string()->domain()
 
 ---
 
-## 組み合わせ例
+## Combination Examples
 
 ```php
 $schema = SV::object([
-  // 名前: 1〜100文字
+  // Name: 1–100 characters
   'name'    => SV::string()->min(1)->max(100),
 
-  // メールアドレス
+  // Email address
   'email'   => SV::string()->email(),
 
-  // 電話番号: 任意入力
+  // Phone number: optional input
   'tel'     => SV::string()->pattern('^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$')->optional(),
 
-  // ウェブサイト: null 許容
+  // Website: nullable
   'website' => SV::string()->url()->nullable()->optional(),
 
-  // 本文: 10〜1000文字
+  // Body: 10–1000 characters
   'body'    => SV::string()->min(10)->max(1000),
 ]);
 ```

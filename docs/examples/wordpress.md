@@ -1,55 +1,55 @@
 # Examples - WordPress
 
-WordPress プラグインとして有効化した環境での実装例です。`schv_*` ヘルパー関数を利用します。
+Implementation examples for an environment with the plugin activated as a WordPress plugin. Uses `schv_*` helper functions.
 
-> ソースコード: [`packages/example/wordpress/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/example/wordpress)
+> Source code: [`packages/example/wordpress/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/example/wordpress)
 
 ---
 
-## 1. 基本的なバリデーション
+## 1. Basic Validation
 
-`schv_validator()` でバリデーターを生成し、`template_redirect` フックでフォーム送信を処理します。
+Create a validator with `schv_validator()` and handle form submissions via the `template_redirect` hook.
 
 <<< ../../packages/example/wordpress/01-validate.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/01-validate.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/01-validate.php)
 
 ---
 
-## 2. ファイルアップロードのバリデーション
+## 2. File Upload Validation
 
-`validateFiles()` で `$_FILES` を検証し、許容する MIME タイプを制限します。
+Validate `$_FILES` with `validateFiles()` and restrict the allowed MIME types.
 
 <<< ../../packages/example/wordpress/02-validate-files.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/02-validate-files.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/02-validate-files.php)
 
 ---
 
-## 3. CSRF トークン保護
+## 3. CSRF Token Protection
 
-`createToken()` で hidden フィールドにトークンを埋め込み、送信時に `checkToken()` で照合します。
+Embed a token in a hidden field with `createToken()` and verify it on submission using `checkToken()`.
 
 <<< ../../packages/example/wordpress/03-csrf.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/03-csrf.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/03-csrf.php)
 
 ---
 
-## 4. メールテンプレートレンダリング
+## 4. Mail Template Rendering
 
-`schv_template()` で WP オプションのテンプレートにバリデーション済みデータを差し込みます。
+Use `schv_template()` to inject validated data into a WP options template.
 
 <<< ../../packages/example/wordpress/04-template.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/04-template.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/04-template.php)
 
 ---
 
-## 5. マルチページフォーム（入力 → 確認 → 完了）
+## 5. Multi-page Form (Input → Confirm → Complete)
 
-`schv_form()` でセッションにデータを保持し、3ページにまたがるフォームを実装します。
+Use `schv_form()` to persist data in the session and implement a form spanning three pages.
 
 <<< ../../packages/example/wordpress/05-multipage-form.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/05-multipage-form.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/05-multipage-form.php)

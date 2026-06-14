@@ -1,29 +1,29 @@
-# 修飾子 - optional / nullable
+# Modifiers - optional / nullable
 
-修飾子はすべてのフィールド型（`string` / `integer` / `number` / `boolean` / `enum` / `file` / `respect`）に付与できます。
+Modifiers can be applied to all field types (`string` / `integer` / `number` / `boolean` / `enum` / `file` / `respect`).
 
 ---
 
 ## .optional() {#optional}
 
-フィールドを**任意入力**にします。JSON Schema の `required` 配列から除外されます。
+Makes a field **optional**. The field is excluded from the JSON Schema `required` array.
 
 ```php
 SV::string()->optional()
 ```
 
-**効果:**
-- `required` 配列に含まれなくなる
-- クライアントの `validateObject` は空文字のとき制約チェックをスキップする
-- Zod 統合では `z.preprocess(v => v === '' ? undefined : v, zType.optional())` として扱われる
+**Effects:**
+- No longer included in the `required` array
+- The client's `validateObject` skips constraint checks when the value is an empty string
+- In Zod integration, treated as `z.preprocess(v => v === '' ? undefined : v, zType.optional())`
 
-**用途:** 電話番号・会社名・コメントなど、入力しなくてもよいフィールド。
+**Use case:** Fields that do not need to be filled in, such as phone number, company name, or comments.
 
 ```php
 $schema = SV::object([
-  'name'  => SV::string()->min(1)->max(100),           // 必須
-  'email' => SV::string()->email(),                    // 必須
-  'tel'   => SV::string()->pattern('^\d{10,11}$')->optional(),  // 任意
+  'name'  => SV::string()->min(1)->max(100),           // required
+  'email' => SV::string()->email(),                    // required
+  'tel'   => SV::string()->pattern('^\d{10,11}$')->optional(),  // optional
 ]);
 ```
 
@@ -38,23 +38,23 @@ $schema = SV::object([
 }
 ```
 
-> `optional()` は「入力しなくてよい」であり「null を入れてよい」ではない。null を許容するには `.nullable()` を組み合わせる。
+> `optional()` means "input is not required" — it does not mean "null is allowed". To allow null, combine it with `.nullable()`.
 
 ---
 
 ## .nullable() {#nullable}
 
-フィールドの型に **`null` を追加**する。`null` 値（または空値）を明示的に許容する。
+**Adds `null` to the field's type.** Explicitly allows `null` values (or empty values).
 
 ```php
 SV::string()->nullable()
 ```
 
-**効果:**
-- JSON Schema の `type` が `["string", "null"]` のような配列になる
-- `null` が有効な値として認められる
+**Effects:**
+- The `type` in JSON Schema becomes an array such as `["string", "null"]`
+- `null` is accepted as a valid value
 
-**用途:** DB の NULL 許容カラム、設定値の未設定状態を明示したい場合。
+**Use case:** Nullable database columns, explicitly representing an unset configuration value.
 
 ```php
 SV::string()->url()->nullable()
@@ -66,18 +66,18 @@ SV::string()->url()->nullable()
 
 ---
 
-## optional と nullable の違い
+## Difference between optional and nullable
 
 | | `optional()` | `nullable()` |
 |:--|:--|:--|
-| 意味 | 入力しなくてよい（省略可） | `null` を値として送れる |
-| `required` への影響 | `required` から除外 | 影響しない |
-| 空文字の扱い | クライアントがスキップ | `null` に変換されうる |
-| JSON Schema | `required` から除外 | `type: ["...", "null"]` |
+| Meaning | Input is not required (can be omitted) | `null` can be sent as a value |
+| Effect on `required` | Excluded from `required` | No effect |
+| Empty string handling | Client skips validation | May be converted to `null` |
+| JSON Schema | Excluded from `required` | `type: ["...", "null"]` |
 
-### 両方付ける場合
+### Using both together
 
-「任意入力かつ null 許容」にする場合は両方を付ける。
+To make a field both optional and nullable, apply both modifiers.
 
 ```php
 SV::string()->url()->nullable()->optional()
@@ -90,17 +90,17 @@ SV::string()->url()->nullable()->optional()
 }
 ```
 
-この場合 `required` にも含まれず、`null` 値も受け付けます。
+In this case the field is neither included in `required` nor does it reject `null` values.
 
 ---
 
-## 組み合わせ例
+## Combination Examples
 
 ```php
 $schema = SV::object([
-  'username' => SV::string()->min(3)->max(20),           // 必須、null 不可
-  'bio'      => SV::string()->max(500)->optional(),      // 任意、null 不可
-  'website'  => SV::string()->url()->nullable()->optional(), // 任意、null 可
-  'age'      => SV::integer()->min(0)->max(150)->optional(), // 任意数値
+  'username' => SV::string()->min(3)->max(20),           // required, not nullable
+  'bio'      => SV::string()->max(500)->optional(),      // optional, not nullable
+  'website'  => SV::string()->url()->nullable()->optional(), // optional, nullable
+  'age'      => SV::integer()->min(0)->max(150)->optional(), // optional number
 ]);
 ```
