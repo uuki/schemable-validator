@@ -250,7 +250,7 @@ All conditions are output under the `x-when` extension key. Literal `===` condit
 | `equalsField` | Target field name (when `SV::field()` is used) |
 | `require` | Array of field names to make required when the condition is met |
 
-> `@schemable-validator/client`'s `validateObject` evaluates `x-when` first. If `x-when` is absent, it falls back to standard `if/then` / `allOf`.
+> `@uuki/schemable-validator-client`'s `validateObject` evaluates `x-when` first. If `x-when` is absent, it falls back to standard `if/then` / `allOf`.
 
 ---
 

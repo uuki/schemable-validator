@@ -32,7 +32,7 @@ SV::respect($rule)
   │
   └─ JSON Schema: x-unmapped-fields に記録（properties には含まれない）
        │
-       └─ クライアント側: @schemable-validator/client / Zod で独自に追加検証
+       └─ クライアント側: @uuki/schemable-validator-client / Zod で独自に追加検証
 ```
 
 ---
@@ -60,12 +60,12 @@ SV::respect(
 
 ### JS 側（クライアント）
 
-`x-unmapped-fields` に含まれるフィールドは `validateObject` が自動スキップする。クライアントでの検証が必要な場合は、**`@schemable-validator/client` の `Constraint`** または **Zod の `.superRefine()`** で追加する。
+`x-unmapped-fields` に含まれるフィールドは `validateObject` が自動スキップする。クライアントでの検証が必要な場合は、**`@uuki/schemable-validator-client` の `Constraint`** または **Zod の `.superRefine()`** で追加する。
 
-**`@schemable-validator/client` の場合:**
+**`@uuki/schemable-validator-client` の場合:**
 
 ```typescript
-import { type Constraint } from '@schemable-validator/client'
+import { type Constraint } from '@uuki/schemable-validator-client'
 
 const checkCustomField: Constraint = (state) => {
   if (state.value === '') return state // optional フィールドの空入力は通す
@@ -172,9 +172,9 @@ $schema = SV::object([
 
 ---
 
-### JS 側 (`@schemable-validator/client`) - `libphonenumber-js`
+### JS 側 (`@uuki/schemable-validator-client`) - `libphonenumber-js`
 
-`@schemable-validator/client` の `Constraint` は `FieldState → FieldState` の純関数。外部ライブラリを直接ラップできる。
+`@uuki/schemable-validator-client` の `Constraint` は `FieldState → FieldState` の純関数。外部ライブラリを直接ラップできる。
 
 #### インストール
 
@@ -186,7 +186,7 @@ npm install libphonenumber-js
 
 ```typescript
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { type Constraint } from '@schemable-validator/client'
+import { type Constraint } from '@uuki/schemable-validator-client'
 
 export const checkJapanesePhone: Constraint = (state) => {
   if (state.value === '') return state // optional フィールドの空入力は通す
@@ -200,7 +200,7 @@ export const checkJapanesePhone: Constraint = (state) => {
 #### `validateObject` との合成
 
 ```typescript
-import { validateObject } from '@schemable-validator/client'
+import { validateObject } from '@uuki/schemable-validator-client'
 import { checkJapanesePhone } from './constraints/phone'
 
 async function validate(data: Record<string, string>, jsonSchema: ObjectSchema) {

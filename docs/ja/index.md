@@ -19,7 +19,7 @@ features:
   - title: JSON Schema draft 2020-12
     details: toJson() が標準準拠のスキーマを出力。JSON Schema 対応のあらゆるツール（バリデーター・エディター・コードジェネレーター）から利用できます。
   - title: Framework-agnostic client library
-    details: '@schemable-validator/client は TypeScript ROP ベースのバリデーションパイプラインを提供。Zod・React・Vue・素の JavaScript で動作します。'
+    details: '@uuki/schemable-validator-client は TypeScript ROP ベースのバリデーションパイプラインを提供。Zod・React・Vue・素の JavaScript で動作します。'
   - title: Framework integrations
     details: フレームワーク固有のインターフェースとヘルパーを提供。現在 WordPress に対応しており、Laravel などの追加対応を予定しています。
 ---

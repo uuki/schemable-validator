@@ -326,8 +326,8 @@ pnpm add zod
 **Before:**
 
 ```typescript
-import { validateObject, isAllValid } from '@schemable-validator/client'
-import type { ObjectSchema } from '@schemable-validator/client'
+import { validateObject, isAllValid } from '@uuki/schemable-validator-client'
+import type { ObjectSchema } from '@uuki/schemable-validator-client'
 
 // SchemaBuilder::toJsonSchema() で生成したスキーマを fetch して使用
 const schema: ObjectSchema = await fetchSchema('/api/schema')

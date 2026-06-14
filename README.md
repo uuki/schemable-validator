@@ -16,7 +16,7 @@ The name reflects this: *validator* is the primary role, *schemable* is its defi
 |:--|:--|
 | `uuki/schemable-validator` | PHP core library (framework-agnostic) |
 | `wp-schemable-validator` | WordPress plugin — REST endpoint, helpers, admin UI |
-| `@schemable-validator/client` | TypeScript client — validates against JSON Schema output |
+| `@uuki/schemable-validator-client` | TypeScript client — validates against JSON Schema output |
 
 ---
 
@@ -30,7 +30,7 @@ composer require uuki/schemable-validator
 cd packages/wp-schemable-validator && composer install --no-dev
 ```
 
-~~`npm install @schemable-validator/client`~~ (not yet published to npm)
+~~`npm install @uuki/schemable-validator-client`~~ (not yet published to npm)
 
 See [docs/01-installation.md](docs/01-installation.md) for full setup.
 
@@ -69,7 +69,7 @@ schv_register_schema('/schema/contact', $schema);
 ### 4. Client-side validation (TypeScript client)
 
 ```typescript
-import { validateObject, isAllValid, extractErrors } from '@schemable-validator/client'
+import { validateObject, isAllValid, extractErrors } from '@uuki/schemable-validator-client'
 
 const schema = await fetch('/wp-json/schv/v1/schema/contact').then(r => r.json())
 
@@ -125,7 +125,7 @@ SV::object([...])          ← PHP: single source of truth
            │
            └─ REST endpoint (WordPress)
                   │
-                  └─ @schemable-validator/client  → client-side validation
+                  └─ @uuki/schemable-validator-client  → client-side validation
                      Zod / any JS validator
 ```
 

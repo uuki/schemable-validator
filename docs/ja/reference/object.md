@@ -250,7 +250,7 @@ SV::object([...])->
 | `equalsField` | 比較先フィールド名（`SV::field()` を使った場合） |
 | `require` | 条件成立時に必須とするフィールド名の配列 |
 
-> `@schemable-validator/client` の `validateObject` は `x-when` を優先して評価します。`x-when` がない場合は標準の `if/then` / `allOf` にフォールバックします。
+> `@uuki/schemable-validator-client` の `validateObject` は `x-when` を優先して評価します。`x-when` がない場合は標準の `if/then` / `allOf` にフォールバックします。
 
 ---
 

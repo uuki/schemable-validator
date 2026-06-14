@@ -1,6 +1,6 @@
 # Examples - Client
 
-Client-side implementation examples using `@schemable-validator/client`.
+Client-side implementation examples using `@uuki/schemable-validator-client`.
 
 > Source code: [`packages/client/examples/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/client/examples)
 

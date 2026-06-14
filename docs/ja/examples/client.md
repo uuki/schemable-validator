@@ -1,6 +1,6 @@
 # Examples - Client
 
-`@schemable-validator/client` を使ったクライアントサイドの実装例です。
+`@uuki/schemable-validator-client` を使ったクライアントサイドの実装例です。
 
 > ソースコード: [`packages/client/examples/`](https://github.com/uuki/schemable-validator/tree/v0.9.1/packages/client/examples)
 

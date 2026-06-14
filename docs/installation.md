@@ -6,7 +6,7 @@
 |:--|:--|:--|
 | PHP | ^7.4 \|\| ^8.x | Core library & WP plugin |
 | WordPress | 5.9+ | WP plugin only |
-| Node.js | >=22.12.0 | `@schemable-validator/client` only (not yet published to npm) |
+| Node.js | >=22.12.0 | `@uuki/schemable-validator-client` only (not yet published to npm) |
 
 ## Installation
 

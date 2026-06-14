@@ -1,5 +1,5 @@
 {
-  "name": "@schemable-validator/client",
+  "name": "@uuki/schemable-validator-client",
   "version": "0.10.1",
   "description": "Client-side validation library for schemable-validator JSON Schema output. No transport, no framework.",
   "type": "module",
@@ -31,5 +31,14 @@
     "tsdown": "^0.22.2",
     "typescript": "^5.5.0",
     "vitest": "^4.1.8"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uuki/schemable-validator.git"
+  },
+  "homepage": "https://uuki.github.io/schemable-validator/",
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -19,7 +19,7 @@ features:
   - title: JSON Schema draft 2020-12
     details: toJson() exports a standards-compliant schema. Any JSON Schema-aware tool - validators, editors, code generators - can consume it.
   - title: Framework-agnostic client library
-    details: '@schemable-validator/client provides a TypeScript ROP-based validation pipeline. Works with Zod, React, Vue, or plain JavaScript.'
+    details: '@uuki/schemable-validator-client provides a TypeScript ROP-based validation pipeline. Works with Zod, React, Vue, or plain JavaScript.'
   - title: Framework integrations
     details: Provides interfaces and helpers for framework-specific integration. WordPress is currently supported, with further integrations such as Laravel planned.
 ---

@@ -32,7 +32,7 @@ SV::respect($rule)
   │
   └─ JSON Schema: recorded in x-unmapped-fields (not included in properties)
        │
-       └─ Client side: add custom validation via @schemable-validator/client / Zod
+       └─ Client side: add custom validation via @uuki/schemable-validator-client / Zod
 ```
 
 ---
@@ -60,12 +60,12 @@ The server is always the authoritative validator. Client-side validation is trea
 
 ### JS Side (Client)
 
-Fields listed in `x-unmapped-fields` are automatically skipped by `validateObject`. If you need client-side validation for them, add it via **`Constraint` from `@schemable-validator/client`** or **Zod's `.superRefine()`**.
+Fields listed in `x-unmapped-fields` are automatically skipped by `validateObject`. If you need client-side validation for them, add it via **`Constraint` from `@uuki/schemable-validator-client`** or **Zod's `.superRefine()`**.
 
-**Using `@schemable-validator/client`:**
+**Using `@uuki/schemable-validator-client`:**
 
 ```typescript
-import { type Constraint } from '@schemable-validator/client'
+import { type Constraint } from '@uuki/schemable-validator-client'
 
 const checkCustomField: Constraint = (state) => {
   if (state.value === '') return state // pass through empty input for optional fields
@@ -172,9 +172,9 @@ When `toJson()` is called, `tel` appears in `x-unmapped-fields` (not in `propert
 
 ---
 
-### JS Side (`@schemable-validator/client`) - `libphonenumber-js`
+### JS Side (`@uuki/schemable-validator-client`) - `libphonenumber-js`
 
-The `Constraint` in `@schemable-validator/client` is a pure function of `FieldState → FieldState`. You can wrap an external library directly.
+The `Constraint` in `@uuki/schemable-validator-client` is a pure function of `FieldState → FieldState`. You can wrap an external library directly.
 
 #### Installation
 
@@ -186,7 +186,7 @@ npm install libphonenumber-js
 
 ```typescript
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { type Constraint } from '@schemable-validator/client'
+import { type Constraint } from '@uuki/schemable-validator-client'
 
 export const checkJapanesePhone: Constraint = (state) => {
   if (state.value === '') return state // pass through empty input for optional fields
@@ -200,7 +200,7 @@ export const checkJapanesePhone: Constraint = (state) => {
 #### Composing with `validateObject`
 
 ```typescript
-import { validateObject } from '@schemable-validator/client'
+import { validateObject } from '@uuki/schemable-validator-client'
 import { checkJapanesePhone } from './constraints/phone'
 
 async function validate(data: Record<string, string>, jsonSchema: ObjectSchema) {

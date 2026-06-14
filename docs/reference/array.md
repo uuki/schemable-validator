@@ -107,12 +107,12 @@ Array fields are submitted via `$_POST` as `tags[]`.
 $result = $schema->toValidator()->validate($_POST)->getResult();
 ```
 
-### Client-side (`@schemable-validator/client`)
+### Client-side (`@uuki/schemable-validator-client`)
 
 Pass a `Record<string, string | string[]>` to `validateObject`.
 
 ```typescript
-import { validateObject } from '@schemable-validator/client'
+import { validateObject } from '@uuki/schemable-validator-client'
 
 const result = validateObject(
   { name: 'Alice', tags: ['php', 'js'] },

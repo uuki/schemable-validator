@@ -107,12 +107,12 @@ $schema = SV::object([
 $result = $schema->toValidator()->validate($_POST)->getResult();
 ```
 
-### クライアント側（`@schemable-validator/client`）
+### クライアント側（`@uuki/schemable-validator-client`）
 
 `validateObject` に `Record<string, string | string[]>` を渡す。
 
 ```typescript
-import { validateObject } from '@schemable-validator/client'
+import { validateObject } from '@uuki/schemable-validator-client'
 
 const result = validateObject(
   { name: 'Alice', tags: ['php', 'js'] },
