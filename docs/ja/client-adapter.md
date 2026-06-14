@@ -138,6 +138,55 @@ formEl.addEventListener('submit', (e) => {
 
 ---
 
+## カスタム Constraint
+
+`validateObject` は各フィールドを **Constraint パイプライン** — `(state: FieldState) => FieldState` 型の純関数の連鎖 — で評価します。各関数は失敗時に `state.errors` にエラーを追加し、通過時はそのまま返します。エラーはすべて蓄積され、最初のエラーで短絡しません。
+
+`composeConstraints` を使うことで、カスタム `Constraint` をビルトインルールと合成できます。
+
+```ts
+import {
+  composeConstraints, constraintsFromSchema, validateObject,
+} from '@uuki/schemable-validator-client'
+import type { Constraint, ObjectSchema } from '@uuki/schemable-validator-client'
+
+// Constraint は純関数: FieldState → FieldState
+const checkJapanesePhone: Constraint = (state) =>
+  /^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$/.test(state.value)
+    ? state
+    : { ...state, errors: [...state.errors, '日本の電話番号形式で入力してください'] }
+
+// 合成: ビルトインの文字列型チェック → カスタム電話番号フォーマットチェック
+const phoneConstraint = composeConstraints([
+  constraintsFromSchema({ type: 'string' }),
+  checkJapanesePhone,
+])
+```
+
+`validateObject` の結果にフィールド単位でマージして適用します。
+
+```ts
+function validateWithCustomRules(data: Record<string, string>) {
+  const base = validateObject(data, schema)
+  const phoneState = phoneConstraint({ value: data.phone ?? '', errors: [] })
+  return {
+    ...base,
+    phone: {
+      value: data.phone ?? '',
+      is_valid: base.phone.is_valid && phoneState.errors.length === 0,
+      errors:
+        [...(base.phone?.errors ?? []), ...phoneState.errors].length > 0
+          ? [...(base.phone?.errors ?? []), ...phoneState.errors]
+          : null,
+    },
+  }
+}
+```
+
+→ 完全な実装サンプル: [サンプル — 4. カスタム Constraint の追加](/ja/examples/client#4-カスタム-constraint-の追加)
+
+---
+
 ## カスタムマッピング
 
 アダプターは大半の PHP ルールを自動変換します。残りはビルダーのメソッドとオプションで対応します。
