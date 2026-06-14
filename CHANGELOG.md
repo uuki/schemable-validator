@@ -1,3 +1,10 @@
+# [0.12.0](https://github.com/uuki/schemable-validator/compare/v0.11.0...v0.12.0) (2026-06-14)
+
+
+### Features
+
+* **client:** add Zod/Valibot adapter sub-paths with onUnknown support ([9c647cb](https://github.com/uuki/schemable-validator/commit/9c647cb4209810d18238d73c8a7752df3821d5d6))
+
 # [0.11.0](https://github.com/uuki/schemable-validator/compare/v0.10.1...v0.11.0) (2026-06-14)
 
 
