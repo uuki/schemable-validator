@@ -10,25 +10,6 @@ The name reflects this: *validator* is the primary role, *schemable* is its defi
 
 ---
 
-## ⚙️ How it works
-
-```
-SV::object([...])          ← PHP: single source of truth
-    │
-    ├─ toValidator()        → server-side validation (Respect/Validation)
-    │
-    └─ toJson()             → JSON Schema draft 2020-12
-           │
-           └─ REST endpoint (WordPress)
-                  │
-                  └─ @schemable-validator/client  → client-side validation
-                     Zod / any JS validator
-```
-
-Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and delegated to the server automatically by the client library.
-
----
-
 ## 📦 Packages
 
 | Package | Description |
@@ -36,6 +17,23 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 | `uuki/schemable-validator` | PHP core library (framework-agnostic) |
 | `wp-schemable-validator` | WordPress plugin — REST endpoint, helpers, admin UI |
 | `@schemable-validator/client` | TypeScript client — validates against JSON Schema output |
+
+---
+
+## 🔧 Installation
+
+```shell
+# PHP core
+composer require uuki/schemable-validator
+
+# WordPress plugin
+cd packages/wp-schemable-validator && composer install --no-dev
+
+# TypeScript client
+npm install @schemable-validator/client
+```
+
+See [docs/01-installation.md](docs/01-installation.md) for full setup.
 
 ---
 
@@ -117,20 +115,22 @@ const parsed = zodSchema.safeParse(formData)
 
 ---
 
-## 🔧 Installation
+## ⚙️ How it works
 
-```shell
-# PHP core
-composer require uuki/schemable-validator
-
-# WordPress plugin
-cd packages/wp-schemable-validator && composer install --no-dev
-
-# TypeScript client
-npm install @schemable-validator/client
+```
+SV::object([...])          ← PHP: single source of truth
+    │
+    ├─ toValidator()        → server-side validation (Respect/Validation)
+    │
+    └─ toJson()             → JSON Schema draft 2020-12
+           │
+           └─ REST endpoint (WordPress)
+                  │
+                  └─ @schemable-validator/client  → client-side validation
+                     Zod / any JS validator
 ```
 
-See [docs/01-installation.md](docs/01-installation.md) for full setup.
+Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and delegated to the server automatically by the client library.
 
 ---
 
