@@ -47,6 +47,14 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Examples',
+        items: [
+          { text: 'Core',      link: '/examples/core' },
+          { text: 'WordPress', link: '/examples/wordpress' },
+          { text: 'Client',    link: '/examples/client' },
+        ],
+      },
+      {
         text: 'Migration',
         items: [
           { text: 'Removal Guide', link: '/removal-guide' },
