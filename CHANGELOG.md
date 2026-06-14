@@ -1,3 +1,10 @@
+## [0.10.1](https://github.com/uuki/schemable-validator/compare/v0.10.0...v0.10.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* correct dead link in reference/extended.md ([e7f430f](https://github.com/uuki/schemable-validator/commit/e7f430f5cb439b447d18763fe05bde78bdc34d29))
+
 # [0.10.0](https://github.com/uuki/schemable-validator/compare/v0.9.1...v0.10.0) (2026-06-14)
 
 
