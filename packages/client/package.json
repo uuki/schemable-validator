@@ -1,6 +1,6 @@
 {
   "name": "@schemable-validator/client",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Client-side validation library for schemable-validator JSON Schema output. No transport, no framework.",
   "type": "module",
   "exports": {
