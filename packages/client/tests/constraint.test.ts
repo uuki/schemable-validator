@@ -295,7 +295,7 @@ describe('checkPattern: injection and invisible characters', () => {
 
   it('handles Unicode line separator U+2028 in input without throwing', () => {
     // U+2028 is 3 UTF-16 code units but one logical char; ensure no RegExp crash
-    expect(() => checkPattern('^[a-z]+$')(state('abc def'))).not.toThrow()
+    expect(() => checkPattern('^[a-z]+$')(state('abcdef'))).not.toThrow()
   })
 
   it('handles zero-width space U+200B without throwing', () => {

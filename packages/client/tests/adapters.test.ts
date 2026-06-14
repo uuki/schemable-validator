@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { z } from 'zod'
 import * as v from 'valibot'
-import { toZodSchema, checkZodSchema }         from '../src/adapters/zod.js'
-import { toValibotSchema, checkValibotSchema } from '../src/adapters/valibot.js'
+import { toZodSchema, checkZodSchema, sv as zodSv, createSv as zodCreateSv }         from '../src/adapters/zod.js'
+import type { ZodRefiner, ZodAsyncRefiner }                                           from '../src/adapters/zod.js'
+import { toValibotSchema, checkValibotSchema, sv as valibotSv, createSv as valibotCreateSv } from '../src/adapters/valibot.js'
+import type { ValibotRefiner, ValibotAsyncRefiner }                                         from '../src/adapters/valibot.js'
 import type { ObjectSchema } from '../src/schema.js'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -467,5 +469,295 @@ describe('checkValibotSchema', () => {
     )
     expect(report.supported).not.toContain('avatar')
     expect(report.unsupported.map(u => u.key)).not.toContain('avatar')
+  })
+})
+
+// ── Zod sv() builder ──────────────────────────────────────────────────────────
+
+describe('zodSv: basic build', () => {
+  it('build() with no methods returns same result as toZodSchema', () => {
+    const json  = schema({ name: { type: 'string' }, age: { type: 'integer' } }, ['name'])
+    const built = zodSv(json).build()
+    const direct = toZodSchema(json)
+    expect(built.safeParse({ name: 'Alice', age: 25 }).success).toBe(true)
+    expect(built.safeParse({ age: 25 }).success).toBe(direct.safeParse({ age: 25 }).success)
+  })
+
+  it('build() respects required / optional', () => {
+    const s = zodSv(schema({ a: { type: 'string' }, b: { type: 'string' } }, ['a'])).build()
+    expect(s.safeParse({ a: 'x' }).success).toBe(true)
+    expect(s.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('zodSv: .extend()', () => {
+  it('adds extra fields not in JSON Schema', () => {
+    const json = schema({ name: { type: 'string' } }, ['name'])
+    const s    = zodSv(json).extend({ file: z.instanceof(File).optional() }).build()
+    expect(s.safeParse({ name: 'Alice' }).success).toBe(true)
+    expect(s.safeParse({ name: 'Alice', file: new File([], 'a.jpg') }).success).toBe(true)
+  })
+
+  it('overrides an existing field', () => {
+    const json = schema({ status: { type: 'string' } }, ['status'])
+    const s    = zodSv(json).extend({ status: z.enum(['active', 'inactive']) }).build()
+    expect(s.safeParse({ status: 'active' }).success).toBe(true)
+    expect(s.safeParse({ status: 'unknown' }).success).toBe(false)
+  })
+})
+
+describe('zodSv: .when()', () => {
+  const whenJson: ObjectSchema = {
+    ...schema(
+      { type: { type: 'string', enum: ['company', 'individual'] }, company_name: { type: 'string' } },
+      ['type'],
+    ),
+    'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }],
+  }
+
+  it('enforces conditional requirement when condition matches', () => {
+    const s = zodSv(whenJson).when().build()
+    expect(s.safeParse({ type: 'company', company_name: 'ACME' }).success).toBe(true)
+    expect(s.safeParse({ type: 'company' }).success).toBe(false)
+  })
+
+  it('does not enforce requirement when condition does not match', () => {
+    const s = zodSv(whenJson).when().build()
+    expect(s.safeParse({ type: 'individual' }).success).toBe(true)
+  })
+
+  it('is a no-op when schema has no x-when', () => {
+    const s = zodSv(schema({ name: { type: 'string' } }, ['name'])).when().build()
+    expect(s.safeParse({ name: 'Alice' }).success).toBe(true)
+  })
+})
+
+describe('zodSv: .refine()', () => {
+  it('runs synchronous cross-field validator', () => {
+    const checkRange: ZodRefiner = (data, ctx) => {
+      if ((data.min as number) >= (data.max as number)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['max'], message: 'max must exceed min' })
+      }
+    }
+    const json = schema({ min: { type: 'integer' }, max: { type: 'integer' } }, ['min', 'max'])
+    const s    = zodSv(json).refine(checkRange).build()
+    expect(s.safeParse({ min: 1, max: 10 }).success).toBe(true)
+    expect(s.safeParse({ min: 10, max: 5 }).success).toBe(false)
+  })
+
+  it('multiple refine() calls all execute', () => {
+    const addError: ZodRefiner = (_data, ctx) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['x'], message: 'err' })
+    const json = schema({ x: { type: 'string' } }, ['x'])
+    const s    = zodSv(json).refine(addError).refine(addError).build()
+    const res  = s.safeParse({ x: 'ok' })
+    expect(res.success).toBe(false)
+    if (!res.success) expect(res.error.issues.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('zodSv: .refineAsync()', () => {
+  it('runs async validator (requires parseAsync)', async () => {
+    const checkAsync: ZodAsyncRefiner = async (data, ctx) => {
+      await Promise.resolve()
+      if (data.name === 'taken') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['name'], message: 'Already taken' })
+      }
+    }
+    const json = schema({ name: { type: 'string' } }, ['name'])
+    const s    = zodSv(json).refineAsync(checkAsync).build()
+    await expect(s.parseAsync({ name: 'alice' })).resolves.toBeTruthy()
+    await expect(s.parseAsync({ name: 'taken' })).rejects.toThrow()
+  })
+
+  it('mixed sync + async refiners all run', async () => {
+    const syncErr: ZodRefiner = (_d, ctx) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['a'], message: 'sync' })
+    const asyncErr: ZodAsyncRefiner = async (_d, ctx) => {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['b'], message: 'async' })
+    }
+    const json = schema({ a: { type: 'string' }, b: { type: 'string' } }, ['a', 'b'])
+    const s    = zodSv(json).refine(syncErr).refineAsync(asyncErr).build()
+    const res  = await s.safeParseAsync({ a: 'x', b: 'y' })
+    expect(res.success).toBe(false)
+    if (!res.success) {
+      const paths = res.error.issues.map(i => i.path[0])
+      expect(paths).toContain('a')
+      expect(paths).toContain('b')
+    }
+  })
+})
+
+describe('zodSv: .when() call order independence', () => {
+  const whenJson: ObjectSchema = {
+    ...schema(
+      { type: { type: 'string', enum: ['corp'] }, corp_id: { type: 'string' } },
+      ['type'],
+    ),
+    'x-when': [{ field: 'type', op: '===', equals: 'corp', require: ['corp_id'] }],
+  }
+
+  it('refine before when produces same result as when before refine', () => {
+    const errRefiner: ZodRefiner = (_d, ctx) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['extra'], message: 'test' })
+
+    const s1 = zodSv(whenJson).refine(errRefiner).when().build()
+    const s2 = zodSv(whenJson).when().refine(errRefiner).build()
+
+    const r1 = s1.safeParse({ type: 'corp' })
+    const r2 = s2.safeParse({ type: 'corp' })
+
+    expect(r1.success).toBe(false)
+    expect(r2.success).toBe(false)
+    if (!r1.success && !r2.success) {
+      const paths1 = r1.error.issues.map(i => i.path[0] as string)
+      const paths2 = r2.error.issues.map(i => i.path[0] as string)
+      expect(paths1).toContain('corp_id')
+      expect(paths1).toContain('extra')
+      expect(paths2).toContain('corp_id')
+      expect(paths2).toContain('extra')
+    }
+  })
+})
+
+describe('zodCreateSv: factory config', () => {
+  it('shares onUnknown policy across schemas', () => {
+    const factory = zodCreateSv({ onUnknown: 'throw' })
+    const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
+    expect(() => factory(json).build()).toThrow('hostname')
+  })
+
+  it('per-schema onUnknown() overrides factory config', () => {
+    const factory = zodCreateSv({ onUnknown: 'throw' })
+    const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
+    expect(() => factory(json).onUnknown('warn').build()).not.toThrow()
+  })
+
+  it('check: true warns during build()', () => {
+    const warn    = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const factory = zodCreateSv({ check: true })
+    const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
+    factory(json).build()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[schemable]'), expect.anything())
+  })
+})
+
+// ── Valibot sv() builder ──────────────────────────────────────────────────────
+
+describe('valibotSv: basic build', () => {
+  it('build() with no methods returns same result as toValibotSchema', () => {
+    const json   = schema({ name: { type: 'string' }, age: { type: 'integer' } }, ['name'])
+    const built  = valibotSv(json).build()
+    expect(v.safeParse(built, { name: 'Alice', age: 25 }).success).toBe(true)
+    expect(v.safeParse(built, { age: 25 }).success).toBe(false)
+  })
+
+  it('build() respects required / optional', () => {
+    const s = valibotSv(schema({ a: { type: 'string' }, b: { type: 'string' } }, ['a'])).build()
+    expect(v.safeParse(s, { a: 'x' }).success).toBe(true)
+    expect(v.safeParse(s, {}).success).toBe(false)
+  })
+})
+
+describe('valibotSv: .extend()', () => {
+  it('adds extra fields not in JSON Schema', () => {
+    const json = schema({ name: { type: 'string' } }, ['name'])
+    const s    = valibotSv(json).extend({ score: v.optional(v.number()) }).build()
+    expect(v.safeParse(s, { name: 'Alice' }).success).toBe(true)
+    expect(v.safeParse(s, { name: 'Alice', score: 9.5 }).success).toBe(true)
+    expect(v.safeParse(s, { name: 'Alice', score: 'bad' }).success).toBe(false)
+  })
+
+  it('overrides an existing field', () => {
+    const json = schema({ status: { type: 'string' } }, ['status'])
+    const s    = valibotSv(json).extend({ status: v.picklist(['active', 'inactive']) }).build()
+    expect(v.safeParse(s, { status: 'active' }).success).toBe(true)
+    expect(v.safeParse(s, { status: 'unknown' }).success).toBe(false)
+  })
+})
+
+describe('valibotSv: .when()', () => {
+  const whenJson: ObjectSchema = {
+    ...schema(
+      { type: { type: 'string', enum: ['company', 'individual'] }, company_name: { type: 'string' } },
+      ['type'],
+    ),
+    'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }],
+  }
+
+  it('enforces conditional requirement when condition matches', () => {
+    const s = valibotSv(whenJson).when().build()
+    expect(v.safeParse(s, { type: 'company', company_name: 'ACME' }).success).toBe(true)
+    expect(v.safeParse(s, { type: 'company' }).success).toBe(false)
+  })
+
+  it('does not enforce requirement when condition does not match', () => {
+    const s = valibotSv(whenJson).when().build()
+    expect(v.safeParse(s, { type: 'individual' }).success).toBe(true)
+  })
+
+  it('is a no-op when schema has no x-when', () => {
+    const s = valibotSv(schema({ name: { type: 'string' } }, ['name'])).when().build()
+    expect(v.safeParse(s, { name: 'Alice' }).success).toBe(true)
+  })
+})
+
+describe('valibotSv: .refine()', () => {
+  it('runs synchronous cross-field validator', () => {
+    const checkRange: ValibotRefiner = ({ dataset, addIssue }) => {
+      if (!dataset.typed) return
+      const d = dataset.value as { min: number; max: number }
+      if (d.min >= d.max) addIssue({ message: 'max must exceed min' })
+    }
+    const json = schema({ min: { type: 'integer' }, max: { type: 'integer' } }, ['min', 'max'])
+    const s    = valibotSv(json).refine(checkRange).build()
+    expect(v.safeParse(s, { min: 1, max: 10 }).success).toBe(true)
+    expect(v.safeParse(s, { min: 10, max: 5 }).success).toBe(false)
+  })
+})
+
+describe('valibotSv: .refineAsync()', () => {
+  it('runs async validator (requires safeParseAsync)', async () => {
+    const checkAsync: ValibotAsyncRefiner = async ({ dataset, addIssue }) => {
+      if (!dataset.typed) return
+      await Promise.resolve()
+      const d = dataset.value as { name: string }
+      if (d.name === 'taken') addIssue({ message: 'Already taken' })
+    }
+    const json = schema({ name: { type: 'string' } }, ['name'])
+    const s    = valibotSv(json).refineAsync(checkAsync).build()
+    await expect(v.safeParseAsync(s, { name: 'alice' })).resolves.toMatchObject({ success: true })
+    const fail = await v.safeParseAsync(s, { name: 'taken' })
+    expect(fail.success).toBe(false)
+  })
+
+  it('auto-selects objectAsync when async refiner is used', () => {
+    const asyncFn: ValibotAsyncRefiner = async () => { await Promise.resolve() }
+    const json = schema({ name: { type: 'string' } }, ['name'])
+    const s    = valibotSv(json).refineAsync(asyncFn).build()
+    // pipeAsync/objectAsync have async: true
+    expect((s as { async?: boolean }).async).toBe(true)
+  })
+})
+
+describe('valibotCreateSv: factory config', () => {
+  it('shares onUnknown policy across schemas', () => {
+    const factory = valibotCreateSv({ onUnknown: 'throw' })
+    const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
+    expect(() => factory(json).build()).toThrow('hostname')
+  })
+
+  it('per-schema onUnknown() overrides factory config', () => {
+    const factory = valibotCreateSv({ onUnknown: 'throw' })
+    const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
+    expect(() => factory(json).onUnknown('warn').build()).not.toThrow()
+  })
+
+  it('check: true warns during build()', () => {
+    const warn    = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const factory = valibotCreateSv({ check: true })
+    const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
+    factory(json).build()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[schemable]'), expect.anything())
   })
 })
