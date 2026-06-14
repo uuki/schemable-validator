@@ -111,7 +111,9 @@ const evaluateConditional = (
   data: Readonly<Record<string, string | readonly string[]>>,
   result: Record<string, FieldResult>,
 ): void => {
-  const [[field, matcher]] = Object.entries(cond.if.properties)
+  const [entry] = Object.entries(cond.if.properties)
+  if (!entry) return
+  const [field, matcher] = entry
   const matches = resolveString(data[field]) === String(matcher.const)
   if (!matches) return
   for (const name of cond.then.required ?? []) {
