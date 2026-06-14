@@ -4,6 +4,7 @@ const sidebarEn = [
   {
     text: 'Getting Started',
     items: [
+      { text: 'Overview',     link: '/overview' },
       { text: 'Installation', link: '/installation' },
     ],
   },
@@ -71,6 +72,7 @@ const sidebarJa = [
   {
     text: 'はじめに',
     items: [
+      { text: '概要',          link: '/ja/overview' },
       { text: 'インストール', link: '/ja/installation' },
     ],
   },
