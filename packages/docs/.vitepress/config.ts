@@ -15,6 +15,8 @@ const sidebarEn = [
       { text: 'SchemaBuilder',      link: '/schema-builder' },
       { text: 'Custom Validation',  link: '/custom-validation' },
       { text: 'MessageDict (i18n)', link: '/message-dict' },
+      { text: 'Client Adapter',     link: '/client-adapter' },
+      { text: 'Client API',         link: '/client-api' },
     ],
   },
   {
@@ -63,11 +65,13 @@ const sidebarJa = [
   {
     text: 'ガイド',
     items: [
-      { text: 'Feature Guide',      link: '/ja/feature-guide' },
-      { text: 'Interfaces',         link: '/ja/interfaces' },
+      { text: '機能ガイド',            link: '/ja/feature-guide' },
+      { text: 'インターフェース',      link: '/ja/interfaces' },
       { text: 'SchemaBuilder',      link: '/ja/schema-builder' },
-      { text: 'Custom Validation',  link: '/ja/custom-validation' },
+      { text: 'カスタムバリデーション', link: '/ja/custom-validation' },
       { text: 'MessageDict (i18n)', link: '/ja/message-dict' },
+      { text: 'クライアントアダプター', link: '/ja/client-adapter' },
+      { text: 'クライアント API',    link: '/ja/client-api' },
     ],
   },
   {

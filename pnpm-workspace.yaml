@@ -2,3 +2,12 @@ packages:
   - playground
   - packages/e2e
   - packages/docs
+
+shamefullyHoist: true
+
+allowBuilds:
+  esbuild: true
+  fs-ext-extra-prebuilt: true
+
+auditConfig:
+  minimumReleaseAge: '0 seconds'

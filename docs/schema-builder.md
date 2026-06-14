@@ -1,6 +1,39 @@
-# SchemaBuilder - JSON Output Examples
+# SchemaBuilder
 
-Schemas defined with `SV::object()` can be converted to JSON Schema (draft 2020-12) using `toJson()` / `toJsonSchema()`.
+`SchemaBuilder` is the central class of Schemable Validator. It lets you define all validation rules in PHP once and use them in two ways simultaneously:
+
+- **Server-side** — convert to a Respect/Validation-based `Validator` via `toValidator()`.
+- **Client-side** — export to standard JSON Schema (draft 2020-12) via `toJson()` / `toJsonSchema()`, then consume from any JS validator (Zod, Valibot, AJV, …).
+
+### Key features
+
+| Feature | Description |
+|---|---|
+| Fluent builder | `SV::string()->email()->min(3)->max(100)` |
+| JSON Schema export | `toJson()` / `toJsonSchema()` — standard draft 2020-12 |
+| Server validation | `toValidator()->validate($data)->getResult()` |
+| Conditional required | `->when('type', SV::equal('company'), ['company_name'])` |
+| WordPress REST | `schv_register_schema('/contact', $schema)` — exposes schema as a GET endpoint |
+| Unmapped fields | `SV::file()` / `SV::respect()` are tracked in `x-unmapped-fields`, validated server-side only |
+
+### Minimal example
+
+```php
+use SchemableValidator\SV;
+
+$schema = SV::object([
+  'name'  => SV::string()->min(1)->max(100),
+  'email' => SV::string()->email(),
+  'tel'   => SV::string()->pattern('^0\d{9,10}$')->optional(),
+]);
+
+// Server-side validation
+$result = $schema->toValidator()->validate($_POST)->getResult();
+
+// Export for JS clients
+header('Content-Type: application/json');
+echo $schema->toJson();
+```
 
 ---
 

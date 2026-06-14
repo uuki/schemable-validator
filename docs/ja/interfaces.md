@@ -1,4 +1,4 @@
-# Interfaces
+# インターフェース
 
 ## WordPress Plugin
 

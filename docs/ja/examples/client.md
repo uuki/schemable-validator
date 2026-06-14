@@ -30,7 +30,25 @@ REST エンドポイントからスキーマを取得し、フォーム送信時
 
 ---
 
-## 3. カスタム Constraint の追加
+## 3. フレームワークバリデーターへの注入
+
+サーバーで定義した JSON Schema を取得して Zod・Valibot・AJV に注入します。PHP 側の定義を変えるだけでクライアント側のルールも自動的に同期されます。
+
+Zod・Valibot はビルトインアダプター経由、AJV は JSON Schema をそのまま受け取ります。
+
+:::code-group
+
+<<< ../../../packages/client/examples/07-with-ajv.ts [AJV]
+
+<<< ../../../packages/client/examples/05-with-zod.ts [Zod]
+
+<<< ../../../packages/client/examples/06-with-valibot.ts [Valibot]
+
+:::
+
+---
+
+## 4. カスタム Constraint の追加
 
 `Constraint`（`FieldState → FieldState` の純関数）を定義し、組み込みバリデーションに追加検証を合成します。
 
@@ -40,7 +58,7 @@ REST エンドポイントからスキーマを取得し、フォーム送信時
 
 ---
 
-## 4. Result 型でのチェーン
+## 5. Result 型でのチェーン
 
 `validateObject` の結果を `Result` 型でラップし、`flatMap` で成功/失敗を連鎖させます。
 

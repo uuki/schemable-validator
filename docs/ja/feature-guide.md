@@ -1,4 +1,4 @@
-# Feature Guide
+# 機能ガイド
 
 ## Validator
 

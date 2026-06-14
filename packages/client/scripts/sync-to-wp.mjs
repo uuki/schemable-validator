@@ -1,5 +1,5 @@
 // Copy client dist to the WordPress plugin's assets directory so it can be
-// served via plugins_url('dist/client/index.js', ...) in PHP examples.
+// served via plugins_url('dist/client/index.mjs', ...) in PHP examples.
 
 import { copyFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,7 +10,7 @@ const dest = join(root, 'wp-schemable-validator/dist/client')
 
 mkdirSync(dest, { recursive: true })
 
-for (const file of ['index.js', 'index.js.map', 'index.cjs', 'index.cjs.map', 'index.d.ts', 'index.d.cts']) {
+for (const file of ['index.mjs', 'index.mjs.map', 'index.cjs', 'index.cjs.map', 'index.d.mts', 'index.d.cts']) {
   copyFileSync(join(src, file), join(dest, file))
 }
 

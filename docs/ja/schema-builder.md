@@ -1,6 +1,39 @@
-# SchemaBuilder - JSON 出力サンプル
+# SchemaBuilder
 
-`SV::object()` で定義したスキーマは `toJson()` / `toJsonSchema()` で JSON Schema (draft 2020-12) に変換できます。
+`SchemaBuilder` は Schemable Validator の中心となるクラスです。バリデーションルールを PHP で一度定義するだけで、以下の2通りの用途に同時に使えます。
+
+- **サーバーサイド** — `toValidator()` で Respect/Validation ベースの `Validator` に変換して検証。
+- **クライアントサイド** — `toJson()` / `toJsonSchema()` で標準 JSON Schema (draft 2020-12) にエクスポートし、Zod・Valibot・AJV などの JS バリデーターで利用。
+
+### 主な機能
+
+| 機能 | 説明 |
+|---|---|
+| フルエント API | `SV::string()->email()->min(3)->max(100)` |
+| JSON Schema エクスポート | `toJson()` / `toJsonSchema()` — draft 2020-12 準拠 |
+| サーバーバリデーション | `toValidator()->validate($data)->getResult()` |
+| 条件付き必須 | `->when('type', SV::equal('company'), ['company_name'])` |
+| WordPress REST | `schv_register_schema('/contact', $schema)` — スキーマを GET エンドポイントとして公開 |
+| 変換不可フィールド | `SV::file()` / `SV::respect()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
+
+### 最小構成の例
+
+```php
+use SchemableValidator\SV;
+
+$schema = SV::object([
+  'name'  => SV::string()->min(1)->max(100),
+  'email' => SV::string()->email(),
+  'tel'   => SV::string()->pattern('^0\d{9,10}$')->optional(),
+]);
+
+// サーバーサイド検証
+$result = $schema->toValidator()->validate($_POST)->getResult();
+
+// JS クライアント向けにエクスポート
+header('Content-Type: application/json');
+echo $schema->toJson();
+```
 
 ---
 
