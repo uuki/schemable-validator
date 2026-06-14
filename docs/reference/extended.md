@@ -1,4 +1,4 @@
-# SV::file() / SV::respect() — JSON Schema 非対応型
+# SV::file() / SV::respect() - JSON Schema 非対応型
 
 これらの型は Respect/Validation でサーバー側検証を行いますが、JSON Schema に変換できません。
 `toJsonSchema()` の出力では `properties` に含まれず、`x-unmapped-fields` にフィールド名が記録されます。
@@ -172,7 +172,7 @@ $schema = SV::object([
 ]);
 ```
 
-詳細は [高度な利用例](/06-custom-validation) を参照。
+詳細は [高度な利用例](/custom-validation) を参照。
 
 ### JSON Schema 出力
 

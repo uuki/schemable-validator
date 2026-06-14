@@ -1,8 +1,14 @@
 <?php
 
+if (!function_exists('schv_message_dict')) {
+  function schv_message_dict(): \SchemableValidator\I18n\MessageDict {
+    return apply_filters('schv_message_dict', new \SchemableValidator\I18n\MessageDict());
+  }
+}
+
 if (!function_exists('schv_validator')) {
-  function schv_validator(array $schema, array $options = []): \SchemableValidator\Validator {
-    return new \SchemableValidator\Validator($schema, $options);
+  function schv_validator(array $schema, array $options = [], ?\SchemableValidator\I18n\MessageDict $dict = null): \SchemableValidator\Validator {
+    return new \SchemableValidator\Validator($schema, $options, [], $dict ?? schv_message_dict());
   }
 }
 

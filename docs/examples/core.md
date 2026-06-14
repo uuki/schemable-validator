@@ -1,4 +1,4 @@
-# Examples — Core
+# Examples - Core
 
 フレームワーク非依存のコアライブラリを使った実装例です。
 

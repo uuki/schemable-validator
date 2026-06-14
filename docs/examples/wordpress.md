@@ -1,4 +1,4 @@
-# Examples — WordPress
+# Examples - WordPress
 
 WordPress プラグインとして有効化した環境での実装例です。`schv_*` ヘルパー関数を利用します。
 

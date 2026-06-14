@@ -1,4 +1,4 @@
-# カスタムバリデーション — 高度な利用例
+# カスタムバリデーション - 高度な利用例
 
 ---
 
@@ -103,7 +103,7 @@ const schema = buildZodSchema(jsonSchema).extend({
 
 電話番号は正規表現による近似では対応しきれない典型例である。`libphonenumber`（Google 製）は ITU-T E.164 に基づく国別番号体系のデータベースを持ち、実在する番号範囲を正確に検証できる。
 
-### PHP 側 — `giggsey/libphonenumber-for-php`
+### PHP 側 - `giggsey/libphonenumber-for-php`
 
 #### インストール
 
@@ -172,7 +172,7 @@ $schema = SV::object([
 
 ---
 
-### JS 側 (`@schemable-validator/client`) — `libphonenumber-js`
+### JS 側 (`@schemable-validator/client`) - `libphonenumber-js`
 
 `@schemable-validator/client` の `Constraint` は `FieldState → FieldState` の純関数。外部ライブラリを直接ラップできる。
 
@@ -222,7 +222,7 @@ async function validate(data: Record<string, string>, jsonSchema: ObjectSchema) 
 
 ---
 
-### JS 側 (Zod) — `libphonenumber-js`
+### JS 側 (Zod) - `libphonenumber-js`
 
 ```typescript
 import { z } from 'zod'

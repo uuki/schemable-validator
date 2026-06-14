@@ -15,6 +15,7 @@ require_once SV_VENDOR_DIR . '/autoload.php';
 use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 use SchemableValidator\Controllers\CurlController;
+use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
 
@@ -37,14 +38,17 @@ final class Validator {
   /** @var array<string, mixed> */
   private array $state;
 
+  private ?MessageDict $dict;
+
   /**
    * Validator constructor.
    *
-   * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances. Validation rules can be found here https://github.com/Respect/Validation/blob/2.2/docs/list-of-rules.md
+   * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = []) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null) {
     $this->schema = $schema;
     $this->conditionals = $conditionals;
+    $this->dict = $dict;
     $this->options = array_merge([
       'recaptcha_provider' => 'https://www.google.com/recaptcha/api/siteverify',
       'recaptcha_secret' => '',
@@ -77,7 +81,7 @@ final class Validator {
 
     foreach($this->schema as $name => $validator) {
       $value = $data[$name] ?? null;
-      $this->state['result'][$name] = $this->assert($value, $validator);
+      $this->state['result'][$name] = $this->assert($value, $validator, $name);
     }
 
     // Apply conditional requirements
@@ -120,7 +124,9 @@ final class Validator {
         if ($isEmpty) {
           $state = $this->createState();
           $state['value']  = $val;
-          $state['errors'] = "- {$requiredField} is required";
+          $state['errors'] = $this->dict
+            ? $this->dict->resolve($requiredField, 'required', "{$requiredField} is required")
+            : "{$requiredField} is required";
           $this->state['result'][$requiredField] = $state;
         }
       }
@@ -164,7 +170,7 @@ final class Validator {
       $this->state['result'][$name] = [];
 
       foreach ($files as $file_data) {
-        $this->state['result'][$name][] = $this->assert($file_data, $validator);
+        $this->state['result'][$name][] = $this->assert($file_data, $validator, $name);
       }
     }
 
@@ -317,6 +323,28 @@ final class Validator {
     return 0.0;
   }
 
+  /**
+   * Isolates all Respect exception internals.
+   * If Respect changes its exception hierarchy, update only here.
+   * Tested against respect/validation 2.2.4.
+   *
+   * @return array<string, string> ruleId => defaultMessage
+   */
+  private static function extractRuleMessages(
+    \Respect\Validation\Exceptions\ValidationException $e
+  ): array {
+    $messages = [];
+    if ($e instanceof \Respect\Validation\Exceptions\NestedValidationException) {
+      foreach ($e->getIterator() as $child) {
+        $messages[$child->getId()] = $child->getMessage();
+      }
+    }
+    if (empty($messages)) {
+      $messages[$e->getId()] = $e->getMessage();
+    }
+    return $messages;
+  }
+
   private function createState(): array {
     return [
       'value' => null,
@@ -325,14 +353,21 @@ final class Validator {
     ];
   }
 
-  private function assert($data, $validator): array {
+  private function assert($data, $validator, string $field = ''): array {
     $newState = $this->createState();
     $newState['value'] = $data;
 
     try {
       $validator->assert($data);
     } catch(\Respect\Validation\Exceptions\ValidationException $e) {
-      $newState['errors'] = $e->getFullMessage();
+      $ruleMessages = self::extractRuleMessages($e);
+      $resolved = [];
+      foreach ($ruleMessages as $ruleId => $defaultMsg) {
+        $resolved[] = ($this->dict !== null && $field !== '')
+          ? $this->dict->resolve($field, $ruleId, $defaultMsg)
+          : $defaultMsg;
+      }
+      $newState['errors'] = implode("\n", $resolved);
     }
 
     if (!isset($newState['errors'])) {

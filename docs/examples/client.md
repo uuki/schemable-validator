@@ -1,4 +1,4 @@
-# Examples — Client
+# Examples - Client
 
 `@schemable-validator/client` を使ったクライアントサイドの実装例です。
 

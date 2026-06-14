@@ -4,6 +4,7 @@ namespace SchemableValidator;
 
 use Respect\Validation\Validator as v;
 use SchemableValidator\Contracts\SchemaProviderInterface;
+use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
@@ -17,6 +18,8 @@ final class SchemaBuilder implements SchemaProviderInterface {
    * @var array<array{field: string, expr: WhenExpr, require: string[]}>
    */
   private $conditionals = [];
+
+  private ?MessageDict $messageDict = null;
 
   /** @param array<string, AbstractFieldSchema> $fields */
   public function __construct(array $fields) {
@@ -43,6 +46,11 @@ final class SchemaBuilder implements SchemaProviderInterface {
     return $this;
   }
 
+  public function withMessages(MessageDict $dict): self {
+    $this->messageDict = $dict;
+    return $this;
+  }
+
   /** Build a Validator from the schema, passing through optional Validator options. */
   public function toValidator(array $options = []): Validator {
     $schema = [];
@@ -52,7 +60,7 @@ final class SchemaBuilder implements SchemaProviderInterface {
       $schema[$name] = $field->isRequired() ? $respect : v::optional($respect);
     }
     $conditionals = $this->conditionals;
-    return new Validator($schema, $options, $conditionals);
+    return new Validator($schema, $options, $conditionals, $this->messageDict);
   }
 
   /**

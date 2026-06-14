@@ -16,11 +16,11 @@
 | [`SV::boolean()`](./scalar) | `"boolean"` | 真偽値 |
 | [`SV::enum(values)`](./scalar) | `"string"` + `enum` | 選択肢から1つを選ぶ |
 | [`SV::array(items)`](./array) | `"array"` | 配列。各要素のスキーマを指定できる |
-| [`SV::file(accept)`](./extended) | —（JSON Schema 非対応） | ファイルアップロード |
-| [`SV::respect(rule)`](./extended) | —（JSON Schema 非対応） | Respect/Validation ルールの直接指定 |
-| [`SV::postalCode(country)`](./extended#postalcode) | —（JSON Schema 非対応） | 国別郵便番号 |
-| [`SV::creditCard()`](./extended#creditcard) | —（JSON Schema 非対応） | クレジットカード番号（Luhn） |
-| [`SV::iban()`](./extended#iban) | —（JSON Schema 非対応） | IBAN |
+| [`SV::file(accept)`](./extended) | -（JSON Schema 非対応） | ファイルアップロード |
+| [`SV::respect(rule)`](./extended) | -（JSON Schema 非対応） | Respect/Validation ルールの直接指定 |
+| [`SV::postalCode(country)`](./extended#postalcode) | -（JSON Schema 非対応） | 国別郵便番号 |
+| [`SV::creditCard()`](./extended#creditcard) | -（JSON Schema 非対応） | クレジットカード番号（Luhn） |
+| [`SV::iban()`](./extended#iban) | -（JSON Schema 非対応） | IBAN |
 
 ## 文字列制約
 
@@ -83,4 +83,4 @@
 | [`SV::lessThanOrEqual($n)`](./object#when-expressions) | `<=` | 値が $n 以下のとき |
 | [`SV::greaterThan($n)`](./object#when-expressions) | `>` | 値が $n より大きいとき |
 | [`SV::lessThan($n)`](./object#when-expressions) | `<` | 値が $n 未満のとき |
-| [`SV::field('name')`](./object#when-expressions) | — | 比較先を別フィールドの値にする |
+| [`SV::field('name')`](./object#when-expressions) | - | 比較先を別フィールドの値にする |

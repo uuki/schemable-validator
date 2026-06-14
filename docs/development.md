@@ -29,9 +29,9 @@ pnpm dev   # http://127.0.0.1:9400 で起動
 
 `pnpm dev` の内部処理:
 
-1. `sync-core` — `packages/core/` を `packages/wp-schemable-validator/lib/core/` へ rsync
-2. `composer install --no-dev` — プラグインの依存を解決
-3. `wp-playground-cli start` — WP Playground を起動
+1. `sync-core` - `packages/core/` を `packages/wp-schemable-validator/lib/core/` へ rsync
+2. `composer install --no-dev` - プラグインの依存を解決
+3. `wp-playground-cli start` - WP Playground を起動
 
 ### blueprint.json
 

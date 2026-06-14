@@ -1,4 +1,4 @@
-# SV::integer() / SV::number() — 数値型
+# SV::integer() / SV::number() - 数値型
 
 数値入力に使う型。整数のみの場合は `integer`、小数を含む場合は `number` を使います。
 

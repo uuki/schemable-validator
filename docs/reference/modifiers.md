@@ -1,4 +1,4 @@
-# 修飾子 — optional / nullable
+# 修飾子 - optional / nullable
 
 修飾子はすべてのフィールド型（`string` / `integer` / `number` / `boolean` / `enum` / `file` / `respect`）に付与できます。
 

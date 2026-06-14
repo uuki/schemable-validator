@@ -10,9 +10,10 @@ export default defineConfig({
 
   themeConfig: {
     search: { provider: 'local' },
+    outline: { level: [2, 3], label: '目次' },
 
     nav: [
-      { text: 'Guide', link: '/01-installation' },
+      { text: 'Guide', link: '/installation' },
       { text: 'GitHub', link: 'https://github.com/uuki/schemable-validator' },
     ],
 
@@ -20,16 +21,25 @@ export default defineConfig({
       {
         text: 'Getting Started',
         items: [
-          { text: 'Installation', link: '/01-installation' },
+          { text: 'Installation', link: '/installation' },
         ],
       },
       {
         text: 'Guide',
         items: [
-          { text: 'Feature Guide',      link: '/02-feature-guide' },
-          { text: 'Interfaces',         link: '/03-interfaces' },
-          { text: 'SchemaBuilder',      link: '/05-schema-builder' },
-          { text: 'Custom Validation',  link: '/06-custom-validation' },
+          { text: 'Feature Guide',      link: '/feature-guide' },
+          { text: 'Interfaces',         link: '/interfaces' },
+          { text: 'SchemaBuilder',      link: '/schema-builder' },
+          { text: 'Custom Validation',  link: '/custom-validation' },
+          { text: 'MessageDict (i18n)', link: '/message-dict' },
+        ],
+      },
+      {
+        text: 'Examples',
+        items: [
+          { text: 'Core',      link: '/examples/core' },
+          { text: 'WordPress', link: '/examples/wordpress' },
+          { text: 'Client',    link: '/examples/client' },
         ],
       },
       {
@@ -47,14 +57,6 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Examples',
-        items: [
-          { text: 'Core',      link: '/examples/core' },
-          { text: 'WordPress', link: '/examples/wordpress' },
-          { text: 'Client',    link: '/examples/client' },
-        ],
-      },
-      {
         text: 'Migration',
         items: [
           { text: 'Removal Guide', link: '/removal-guide' },
@@ -63,7 +65,7 @@ export default defineConfig({
       {
         text: 'Contributing',
         items: [
-          { text: 'Development', link: '/04-development' },
+          { text: 'Development', link: '/development' },
         ],
       },
     ],

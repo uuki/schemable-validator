@@ -1,4 +1,4 @@
-# SV::boolean() / SV::enum() — 真偽値・選択肢型
+# SV::boolean() / SV::enum() - 真偽値・選択肢型
 
 ---
 

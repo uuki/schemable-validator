@@ -1,4 +1,4 @@
-# SV::object() — オブジェクト定義と出力
+# SV::object() - オブジェクト定義と出力
 
 ---
 
@@ -121,7 +121,7 @@ $result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
 ```json
 {
   "name":  { "value": "Alice", "is_valid": true,  "errors": null },
-  "email": { "value": "bad",   "is_valid": false, "errors": "\"bad\" must be a valid email address" }
+  "email": { "value": "bad",   "is_valid": false, "errors": "\"bad\" must be valid email" }
 }
 ```
 
@@ -159,7 +159,7 @@ $schema->when(string $field, WhenExpr|scalar $expr, array $require): self
 | `SV::lessThanOrEqual($n)` | `<= n` | 数値・以下 |
 | `SV::greaterThan($n)` | `> n` | 数値・より大きい |
 | `SV::lessThan($n)` | `< n` | 数値・未満 |
-| `SV::field('name')` | — | 別フィールドの値を参照（上記と組み合わせる） |
+| `SV::field('name')` | - | 別フィールドの値を参照（上記と組み合わせる） |
 
 `SV::equal()` / `SV::notEqual()` の引数に `SV::field('name')` を渡すと、**2フィールド間の比較**になります。  
 数値演算子（`>=` / `<=` / `>` / `<`）も同様にフィールド参照を受け取れます。

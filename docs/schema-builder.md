@@ -1,4 +1,4 @@
-# SchemaBuilder — JSON 出力サンプル
+# SchemaBuilder - JSON 出力サンプル
 
 `SV::object()` で定義したスキーマは `toJson()` / `toJsonSchema()` で JSON Schema (draft 2020-12) に変換できます。
 
@@ -13,8 +13,8 @@
 | `SV::number()` | `"number"` | `.min()` `.max()` (int/float) |
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
-| `SV::file(['image/jpeg'])` | — | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
-| `SV::respect(v::...)` | — | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::file(['image/jpeg'])` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::respect(v::...)` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
 
 修飾子:
 
@@ -177,8 +177,8 @@ $result = $validator->validate(['name' => '', 'email' => 'not-an-email'])->getRe
 
 ```json
 {
-  "name":  { "value": "",             "errors": "- \"\" must have a length between 1 and 100", "is_valid": false },
-  "email": { "value": "not-an-email", "errors": "- \"not-an-email\" must be valid email",       "is_valid": false }
+  "name":  { "value": "",             "errors": "\"\" must have a length between 1 and 100", "is_valid": false },
+  "email": { "value": "not-an-email", "errors": "\"not-an-email\" must be valid email",         "is_valid": false }
 }
 ```
 
