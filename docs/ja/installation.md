@@ -13,7 +13,7 @@
 ### PHP library
 
 ```shell
-composer require uuki/schemable-validator:0.9.0
+composer require uuki/schemable-validator
 ```
 
 ### プラグインパターン - WordPress
