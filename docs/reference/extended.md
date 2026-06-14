@@ -172,7 +172,7 @@ $schema = SV::object([
 ]);
 ```
 
-See [Advanced Usage](/reference/custom-validation) for more details.
+See [Advanced Usage](/custom-validation) for more details.
 
 ### JSON Schema Output
 
