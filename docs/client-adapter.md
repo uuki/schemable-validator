@@ -138,55 +138,6 @@ formEl.addEventListener('submit', (e) => {
 
 ---
 
-## Custom constraints
-
-`validateObject` evaluates each field through a **Constraint pipeline** — a chain of pure functions typed as `(state: FieldState) => FieldState`. Each function appends to `state.errors` on failure and passes the state through unchanged on success. All errors are accumulated; there is no short-circuit.
-
-You can define a custom `Constraint` and compose it alongside the built-in rules with `composeConstraints`:
-
-```ts
-import {
-  composeConstraints, constraintsFromSchema, validateObject,
-} from '@uuki/schemable-validator-client'
-import type { Constraint, ObjectSchema } from '@uuki/schemable-validator-client'
-
-// A Constraint is a pure function: FieldState → FieldState
-const checkJapanesePhone: Constraint = (state) =>
-  /^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$/.test(state.value)
-    ? state
-    : { ...state, errors: [...state.errors, '日本の電話番号形式で入力してください'] }
-
-// Compose: built-in string type check → custom phone format check
-const phoneConstraint = composeConstraints([
-  constraintsFromSchema({ type: 'string' }),
-  checkJapanesePhone,
-])
-```
-
-Apply it on top of `validateObject` output by merging the field result:
-
-```ts
-function validateWithCustomRules(data: Record<string, string>) {
-  const base = validateObject(data, schema)
-  const phoneState = phoneConstraint({ value: data.phone ?? '', errors: [] })
-  return {
-    ...base,
-    phone: {
-      value: data.phone ?? '',
-      is_valid: base.phone.is_valid && phoneState.errors.length === 0,
-      errors:
-        [...(base.phone?.errors ?? []), ...phoneState.errors].length > 0
-          ? [...(base.phone?.errors ?? []), ...phoneState.errors]
-          : null,
-    },
-  }
-}
-```
-
-→ Full implementation sample: [Examples — 4. Adding a Custom Constraint](/examples/client#4-adding-a-custom-constraint)
-
----
-
 ## Custom mapping
 
 The adapter converts most PHP rules automatically. Use these builder methods and options to handle the rest.
@@ -509,6 +460,53 @@ async function buildOrderSchema() {
     .build()
 }
 ```
+
+### Custom constraints
+
+`validateObject` evaluates each field through a **Constraint pipeline** — a chain of pure functions typed as `(state: FieldState) => FieldState`. Each function appends to `state.errors` on failure and passes the state through unchanged on success. All errors are accumulated; there is no short-circuit.
+
+Define a custom `Constraint` and compose it alongside the built-in rules with `composeConstraints`:
+
+```ts
+import {
+  composeConstraints, constraintsFromSchema, validateObject,
+} from '@uuki/schemable-validator-client'
+import type { Constraint, ObjectSchema } from '@uuki/schemable-validator-client'
+
+// A Constraint is a pure function: FieldState → FieldState
+const checkJapanesePhone: Constraint = (state) =>
+  /^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$/.test(state.value)
+    ? state
+    : { ...state, errors: [...state.errors, '日本の電話番号形式で入力してください'] }
+
+// Compose: built-in string type check → custom phone format check
+const phoneConstraint = composeConstraints([
+  constraintsFromSchema({ type: 'string' }),
+  checkJapanesePhone,
+])
+```
+
+Apply it on top of `validateObject` output by merging the field result:
+
+```ts
+function validateWithCustomRules(data: Record<string, string>) {
+  const base = validateObject(data, schema)
+  const phoneState = phoneConstraint({ value: data.phone ?? '', errors: [] })
+  return {
+    ...base,
+    phone: {
+      value: data.phone ?? '',
+      is_valid: base.phone.is_valid && phoneState.errors.length === 0,
+      errors:
+        [...(base.phone?.errors ?? []), ...phoneState.errors].length > 0
+          ? [...(base.phone?.errors ?? []), ...phoneState.errors]
+          : null,
+    },
+  }
+}
+```
+
+→ Full implementation sample: [Examples — 4. Adding a Custom Constraint](/examples/client#4-adding-a-custom-constraint)
 
 ---
 
