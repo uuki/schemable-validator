@@ -201,6 +201,9 @@ final class RespectAdapter implements BackendAdapter {
         case 'email':
           $descriptors[] = ['rule' => 'email', 'args' => []];
           break;
+        case 'uri':
+          $descriptors[] = ['rule' => 'url', 'args' => []];
+          break;
         case 'date':
           $descriptors[] = ['rule' => 'date', 'args' => []];
           break;
@@ -212,6 +215,15 @@ final class RespectAdapter implements BackendAdapter {
           break;
         case 'uuid':
           $descriptors[] = ['rule' => 'uuid', 'args' => []];
+          break;
+        case 'ipv4':
+          $descriptors[] = ['rule' => 'ipv4', 'args' => []];
+          break;
+        case 'ipv6':
+          $descriptors[] = ['rule' => 'ipv6', 'args' => []];
+          break;
+        case 'hostname':
+          $descriptors[] = ['rule' => 'domain', 'args' => []];
           break;
       }
     }

@@ -440,4 +440,26 @@ class ValidatorTest extends TestCase
     $result = $validator->validate(['tags' => ['php', 'js']])->getResult();
     $this->assertTrue($result['tags']['is_valid']);
   }
+
+  // ── fromJsonSchema() format round-trip (uri/ipv4/ipv6/hostname) ───────────
+
+  public function test_fromJsonSchema_matches_schemaBuilder_toValidator_for_format_methods(): void {
+    $cases = [
+      'website' => ['schema' => SV::string()->url(),    'bad' => 'not a url'],
+      'ip4'     => ['schema' => SV::string()->ipv4(),   'bad' => '999.999.999.999'],
+      'ip6'     => ['schema' => SV::string()->ipv6(),   'bad' => '192.168.1.1'],
+      'host'    => ['schema' => SV::string()->domain(), 'bad' => 'not a domain'],
+    ];
+
+    foreach ($cases as $field => $case) {
+      $sb   = SV::object([$field => $case['schema']]);
+      $data = [$field => $case['bad']];
+
+      $fromBuilder = $sb->toValidator()->validate($data)->getResult();
+      $fromRaw     = Validator::fromJsonSchema($sb->toJsonSchema())->validate($data)->getResult();
+
+      $this->assertSame($fromBuilder[$field]['is_valid'], $fromRaw[$field]['is_valid'], "{$field} round-trip parity");
+      $this->assertFalse($fromRaw[$field]['is_valid'], "{$field} should reject '{$case['bad']}' via fromJsonSchema");
+    }
+  }
 }

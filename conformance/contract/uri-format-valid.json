@@ -1,0 +1,16 @@
+{
+  "name": "uri format accepts a well-formed URL",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "website": { "type": "string", "format": "uri" }
+    },
+    "required": ["website"]
+  },
+  "input": { "website": "https://example.com" },
+  "expected": {
+    "website": { "is_valid": true }
+  }
+}
