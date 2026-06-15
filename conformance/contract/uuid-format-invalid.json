@@ -1,0 +1,16 @@
+{
+  "name": "uuid format rejects a non-UUID string",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "format": "uuid" }
+    },
+    "required": ["id"]
+  },
+  "input": { "id": "not-a-uuid" },
+  "expected": {
+    "id": { "is_valid": false }
+  }
+}
