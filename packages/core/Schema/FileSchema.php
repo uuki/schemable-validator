@@ -5,7 +5,7 @@ namespace SchemableValidator\Schema;
 use Respect\Validation\Validator as v;
 use SchemableValidator\Rules\FileExtension;
 
-final class FileSchema extends AbstractFieldSchema {
+final class FileSchema extends AbstractFieldSchema implements UnmappableField {
   /** @var array */
   private $accept;
 

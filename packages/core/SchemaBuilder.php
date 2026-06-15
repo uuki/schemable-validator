@@ -8,6 +8,7 @@ use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
+use SchemableValidator\Validation\Adapters\RespectAdapter;
 
 final class SchemaBuilder implements SchemaProviderInterface {
   /** @var array<string, AbstractFieldSchema> */
@@ -55,7 +56,7 @@ final class SchemaBuilder implements SchemaProviderInterface {
   public function toValidator(array $options = []): Validator {
     $schema = [];
     foreach ($this->fields as $name => $field) {
-      $respect = $field->toRespect();
+      $respect = RespectAdapter::compileField($field);
       // Optional fields: null or '' should always pass; non-empty values are validated normally.
       $schema[$name] = $field->isRequired() ? $respect : v::optional($respect);
     }

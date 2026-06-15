@@ -4,7 +4,7 @@ namespace SchemableValidator\Schema;
 
 use Respect\Validation\Validator as v;
 
-final class RawRespectSchema extends AbstractFieldSchema {
+final class RawRespectSchema extends AbstractFieldSchema implements UnmappableField {
   /** @var v */
   private $rule;
 

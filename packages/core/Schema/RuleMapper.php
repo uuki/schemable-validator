@@ -2,16 +2,15 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-use SchemableValidator\Rules\FileExtension;
-
 /**
- * Single source of truth for Respect/Validation ↔ JSON Schema compatibility.
- * Add an entry here to support a new rule in both engines.
+ * Single source of truth for rule name -> JSON Schema fragment mapping.
+ *
+ * Execution (rule + args -> Respect/Opis/... validator) is a BackendAdapter's
+ * responsibility; see Validation/Adapters/RespectAdapter::compileDescriptor().
  */
 final class RuleMapper {
   /**
-   * Resolve a rule name + arguments into a RuleMapping pair.
+   * Resolve a rule name + arguments into a RuleMapping descriptor.
    *
    * @param string $rule Rule name (e.g. 'string', 'email', 'min')
    * @param array  $args Rule arguments
@@ -21,19 +20,19 @@ final class RuleMapper {
     switch ($rule) {
       // --- Primitive types ---
       case 'string':
-        return new RuleMapping(v::stringType(), ['type' => 'string']);
+        return new RuleMapping($rule, $args, ['type' => 'string']);
       case 'integer':
-        return new RuleMapping(v::intType(), ['type' => 'integer']);
+        return new RuleMapping($rule, $args, ['type' => 'integer']);
       case 'number':
-        return new RuleMapping(v::numericVal(), ['type' => 'number']);
+        return new RuleMapping($rule, $args, ['type' => 'number']);
       case 'boolean':
-        return new RuleMapping(v::boolType(), ['type' => 'boolean']);
+        return new RuleMapping($rule, $args, ['type' => 'boolean']);
 
       // --- String formats ---
       case 'email':
-        return new RuleMapping(v::email(), ['type' => 'string', 'format' => 'email']);
+        return new RuleMapping($rule, $args, ['type' => 'string', 'format' => 'email']);
       case 'url':
-        return new RuleMapping(v::url(), ['type' => 'string', 'format' => 'uri']);
+        return new RuleMapping($rule, $args, ['type' => 'string', 'format' => 'uri']);
 
       // --- String length (args: [?int $min, ?int $max]) ---
       case 'length':
@@ -43,46 +42,43 @@ final class RuleMapper {
           ['minLength' => $min, 'maxLength' => $max],
           fn($v) => $v !== null,
         );
-        return new RuleMapping(v::length($min, $max), $js);
+        return new RuleMapping($rule, $args, $js);
 
       // --- Numeric bounds (args: [int|float $n]) ---
       case 'min':
-        return new RuleMapping(v::min($args[0]), ['minimum' => $args[0]]);
+        return new RuleMapping($rule, $args, ['minimum' => $args[0]]);
       case 'max':
-        return new RuleMapping(v::max($args[0]), ['maximum' => $args[0]]);
+        return new RuleMapping($rule, $args, ['maximum' => $args[0]]);
 
       // --- Pattern (args: [string $pattern]) — raw regex without delimiters ---
       case 'pattern':
-        return new RuleMapping(
-          v::regex('/' . $args[0] . '/u'),
-          ['pattern' => $args[0]],
-        );
+        return new RuleMapping($rule, $args, ['pattern' => $args[0]]);
 
       // --- String formats ---
       case 'date':
-        return new RuleMapping(v::date('Y-m-d'), ['format' => 'date']);
+        return new RuleMapping($rule, $args, ['format' => 'date']);
       case 'dateTime':
-        return new RuleMapping(v::dateTime(), ['format' => 'date-time']);
+        return new RuleMapping($rule, $args, ['format' => 'date-time']);
       case 'time':
-        return new RuleMapping(v::time('H:i:s'), ['format' => 'time']);
+        return new RuleMapping($rule, $args, ['format' => 'time']);
       case 'uuid':
-        return new RuleMapping(v::uuid(), ['format' => 'uuid']);
+        return new RuleMapping($rule, $args, ['format' => 'uuid']);
       case 'ipv4':
-        return new RuleMapping(v::ip('*', FILTER_FLAG_IPV4), ['format' => 'ipv4']);
+        return new RuleMapping($rule, $args, ['format' => 'ipv4']);
       case 'ipv6':
-        return new RuleMapping(v::ip('*', FILTER_FLAG_IPV6), ['format' => 'ipv6']);
+        return new RuleMapping($rule, $args, ['format' => 'ipv6']);
       case 'slug':
-        return new RuleMapping(v::slug(), ['pattern' => '^[a-z0-9]+(?:-[a-z0-9]+)*$']);
+        return new RuleMapping($rule, $args, ['pattern' => '^[a-z0-9]+(?:-[a-z0-9]+)*$']);
       case 'domain':
-        return new RuleMapping(v::domain(), ['format' => 'hostname']);
+        return new RuleMapping($rule, $args, ['format' => 'hostname']);
 
       // --- Enumeration (args: [array $values]) ---
       case 'in':
-        return new RuleMapping(v::in($args[0]), ['enum' => $args[0]]);
+        return new RuleMapping($rule, $args, ['enum' => $args[0]]);
 
       // --- File MIME type — no JSON Schema equivalent (args: [array $mimeTypes]) ---
       case 'fileExt':
-        return self::buildFileExtMapping($args[0]);
+        return new RuleMapping($rule, $args, null);
 
       default:
         if (in_array($rule, RuleCatalog::todo(), true)) {
@@ -97,11 +93,5 @@ final class RuleMapper {
           "then implement it in RuleMapper."
         );
     }
-  }
-
-  private static function buildFileExtMapping(array $accept): RuleMapping {
-    $fv = v::create();
-    $fv->addRule(new FileExtension($accept));
-    return new RuleMapping($fv, null);
   }
 }

@@ -8,19 +8,20 @@ use SchemableValidator\SchemaBuilder;
 use SchemableValidator\SV;
 use SchemableValidator\Schema\RuleMapper;
 use SchemableValidator\Schema\RuleMapping;
+use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validator;
 
 class SchemaBuilderTest extends TestCase {
   // ── RuleMapping ─────────────────────────────────────────────
 
   public function test_ruleMapping_isMappable_true_when_jsonSchema_set(): void {
-    $m = new RuleMapping(v::stringType(), ['type' => 'string']);
+    $m = new RuleMapping('string', [], ['type' => 'string']);
     $this->assertTrue($m->isMappable());
     $this->assertSame(['type' => 'string'], $m->jsonSchema);
   }
 
   public function test_ruleMapping_isMappable_false_when_jsonSchema_null(): void {
-    $m = new RuleMapping(v::create(), null);
+    $m = new RuleMapping('fileExt', [['image/jpeg']], null);
     $this->assertFalse($m->isMappable());
     $this->assertNull($m->jsonSchema);
   }
@@ -140,17 +141,17 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_stringSchema_toRespect_validates_valid(): void {
-    $r = SV::string()->min(2)->toRespect();
+    $r = RespectAdapter::compileField(SV::string()->min(2));
     $this->assertTrue($r->validate('hello'));
   }
 
   public function test_stringSchema_toRespect_validates_invalid(): void {
-    $r = SV::string()->min(5)->toRespect();
+    $r = RespectAdapter::compileField(SV::string()->min(5));
     $this->assertFalse($r->validate('hi'));
   }
 
   public function test_stringSchema_email_toRespect(): void {
-    $r = SV::string()->email()->toRespect();
+    $r = RespectAdapter::compileField(SV::string()->email());
     $this->assertTrue($r->validate('user@example.com'));
     $this->assertFalse($r->validate('not-an-email'));
   }
@@ -165,7 +166,7 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_integerSchema_toRespect_validates(): void {
-    $r = SV::integer()->min(1)->max(10)->toRespect();
+    $r = RespectAdapter::compileField(SV::integer()->min(1)->max(10));
     $this->assertTrue($r->validate(5));
     $this->assertFalse($r->validate(0));
     $this->assertFalse($r->validate(11));
@@ -186,7 +187,7 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_booleanSchema_toRespect(): void {
-    $r = SV::boolean()->toRespect();
+    $r = RespectAdapter::compileField(SV::boolean());
     $this->assertTrue($r->validate(true));
     $this->assertFalse($r->validate('yes'));
   }
@@ -200,7 +201,7 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_enumSchema_toRespect(): void {
-    $r = SV::enum(['general', 'support'])->toRespect();
+    $r = RespectAdapter::compileField(SV::enum(['general', 'support']));
     $this->assertTrue($r->validate('general'));
     $this->assertFalse($r->validate('unknown'));
   }
@@ -397,12 +398,12 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_arraySchema_toRespect_validates_valid_items(): void {
-    $r = SV::array(SV::string()->min(2))->toRespect();
+    $r = RespectAdapter::compileField(SV::array(SV::string()->min(2)));
     $this->assertTrue($r->validate(['ab', 'cd']));
   }
 
   public function test_arraySchema_toRespect_rejects_short_items(): void {
-    $r = SV::array(SV::string()->min(3))->toRespect();
+    $r = RespectAdapter::compileField(SV::array(SV::string()->min(3)));
     $this->assertFalse($r->validate(['ab']));
   }
 

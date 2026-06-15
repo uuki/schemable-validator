@@ -2,13 +2,9 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
-final class BooleanSchema extends AbstractFieldSchema {
-  public function toRespect(): v {
-    $chain = v::create();
-    $chain->addRule(RuleMapper::resolve('boolean', [])->respect);
-    return $chain;
+final class BooleanSchema extends AbstractFieldSchema implements MappableField {
+  public function toDescriptors(): array {
+    return [['rule' => 'boolean', 'args' => []]];
   }
 
   public function toJsonSchema(): array {

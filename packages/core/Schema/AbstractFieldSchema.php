@@ -2,8 +2,6 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
 abstract class AbstractFieldSchema {
   /** @var bool */
   protected $required = true;
@@ -30,8 +28,6 @@ abstract class AbstractFieldSchema {
   public function isMappable(): bool {
     return true;
   }
-
-  abstract public function toRespect(): v;
 
   abstract public function toJsonSchema(): array;
 

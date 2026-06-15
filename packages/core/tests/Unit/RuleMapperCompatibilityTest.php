@@ -5,6 +5,7 @@ namespace SchemableValidator\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\Schema\RuleCatalog;
 use SchemableValidator\Schema\RuleMapper;
+use SchemableValidator\Validation\Adapters\RespectAdapter;
 
 /**
  * Regression tests for Respect/Validation compatibility.
@@ -38,14 +39,15 @@ class RuleMapperCompatibilityTest extends TestCase {
     $valid,
     $invalid
   ): void {
-    $mapping = RuleMapper::resolve($rule, $args);
+    $mapping  = RuleMapper::resolve($rule, $args);
+    $respect  = RespectAdapter::compileDescriptor($mapping->rule, $mapping->args);
 
     $this->assertTrue(
-      $mapping->respect->validate($valid),
+      $respect->validate($valid),
       "Rule '{$rule}': valid input should pass Respect validation"
     );
     $this->assertFalse(
-      $mapping->respect->validate($invalid),
+      $respect->validate($invalid),
       "Rule '{$rule}': invalid input should fail Respect validation"
     );
   }
@@ -94,14 +96,17 @@ class RuleMapperCompatibilityTest extends TestCase {
 
   /**
    * UNMAPPABLE rules must resolve without error, have null jsonSchema,
-   * and still carry a working Respect validator.
+   * and still compile to a working Respect validator via RespectAdapter.
    */
   public function test_unmappable_rules_resolve_with_null_json_schema(): void {
     $mapping = RuleMapper::resolve('fileExt', [['image/jpeg']]);
 
     $this->assertNull($mapping->jsonSchema);
     $this->assertFalse($mapping->isMappable());
-    $this->assertNotNull($mapping->respect, 'UNMAPPABLE rule must still have a Respect validator');
+    $this->assertNotNull(
+      RespectAdapter::compileDescriptor($mapping->rule, $mapping->args),
+      'UNMAPPABLE rule must still compile to a Respect validator'
+    );
   }
 
   // ── Error taxonomy ──────────────────────────────────────────

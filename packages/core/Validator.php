@@ -18,6 +18,8 @@ use SchemableValidator\Controllers\CurlController;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
+use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Validation\BackendAdapter;
 
 /**
  * Class Validator
@@ -40,15 +42,18 @@ final class Validator {
 
   private ?MessageDict $dict;
 
+  private BackendAdapter $adapter;
+
   /**
    * Validator constructor.
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null) {
     $this->schema = $schema;
     $this->conditionals = $conditionals;
     $this->dict = $dict;
+    $this->adapter = $adapter ?? new RespectAdapter();
     $this->options = array_merge([
       'recaptcha_provider' => 'https://www.google.com/recaptcha/api/siteverify',
       'recaptcha_secret' => '',
@@ -324,25 +329,18 @@ final class Validator {
   }
 
   /**
-   * Isolates all Respect exception internals.
-   * If Respect changes its exception hierarchy, update only here.
-   * Tested against respect/validation 2.2.4.
+   * Delegates exception->message extraction to the configured adapter.
+   * RespectAdapter isolates all Respect exception internals; non-Respect
+   * adapters fall back to the exception's own id/message.
    *
    * @return array<string, string> ruleId => defaultMessage
    */
-  private static function extractRuleMessages(
+  private function extractRuleMessages(
     \Respect\Validation\Exceptions\ValidationException $e
   ): array {
-    $messages = [];
-    if ($e instanceof \Respect\Validation\Exceptions\NestedValidationException) {
-      foreach ($e->getIterator() as $child) {
-        $messages[$child->getId()] = $child->getMessage();
-      }
-    }
-    if (empty($messages)) {
-      $messages[$e->getId()] = $e->getMessage();
-    }
-    return $messages;
+    return $this->adapter instanceof RespectAdapter
+      ? RespectAdapter::extractRuleMessages($e)
+      : [$e->getId() => $e->getMessage()];
   }
 
   private function createState(): array {
@@ -360,7 +358,7 @@ final class Validator {
     try {
       $validator->assert($data);
     } catch(\Respect\Validation\Exceptions\ValidationException $e) {
-      $ruleMessages = self::extractRuleMessages($e);
+      $ruleMessages = $this->extractRuleMessages($e);
       $resolved = [];
       foreach ($ruleMessages as $ruleId => $defaultMsg) {
         $resolved[] = ($this->dict !== null && $field !== '')

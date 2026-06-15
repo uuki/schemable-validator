@@ -2,9 +2,7 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
-final class EnumSchema extends AbstractFieldSchema {
+final class EnumSchema extends AbstractFieldSchema implements MappableField {
   /** @var array */
   private $values;
 
@@ -12,10 +10,8 @@ final class EnumSchema extends AbstractFieldSchema {
     $this->values = $values;
   }
 
-  public function toRespect(): v {
-    $chain = v::create();
-    $chain->addRule(RuleMapper::resolve('in', [$this->values])->respect);
-    return $chain;
+  public function toDescriptors(): array {
+    return [['rule' => 'in', 'args' => [$this->values]]];
   }
 
   public function toJsonSchema(): array {

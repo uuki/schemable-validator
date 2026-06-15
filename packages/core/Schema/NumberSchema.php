@@ -2,9 +2,7 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
-final class NumberSchema extends AbstractFieldSchema {
+final class NumberSchema extends AbstractFieldSchema implements MappableField {
   /** @var array */
   private $bounds = [];
 
@@ -26,13 +24,12 @@ final class NumberSchema extends AbstractFieldSchema {
     return $this;
   }
 
-  public function toRespect(): v {
-    $chain = v::create();
-    $chain->addRule(RuleMapper::resolve('number', [])->respect);
+  public function toDescriptors(): array {
+    $descriptors = [['rule' => 'number', 'args' => []]];
     foreach ($this->bounds as $bound) {
-      $chain->addRule(RuleMapper::resolve($bound['rule'], $bound['args'])->respect);
+      $descriptors[] = $bound;
     }
-    return $chain;
+    return $descriptors;
   }
 
   public function toJsonSchema(): array {
