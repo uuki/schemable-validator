@@ -1,0 +1,18 @@
+{
+  "name": "boolean field accepts 'on'",
+  "category": "parity",
+  "knownMismatch": true,
+  "note": "BE (respect v::boolType()) requires a native PHP bool and rejects the string \"on\". FE checkType('boolean') already accepts an enumerated set of boolean-like strings (true/false/1/0/on/off), so FE is_valid=true matches expected but BE returns false. Target = Coercion Contract v1 BooleanCoercion makes BE accept these strings too (resolved in W2).",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "subscribe": { "type": "boolean" }
+    },
+    "required": ["subscribe"]
+  },
+  "input": { "subscribe": "on" },
+  "expected": {
+    "subscribe": { "is_valid": true }
+  }
+}

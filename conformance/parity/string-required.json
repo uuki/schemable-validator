@@ -1,0 +1,16 @@
+{
+  "name": "required string field accepts non-empty value",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "minLength": 1 }
+    },
+    "required": ["name"]
+  },
+  "input": { "name": "Alice" },
+  "expected": {
+    "name": { "is_valid": true }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "number exceeding maximum is invalid",
+  "category": "structural",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "score": { "type": "number", "minimum": 0, "maximum": 100 }
+    },
+    "required": ["score"]
+  },
+  "input": { "score": "150" },
+  "expected": {
+    "score": { "is_valid": false }
+  }
+}

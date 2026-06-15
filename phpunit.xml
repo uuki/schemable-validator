@@ -7,6 +7,9 @@
     <testsuite name="Unit">
       <directory>packages/core/tests/Unit</directory>
     </testsuite>
+    <testsuite name="Conformance">
+      <directory>packages/core/tests/Conformance</directory>
+    </testsuite>
   </testsuites>
   <coverage>
     <include>
