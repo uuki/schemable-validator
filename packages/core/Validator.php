@@ -73,6 +73,28 @@ final class Validator {
   }
 
   /**
+   * Build a Validator directly from a raw JSON Schema 2020-12 object schema
+   * (`properties`/`required`), bypassing SchemaBuilder. Each property is
+   * compiled via RespectAdapter, so the resulting Validator behaves the same
+   * as one built from SV::object(...)->toValidator().
+   *
+   * @param array<string, mixed> $jsonSchema
+   * @param array<string, mixed> $options
+   * @param array<array{field: string, value: mixed, require: string[]}> $conditionals
+   */
+  public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null): self {
+    $required = $jsonSchema['required'] ?? [];
+    $schema   = [];
+
+    foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
+      $chain         = RespectAdapter::compileProperty($prop);
+      $schema[$name] = in_array($name, $required, true) ? $chain : v::optional($chain);
+    }
+
+    return new self($schema, $options, $conditionals, $dict);
+  }
+
+  /**
    * Validate the provided $_POST against the defined schema.
    *
    * @param array<string, mixed> $data The data to be validated, where keys correspond to schema field names.

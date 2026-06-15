@@ -336,4 +336,80 @@ class ValidatorTest extends TestCase
 
     $this->assertTrue($result['company_name']['is_valid']);
   }
+
+  // ── fromJsonSchema() ───────────────────────────────────────
+
+  public function test_fromJsonSchema_validates_required_string(): void {
+    $validator = Validator::fromJsonSchema([
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => [
+        'name' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 50],
+      ],
+      'required' => ['name'],
+    ]);
+
+    $valid = $validator->validate(['name' => 'Alice'])->getResult();
+    $this->assertTrue($valid['name']['is_valid']);
+
+    $invalid = $validator->validate(['name' => ''])->getResult();
+    $this->assertFalse($invalid['name']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_optional_field_allows_empty(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'nickname' => ['type' => 'string'],
+      ],
+    ]);
+
+    $result = $validator->validate([])->getResult();
+    $this->assertTrue($result['nickname']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_applies_coercion_contract_for_integer_and_boolean(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'age'       => ['type' => 'integer'],
+        'subscribe' => ['type' => 'boolean'],
+      ],
+      'required' => ['age', 'subscribe'],
+    ]);
+
+    $result = $validator->validate(['age' => '42', 'subscribe' => 'on'])->getResult();
+    $this->assertTrue($result['age']['is_valid']);
+    $this->assertTrue($result['subscribe']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_applies_format_constraint(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'email' => ['type' => 'string', 'format' => 'email'],
+      ],
+      'required' => ['email'],
+    ]);
+
+    $invalid = $validator->validate(['email' => 'not-an-email'])->getResult();
+    $this->assertFalse($invalid['email']['is_valid']);
+
+    $valid = $validator->validate(['email' => 'user@example.com'])->getResult();
+    $this->assertTrue($valid['email']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_matches_schemaBuilder_toValidator_for_same_schema(): void {
+    $sb   = SV::object([
+      'name' => SV::string()->min(1)->max(50),
+      'age'  => SV::integer()->min(0),
+    ]);
+    $data = ['name' => 'Bob', 'age' => '30'];
+
+    $fromBuilder = $sb->toValidator()->validate($data)->getResult();
+    $fromRaw     = Validator::fromJsonSchema($sb->toJsonSchema())->validate($data)->getResult();
+
+    $this->assertSame($fromBuilder['name']['is_valid'], $fromRaw['name']['is_valid']);
+    $this->assertSame($fromBuilder['age']['is_valid'], $fromRaw['age']['is_valid']);
+  }
 }

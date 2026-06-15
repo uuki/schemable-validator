@@ -33,11 +33,23 @@ final class RespectAdapter implements BackendAdapter {
     $schema   = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
-      $chain          = self::compileDescriptors(self::jsonSchemaPropertyToDescriptors($prop));
+      $chain          = self::compileProperty($prop);
       $schema[$name]  = in_array($name, $required, true) ? $chain : v::optional($chain);
     }
 
     return new RespectExecutableValidator($schema);
+  }
+
+  /**
+   * Compile a single JSON Schema property fragment (the value of
+   * `properties.<name>` in a 2020-12 object schema) to a Respect validator.
+   * Used by compile()'s per-property loop and by Validator::fromJsonSchema()
+   * for raw JSON Schema input that bypasses SchemaBuilder.
+   *
+   * @param array<string, mixed> $prop
+   */
+  public static function compileProperty(array $prop): v {
+    return self::compileDescriptors(self::jsonSchemaPropertyToDescriptors($prop));
   }
 
   /** Compile a single field schema (Mappable or Unmappable) to a Respect validator. */
