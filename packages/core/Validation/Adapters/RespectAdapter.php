@@ -4,6 +4,8 @@ namespace SchemableValidator\Validation\Adapters;
 
 use Respect\Validation\Validator as v;
 use SchemableValidator\Rules\BooleanCoercion;
+use SchemableValidator\Rules\DateFormat;
+use SchemableValidator\Rules\DateTimeFormat;
 use SchemableValidator\Rules\FileExtension;
 use SchemableValidator\Rules\IntegerCoercion;
 use SchemableValidator\Rules\NumberCoercion;
@@ -82,9 +84,9 @@ final class RespectAdapter implements BackendAdapter {
       case 'pattern':
         return v::regex('/' . $args[0] . '/u');
       case 'date':
-        return v::date('Y-m-d');
+        return v::create()->addRule((new DateFormat())->setName('date'));
       case 'dateTime':
-        return v::dateTime();
+        return v::create()->addRule((new DateTimeFormat())->setName('dateTime'));
       case 'time':
         return v::time('H:i:s');
       case 'uuid':

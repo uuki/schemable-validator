@@ -1,8 +1,6 @@
 {
   "name": "maxLength counts codepoints, not UTF-16 code units",
   "category": "contract",
-  "knownMismatch": true,
-  "note": "Input is a single astral-plane codepoint (U+1F600, surrogate pair in UTF-16/JS). BE (respect Length via mb_strlen) counts it as 1 codepoint => valid. FE checkMaxLength uses .length (UTF-16 code units = 2) => currently invalid. Target = codepoint count on both sides (resolved in format-assertion fix).",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",

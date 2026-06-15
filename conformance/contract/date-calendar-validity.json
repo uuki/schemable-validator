@@ -1,8 +1,6 @@
 {
   "name": "date format rejects a calendar-invalid date (Feb 30)",
   "category": "contract",
-  "knownMismatch": true,
-  "note": "BE (respect date('Y-m-d') via date_parse_from_format+checkdate) correctly rejects Feb 30. FE FORMAT_RE.date is a structural regex with no calendar check, so it currently accepts. Target = BE behavior: fast regex + pure-arithmetic calendar check (resolved in format-assertion fix).",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",

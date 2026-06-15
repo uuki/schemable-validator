@@ -67,6 +67,10 @@ describe('checkMaxLength', () => {
   it('fails when value exceeds limit', () => {
     expect(checkMaxLength(2)(state('abc')).errors.length).toBeGreaterThan(0)
   })
+  it('counts an astral-plane codepoint as 1 character, not 2', () => {
+    // U+1F600 "😀" is a surrogate pair in UTF-16/JS .length, but a single codepoint.
+    expect(checkMaxLength(1)(state('😀')).errors).toHaveLength(0)
+  })
 })
 
 // ── checkMinimum / checkMaximum ──────────────────────────────────────────────
@@ -153,10 +157,17 @@ describe('checkFormat: email', () => {
 })
 
 describe('checkFormat: date', () => {
-  it.each(['2024-01-15', '2000-12-31'])('accepts %s', (v) => {
+  it.each(['2024-01-15', '2000-12-31', '2024-02-29'])('accepts %s', (v) => {
     expect(checkFormat('date')(state(v)).errors).toHaveLength(0)
   })
-  it.each(['2024-1-5', '01-15-2024', 'not-a-date'])('rejects %s', (v) => {
+  it.each([
+    '2024-1-5',
+    '01-15-2024',
+    'not-a-date',
+    '2026-02-30',
+    '2024-04-31',
+    '2023-02-29',
+  ])('rejects %s', (v) => {
     expect(checkFormat('date')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })
@@ -166,10 +177,17 @@ describe('checkFormat: date-time', () => {
     '2024-01-15T12:00:00Z',
     '2024-01-15T12:00:00+09:00',
     '2024-01-15T12:00:00.123Z',
+    '2024-02-29T12:00:00Z',
   ])('accepts %s', (v) => {
     expect(checkFormat('date-time')(state(v)).errors).toHaveLength(0)
   })
-  it.each(['2024-01-15', '2024-01-15 12:00:00', 'not-a-datetime'])('rejects %s', (v) => {
+  it.each([
+    '2024-01-15',
+    '2024-01-15 12:00:00',
+    'not-a-datetime',
+    '2026-02-30T12:00:00Z',
+    '2023-02-29T00:00:00Z',
+  ])('rejects %s', (v) => {
     expect(checkFormat('date-time')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })
