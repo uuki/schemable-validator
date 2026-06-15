@@ -145,9 +145,10 @@ final class RespectAdapter implements BackendAdapter {
   }
 
   /**
-   * Translate a JSON Schema property fragment (type/format/length/min/max/pattern/enum)
-   * into {rule, args} descriptors, so the same compileDescriptor() dispatch serves
-   * both the SV-builder path (compileField) and raw-JSON-Schema input (compile).
+   * Translate a JSON Schema property fragment (type/format/length/min/max/pattern/enum/
+   * array items/minItems/maxItems) into {rule, args} descriptors, so the same
+   * compileDescriptor() dispatch serves both the SV-builder path (compileField)
+   * and raw-JSON-Schema input (compile).
    *
    * @param array<string, mixed> $prop
    * @return array<int, array{rule: string, args: array}>
@@ -165,6 +166,10 @@ final class RespectAdapter implements BackendAdapter {
       case 'boolean':
         $descriptors[] = ['rule' => 'boolean', 'args' => []];
         break;
+      case 'array':
+        $itemProp      = $prop['items'] ?? [];
+        $descriptors[] = ['rule' => 'each', 'args' => [self::jsonSchemaPropertyToDescriptors($itemProp)]];
+        break;
       default:
         $descriptors[] = ['rule' => 'string', 'args' => []];
         break;
@@ -172,6 +177,12 @@ final class RespectAdapter implements BackendAdapter {
 
     if (isset($prop['minLength']) || isset($prop['maxLength'])) {
       $descriptors[] = ['rule' => 'length', 'args' => [$prop['minLength'] ?? null, $prop['maxLength'] ?? null]];
+    }
+    if (isset($prop['minItems'])) {
+      $descriptors[] = ['rule' => 'length', 'args' => [$prop['minItems'], null]];
+    }
+    if (isset($prop['maxItems'])) {
+      $descriptors[] = ['rule' => 'length', 'args' => [null, $prop['maxItems']]];
     }
     if (isset($prop['minimum'])) {
       $descriptors[] = ['rule' => 'min', 'args' => [$prop['minimum']]];

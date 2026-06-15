@@ -412,4 +412,32 @@ class ValidatorTest extends TestCase
     $this->assertSame($fromBuilder['name']['is_valid'], $fromRaw['name']['is_valid']);
     $this->assertSame($fromBuilder['age']['is_valid'], $fromRaw['age']['is_valid']);
   }
+
+  public function test_fromJsonSchema_matches_schemaBuilder_toValidator_for_array_field(): void {
+    $sb = SV::object(['tags' => SV::array(SV::string()->min(1))]);
+
+    foreach ([['tags' => ['php', 'js']], ['tags' => ['']]] as $data) {
+      $fromBuilder = $sb->toValidator()->validate($data)->getResult();
+      $fromRaw     = Validator::fromJsonSchema($sb->toJsonSchema())->validate($data)->getResult();
+
+      $this->assertSame($fromBuilder['tags']['is_valid'], $fromRaw['tags']['is_valid']);
+    }
+  }
+
+  public function test_fromJsonSchema_applies_array_minItems(): void {
+    $validator = Validator::fromJsonSchema([
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => [
+        'tags' => ['type' => 'array', 'items' => ['type' => 'string'], 'minItems' => 2],
+      ],
+      'required' => ['tags'],
+    ]);
+
+    $result = $validator->validate(['tags' => ['php']])->getResult();
+    $this->assertFalse($result['tags']['is_valid']);
+
+    $result = $validator->validate(['tags' => ['php', 'js']])->getResult();
+    $this->assertTrue($result['tags']['is_valid']);
+  }
 }
