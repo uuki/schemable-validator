@@ -28,13 +28,42 @@ describe('checkType', () => {
   it('fails number for non-numeric strings', () => {
     expect(checkType('number')(state('hello')).errors.length).toBeGreaterThan(0)
   })
-  it('passes boolean for accepted literals', () => {
-    for (const v of ['true', 'false', '1', '0', 'on', 'off']) {
+  it('passes boolean for accepted literals (lowercase)', () => {
+    for (const v of ['true', 'false', '1', '0', 'on', 'off', 'yes', 'no']) {
       expect(checkType('boolean')(state(v)).errors).toHaveLength(0)
+    }
+  })
+  it('passes boolean for mixed-case literals', () => {
+    for (const v of ['TRUE', 'True', 'FALSE', 'YES', 'Yes', 'NO', 'ON', 'OFF']) {
+      expect(checkType('boolean')(state(v)).errors).toHaveLength(0)
+    }
+  })
+  it('rejects boolean with leading or trailing whitespace', () => {
+    for (const v of [' true', 'true ', ' true ', ' 1 ', '\ttrue']) {
+      expect(checkType('boolean')(state(v)).errors.length).toBeGreaterThan(0)
     }
   })
   it('fails boolean for arbitrary strings', () => {
     expect(checkType('boolean')(state('yes_maybe')).errors.length).toBeGreaterThan(0)
+  })
+  it('passes integer for whitespace-padded whole numbers', () => {
+    expect(checkType('integer')(state(' 42 ')).errors).toHaveLength(0)
+    expect(checkType('integer')(state('\t5\n')).errors).toHaveLength(0)
+  })
+  it('passes number for whitespace-padded float strings', () => {
+    expect(checkType('number')(state(' 3.14 ')).errors).toHaveLength(0)
+  })
+  it('rejects integer and number for hex/octal/binary literals', () => {
+    for (const v of ['0x10', '0X10', '0o7', '0O7', '0b101', '0B101']) {
+      expect(checkType('integer')(state(v)).errors.length).toBeGreaterThan(0)
+      expect(checkType('number')(state(v)).errors.length).toBeGreaterThan(0)
+    }
+  })
+  it('rejects integer and number for Infinity and NaN', () => {
+    for (const v of ['Infinity', '-Infinity', 'NaN']) {
+      expect(checkType('integer')(state(v)).errors.length).toBeGreaterThan(0)
+      expect(checkType('number')(state(v)).errors.length).toBeGreaterThan(0)
+    }
   })
   it('accepts null type in array (string | null)', () => {
     expect(checkType(['string', 'null'])(state('hello')).errors).toHaveLength(0)
@@ -82,6 +111,13 @@ describe('checkMinimum', () => {
   it('fails below boundary', () => {
     expect(checkMinimum(5)(state('4')).errors.length).toBeGreaterThan(0)
   })
+  it('passes for whitespace-padded value at boundary', () => {
+    expect(checkMinimum(5)(state(' 5 ')).errors).toHaveLength(0)
+  })
+  it('rejects hex literal that Number() would accept as in-range', () => {
+    // Number('0x10') === 16 >= 5, but parseDecimalInput returns NaN → rejects
+    expect(checkMinimum(5)(state('0x10')).errors.length).toBeGreaterThan(0)
+  })
 })
 
 describe('checkMaximum', () => {
@@ -90,6 +126,13 @@ describe('checkMaximum', () => {
   })
   it('fails above boundary', () => {
     expect(checkMaximum(10)(state('11')).errors.length).toBeGreaterThan(0)
+  })
+  it('passes for whitespace-padded value at boundary', () => {
+    expect(checkMaximum(10)(state(' 10 ')).errors).toHaveLength(0)
+  })
+  it('rejects hex literal that Number() would accept as in-range', () => {
+    // Number('0x5') === 5 <= 10, but parseDecimalInput returns NaN → rejects
+    expect(checkMaximum(10)(state('0x5')).errors.length).toBeGreaterThan(0)
   })
 })
 
