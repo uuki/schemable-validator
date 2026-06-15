@@ -3,7 +3,10 @@
 namespace SchemableValidator\Validation\Adapters;
 
 use Respect\Validation\Validator as v;
+use SchemableValidator\Rules\BooleanCoercion;
 use SchemableValidator\Rules\FileExtension;
+use SchemableValidator\Rules\IntegerCoercion;
+use SchemableValidator\Rules\NumberCoercion;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\MappableField;
 use SchemableValidator\Schema\UnmappableField;
@@ -61,11 +64,11 @@ final class RespectAdapter implements BackendAdapter {
       case 'string':
         return v::stringType();
       case 'integer':
-        return v::intType();
+        return v::create()->addRule((new IntegerCoercion())->setName('intType'));
       case 'number':
-        return v::numericVal();
+        return v::create()->addRule((new NumberCoercion())->setName('numericVal'));
       case 'boolean':
-        return v::boolType();
+        return v::create()->addRule((new BooleanCoercion())->setName('boolType'));
       case 'email':
         return v::email();
       case 'url':

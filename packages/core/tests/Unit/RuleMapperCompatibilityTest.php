@@ -243,7 +243,7 @@ class RuleMapperCompatibilityTest extends TestCase {
       ['string',   [],                 'hello',                          123                  ],
       ['integer',  [],                 42,                               3.14                 ],
       ['number',   [],                 3.14,                             'hello'              ],
-      ['boolean',  [],                 true,                             'yes'                ],
+      ['boolean',  [],                 true,                             'maybe'              ],
       ['email',    [],                 'a@example.com',                  'not-an-email'       ],
       ['url',      [],                 'https://ex.com',                 'not-a-url'          ],
       ['length',   [2, 10],            'hello',                          'x'                  ],

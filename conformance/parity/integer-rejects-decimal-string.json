@@ -1,5 +1,5 @@
 {
-  "name": "integer field accepts numeric string '42'",
+  "name": "integer field rejects decimal string '3.14'",
   "category": "parity",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9,8 +9,8 @@
     },
     "required": ["age"]
   },
-  "input": { "age": "42" },
+  "input": { "age": "3.14" },
   "expected": {
-    "age": { "is_valid": true }
+    "age": { "is_valid": false }
   }
 }

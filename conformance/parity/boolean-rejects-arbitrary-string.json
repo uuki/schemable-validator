@@ -1,5 +1,5 @@
 {
-  "name": "boolean field accepts 'on'",
+  "name": "boolean field rejects arbitrary string 'maybe'",
   "category": "parity",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9,8 +9,8 @@
     },
     "required": ["subscribe"]
   },
-  "input": { "subscribe": "on" },
+  "input": { "subscribe": "maybe" },
   "expected": {
-    "subscribe": { "is_valid": true }
+    "subscribe": { "is_valid": false }
   }
 }

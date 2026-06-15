@@ -189,7 +189,9 @@ class SchemaBuilderTest extends TestCase {
   public function test_booleanSchema_toRespect(): void {
     $r = RespectAdapter::compileField(SV::boolean());
     $this->assertTrue($r->validate(true));
-    $this->assertFalse($r->validate('yes'));
+    // Coercion Contract v1: {true,false,1,0,on,off,yes,no} accepted, case-insensitive.
+    $this->assertTrue($r->validate('on'));
+    $this->assertFalse($r->validate('maybe'));
   }
 
   // ── EnumSchema ──────────────────────────────────────────────
