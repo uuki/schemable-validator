@@ -16,7 +16,7 @@ PHP (SchemaBuilder)
         │
         │  toJsonSchema()
         ▼
-  JSON Schema (Draft-07)
+  JSON Schema (draft 2020-12)
         │
         ├─ AJV          (直接消費)
         ├─ Zod adapter  (sv(jsonSchema).build())

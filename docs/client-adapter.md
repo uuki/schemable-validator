@@ -2,7 +2,7 @@
 
 ## Overview
 
-`SchemaBuilder::toJsonSchema()` exports the PHP-side validation rules as a standard JSON Schema (Draft-07) object. Any JSON Schema-compatible validator can consume it directly on the client side.
+`SchemaBuilder::toJsonSchema()` exports the PHP-side validation rules as a standard JSON Schema (draft 2020-12) object. Any JSON Schema-compatible validator can consume it directly on the client side.
 
 `@uuki/schemable-validator-client` also ships built-in **adapters** that convert the JSON Schema into native Zod or Valibot schemas, enabling type inference and framework integration beyond what plain JSON Schema validators provide.
 
@@ -63,7 +63,7 @@ The example below uses a minimal inline schema. In real usage `jsonSchema` comes
 import { sv } from '@uuki/schemable-validator-client/zod'
 
 const jsonSchema = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
   properties: {
     name:  { type: 'string', minLength: 1 },
@@ -101,7 +101,7 @@ import { sv } from '@uuki/schemable-validator-client/valibot'
 import * as v from 'valibot'
 
 const jsonSchema = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
   properties: {
     name:  { type: 'string', minLength: 1 },
