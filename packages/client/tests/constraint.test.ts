@@ -178,6 +178,7 @@ describe('checkFormat: date-time', () => {
     '2024-01-15T12:00:00+09:00',
     '2024-01-15T12:00:00.123Z',
     '2024-02-29T12:00:00Z',
+    '2024-01-15T23:59:60Z',
   ])('accepts %s', (v) => {
     expect(checkFormat('date-time')(state(v)).errors).toHaveLength(0)
   })
@@ -187,16 +188,17 @@ describe('checkFormat: date-time', () => {
     'not-a-datetime',
     '2026-02-30T12:00:00Z',
     '2023-02-29T00:00:00Z',
+    '2024-01-15T12:00:61Z',
   ])('rejects %s', (v) => {
     expect(checkFormat('date-time')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })
 
 describe('checkFormat: time', () => {
-  it.each(['12:30:00', '00:00:00', '23:59:59'])('accepts %s', (v) => {
+  it.each(['12:30:00', '00:00:00', '23:59:59', '23:59:60'])('accepts %s', (v) => {
     expect(checkFormat('time')(state(v)).errors).toHaveLength(0)
   })
-  it.each(['25:00:00', '12:60:00', 'not-a-time'])('rejects %s', (v) => {
+  it.each(['25:00:00', '12:60:00', '12:30:61', 'not-a-time'])('rejects %s', (v) => {
     expect(checkFormat('time')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })

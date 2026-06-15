@@ -9,6 +9,7 @@ use SchemableValidator\Rules\DateTimeFormat;
 use SchemableValidator\Rules\FileExtension;
 use SchemableValidator\Rules\IntegerCoercion;
 use SchemableValidator\Rules\NumberCoercion;
+use SchemableValidator\Rules\TimeFormat;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\MappableField;
 use SchemableValidator\Schema\UnmappableField;
@@ -100,7 +101,7 @@ final class RespectAdapter implements BackendAdapter {
       case 'dateTime':
         return v::create()->addRule((new DateTimeFormat())->setName('dateTime'));
       case 'time':
-        return v::time('H:i:s');
+        return v::create()->addRule((new TimeFormat())->setName('time'));
       case 'uuid':
         return v::uuid();
       case 'ipv4':

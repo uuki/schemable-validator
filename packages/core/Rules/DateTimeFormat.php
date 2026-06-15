@@ -11,7 +11,7 @@ use SchemableValidator\Validation\CalendarDate;
  * pure-arithmetic calendar check on the date portion as DateFormat.
  */
 final class DateTimeFormat extends AbstractRule {
-  private const PATTERN = '/^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/';
+  private const PATTERN = '/^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:(?:[0-5]\d|60)(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/';
 
   public function validate($input): bool {
     if (!is_string($input)) {
