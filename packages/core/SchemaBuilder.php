@@ -24,6 +24,15 @@ final class SchemaBuilder implements SchemaProviderInterface {
 
   /** @param array<string, AbstractFieldSchema> $fields */
   public function __construct(array $fields) {
+    foreach ($fields as $name => $field) {
+      if (!($field instanceof AbstractFieldSchema)) {
+        $given = is_object($field) ? get_class($field) : gettype($field);
+        throw new \InvalidArgumentException(
+          "SchemaBuilder field '{$name}' must be an AbstractFieldSchema instance, got {$given}. " .
+          'Nested SV::object() values are not supported as field values.'
+        );
+      }
+    }
     $this->fields = $fields;
   }
 

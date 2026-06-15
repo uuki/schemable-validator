@@ -229,6 +229,25 @@ class SchemaBuilderTest extends TestCase {
     $this->assertTrue($r->validate('a@b.com'));
   }
 
+  // ── SchemaBuilder constructor validation ────────────────────
+
+  public function test_constructor_rejects_nested_schemaBuilder_field(): void {
+    $inner = SV::object(['street' => SV::string()]);
+
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessageMatches('/Nested SV::object\(\)/');
+    SV::object([
+      'name'    => SV::string(),
+      'address' => $inner,
+    ]);
+  }
+
+  public function test_constructor_rejects_non_field_schema_value(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessageMatches("/field 'name'/");
+    SV::object(['name' => 'not-a-field-schema']);
+  }
+
   // ── SchemaBuilder::toJsonSchema() ───────────────────────────
 
   public function test_schemaBuilder_toJsonSchema_structure(): void {
