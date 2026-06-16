@@ -21,6 +21,9 @@ final class SchemaBuilder implements SchemaProviderInterface {
    */
   private $conditionals = [];
 
+  /** @var string[] */
+  private $customFields = [];
+
   private ?MessageDict $messageDict = null;
 
   /** @param array<string, AbstractFieldSchema> $fields */
@@ -60,6 +63,18 @@ final class SchemaBuilder implements SchemaProviderInterface {
       'condition' => [$expr->op => [$lhs, $rhs]],
       'require'   => $require,
     ];
+    return $this;
+  }
+
+  /**
+   * Declare server-side custom validation fields that have no JSON Schema equivalent.
+   * Clients can inspect x-custom-fields and warn when .refine() is not wired up.
+   *
+   * @param string[] $names
+   * @return $this
+   */
+  public function customFields(array $names): self {
+    $this->customFields = array_values($names);
     return $this;
   }
 
@@ -108,6 +123,10 @@ final class SchemaBuilder implements SchemaProviderInterface {
 
     if (!empty($required)) {
       $schema['required'] = $required;
+    }
+
+    if (!empty($this->customFields)) {
+      $schema['x-custom-fields'] = $this->customFields;
     }
 
     if (!empty($unmapped)) {

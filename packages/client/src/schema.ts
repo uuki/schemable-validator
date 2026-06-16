@@ -59,6 +59,9 @@ export type ObjectSchema = {
   // Fields with no JSON Schema equivalent (e.g. SV::file, SV::respect).
   // Validated server-side only; clients pass these through untouched.
   readonly 'x-unmapped-fields'?: readonly string[]
+  // Custom validation fields declared by SchemaBuilder::customFields().
+  // BE-only logic; FE should implement via .refine()/.refineAsync().
+  readonly 'x-custom-fields'?: readonly string[]
   // Conditional requirements from SchemaBuilder::when()
   readonly if?:     ConditionalSchema['if']
   readonly then?:   ConditionalSchema['then']

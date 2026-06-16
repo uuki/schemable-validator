@@ -813,4 +813,36 @@ class SchemaBuilderTest extends TestCase {
     $this->assertArrayHasKey('errorMessage', $js['properties']['email']);
     $this->assertSame('メール形式が無効です', $js['properties']['email']['errorMessage']['format']);
   }
+
+  // ── SchemaBuilder::customFields() (Step 3-c) ─────────────────
+
+  public function test_customFields_appears_in_json_schema(): void {
+    $js = SV::object(['email' => SV::string()])
+      ->customFields(['email_unique', 'age_verify'])
+      ->toJsonSchema();
+
+    $this->assertArrayHasKey('x-custom-fields', $js);
+    $this->assertSame(['email_unique', 'age_verify'], $js['x-custom-fields']);
+  }
+
+  public function test_customFields_absent_when_not_called(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema();
+    $this->assertArrayNotHasKey('x-custom-fields', $js);
+  }
+
+  public function test_customFields_single_entry(): void {
+    $js = SV::object(['email' => SV::string()])
+      ->customFields(['email_unique'])
+      ->toJsonSchema();
+
+    $this->assertSame(['email_unique'], $js['x-custom-fields']);
+  }
+
+  public function test_customFields_does_not_affect_validation(): void {
+    $sb = SV::object(['name' => SV::string()])->customFields(['custom_check']);
+    $result = $sb->toValidator()->validate(['name' => 'Alice'])->getResult();
+    $this->assertTrue($result['name']['is_valid']);
+    // custom_check not in result — server-side only
+    $this->assertArrayNotHasKey('custom_check', $result);
+  }
 }

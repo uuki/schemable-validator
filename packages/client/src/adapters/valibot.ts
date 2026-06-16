@@ -161,6 +161,10 @@ class ValibotSchemaBuilder extends SchemaBuilderBase<OnUnknown, ValibotExtField,
       if (unsupported.length) {
         console.warn('[schemable] sv.build(): unsupported fields detected:', unsupported)
       }
+      const customFields = this.json['x-custom-fields'] ?? []
+      if (customFields.length > 0 && this.syncRefiners.length === 0 && this.asyncRefiners.length === 0) {
+        console.warn('[schemable] sv.build(): x-custom-fields declared but no .refine()/.refineAsync() registered:', customFields)
+      }
     }
 
     // Phase 1 + 2: merge base entries with extension fields
