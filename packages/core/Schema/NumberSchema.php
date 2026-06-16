@@ -38,6 +38,6 @@ final class NumberSchema extends AbstractFieldSchema implements MappableField {
       $mapping = RuleMapper::resolve($bound['rule'], $bound['args']);
       $schema  = array_merge($schema, $mapping->jsonSchema);
     }
-    return $this->applyNullable($schema);
+    return $this->applyErrorMessages($this->applyNullable($schema));
   }
 }

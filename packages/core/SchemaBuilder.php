@@ -144,6 +144,28 @@ final class SchemaBuilder implements SchemaProviderInterface {
     return $schema;
   }
 
+  /**
+   * Export a JSON Forms / RJSF compatible UI Schema (companion document).
+   * Does not affect validation — purely declarative layout metadata.
+   */
+  public function toUiSchema(): array {
+    $elements = [];
+    foreach ($this->fields as $name => $field) {
+      if (!$field->isMappable()) {
+        continue;
+      }
+      $elements[] = [
+        'type'  => 'Control',
+        'scope' => "#/properties/{$name}",
+        'label' => $field->getLabel() ?? $name,
+      ];
+    }
+    return [
+      'type'     => 'VerticalLayout',
+      'elements' => $elements,
+    ];
+  }
+
   public function toJson(): string {
     return json_encode(
       $this->toJsonSchema(),

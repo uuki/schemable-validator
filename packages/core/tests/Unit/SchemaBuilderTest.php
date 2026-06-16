@@ -724,4 +724,84 @@ class SchemaBuilderTest extends TestCase {
     $this->assertSame($js1['x-when'][0]['op'],     $js2['x-when'][0]['op']);
     $this->assertSame($js1['x-when'][0]['equals'], $js2['x-when'][0]['equals']);
   }
+
+  // ── UISchema (Step 1-e) ──────────────────────────────────────
+
+  public function test_toUiSchema_basic_layout(): void {
+    $sb = SV::object([
+      'name'  => SV::string(),
+      'email' => SV::string()->email(),
+    ]);
+    $ui = $sb->toUiSchema();
+    $this->assertSame('VerticalLayout', $ui['type']);
+    $this->assertCount(2, $ui['elements']);
+    $this->assertSame('Control',             $ui['elements'][0]['type']);
+    $this->assertSame('#/properties/name',   $ui['elements'][0]['scope']);
+    $this->assertSame('name',                $ui['elements'][0]['label']);
+    $this->assertSame('#/properties/email',  $ui['elements'][1]['scope']);
+    $this->assertSame('email',               $ui['elements'][1]['label']);
+  }
+
+  public function test_toUiSchema_label_override(): void {
+    $sb = SV::object([
+      'name'  => SV::string()->label('お名前'),
+      'email' => SV::string()->email()->label('メールアドレス'),
+    ]);
+    $ui = $sb->toUiSchema();
+    $this->assertSame('お名前',           $ui['elements'][0]['label']);
+    $this->assertSame('メールアドレス',   $ui['elements'][1]['label']);
+  }
+
+  public function test_toUiSchema_excludes_unmapped_fields(): void {
+    $sb = SV::object([
+      'name' => SV::string(),
+      'file' => SV::file(['image/jpeg']),
+    ]);
+    $ui = $sb->toUiSchema();
+    // Only mappable fields appear in elements
+    $this->assertCount(1, $ui['elements']);
+    $this->assertSame('#/properties/name', $ui['elements'][0]['scope']);
+  }
+
+  public function test_toUiSchema_does_not_affect_toJsonSchema(): void {
+    $sb = SV::object(['name' => SV::string()->label('お名前')]);
+    $js = $sb->toJsonSchema();
+    // label must not leak into the JSON Schema output
+    $this->assertArrayNotHasKey('label', $js['properties']['name']);
+  }
+
+  // ── errorMessages (Step 1-a) ────────────────────────────────
+
+  public function test_errorMessages_appears_in_toJsonSchema(): void {
+    $js = SV::string()->email()->errorMessages([
+      'format' => '有効なメールアドレスを入力してください',
+    ])->toJsonSchema();
+    $this->assertArrayHasKey('errorMessage', $js);
+    $this->assertSame('有効なメールアドレスを入力してください', $js['errorMessage']['format']);
+  }
+
+  public function test_errorMessages_absent_when_not_set(): void {
+    $js = SV::string()->email()->toJsonSchema();
+    $this->assertArrayNotHasKey('errorMessage', $js);
+  }
+
+  public function test_errorMessages_on_integer(): void {
+    $js = SV::integer()->min(1)->errorMessages(['type' => '整数で入力してください'])->toJsonSchema();
+    $this->assertSame('整数で入力してください', $js['errorMessage']['type']);
+  }
+
+  public function test_errorMessages_survives_nullable(): void {
+    $js = SV::string()->nullable()->errorMessages(['type' => 'custom'])->toJsonSchema();
+    $this->assertSame(['string', 'null'], $js['type']);
+    $this->assertSame('custom', $js['errorMessage']['type']);
+  }
+
+  public function test_errorMessages_in_object_toJsonSchema(): void {
+    $sb = SV::object([
+      'email' => SV::string()->email()->errorMessages(['format' => 'メール形式が無効です']),
+    ]);
+    $js = $sb->toJsonSchema();
+    $this->assertArrayHasKey('errorMessage', $js['properties']['email']);
+    $this->assertSame('メール形式が無効です', $js['properties']['email']['errorMessage']['format']);
+  }
 }

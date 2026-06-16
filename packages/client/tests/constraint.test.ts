@@ -8,6 +8,7 @@ import {
   checkMaximum,
   checkEnum,
   checkType,
+  constraintsFromSchema,
   PATTERN_MAX_INPUT_LENGTH,
 } from '../src/constraint.js'
 
@@ -335,6 +336,101 @@ describe('checkFormat: injection and invisible characters', () => {
   })
   it('rejects uri with null byte', () => {
     expect(checkFormat('uri')(state('https://example.com/\x00evil')).errors.length).toBeGreaterThan(0)
+  })
+})
+
+// ── errorMessage override (Step 1-a) ─────────────────────────────────────────
+
+describe('constraintsFromSchema: errorMessage override', () => {
+  it('uses custom type message for integer error', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      errorMessage: { type: '整数で入力してください' },
+    })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['整数で入力してください'])
+  })
+
+  it('uses custom type message for number error', () => {
+    const result = constraintsFromSchema({
+      type: 'number',
+      errorMessage: { type: '数値で入力してください' },
+    })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['数値で入力してください'])
+  })
+
+  it('uses custom type message for boolean error', () => {
+    const result = constraintsFromSchema({
+      type: 'boolean',
+      errorMessage: { type: 'true か false を入力してください' },
+    })({ value: 'maybe', errors: [] })
+    expect(result.errors).toEqual(['true か false を入力してください'])
+  })
+
+  it('uses custom format message for format error', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      format: 'email',
+      errorMessage: { format: '有効なメールアドレスを入力してください' },
+    })({ value: 'not-an-email', errors: [] })
+    expect(result.errors).toEqual(['有効なメールアドレスを入力してください'])
+  })
+
+  it('uses custom minLength message', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 5,
+      errorMessage: { minLength: '5文字以上で入力してください' },
+    })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['5文字以上で入力してください'])
+  })
+
+  it('uses custom maxLength message', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      maxLength: 3,
+      errorMessage: { maxLength: '3文字以内で入力してください' },
+    })({ value: 'abcdef', errors: [] })
+    expect(result.errors).toEqual(['3文字以内で入力してください'])
+  })
+
+  it('uses custom minimum message', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      minimum: 10,
+      errorMessage: { minimum: '10以上で入力してください' },
+    })({ value: '5', errors: [] })
+    expect(result.errors).toEqual(['10以上で入力してください'])
+  })
+
+  it('uses custom maximum message', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      maximum: 100,
+      errorMessage: { maximum: '100以下で入力してください' },
+    })({ value: '200', errors: [] })
+    expect(result.errors).toEqual(['100以下で入力してください'])
+  })
+
+  it('falls back to default message when errorMessage absent', () => {
+    const result = constraintsFromSchema({ type: 'integer' })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['must be an integer'])
+  })
+
+  it('falls back to default when errorMessage does not include the triggered key', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      format: 'email',
+      errorMessage: { minLength: 'something else' },
+    })({ value: 'not-an-email', errors: [] })
+    expect(result.errors).toEqual(['must be a valid email'])
+  })
+
+  it('does not affect valid input', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      errorMessage: { type: 'カスタムエラー' },
+    })({ value: '42', errors: [] })
+    expect(result.errors).toHaveLength(0)
   })
 })
 

@@ -19,6 +19,21 @@ export type PropertySchema = {
   readonly items?: PropertySchema
   readonly minItems?: number
   readonly maxItems?: number
+  // Inline error messages keyed by JSON Schema keyword (AJV ajv-errors convention).
+  // Resolution order: MessageDict > errorMessage > default.
+  readonly errorMessage?: Readonly<Record<string, string>>
+}
+
+/** JSON Forms / RJSF UI Schema companion document produced by SchemaBuilder::toUiSchema(). */
+export type UiSchemaControl = {
+  readonly type: 'Control'
+  readonly scope: string
+  readonly label: string
+}
+
+export type UiSchema = {
+  readonly type: 'VerticalLayout'
+  readonly elements: readonly UiSchemaControl[]
 }
 
 /** Conditional requirement block (JSON Schema if/then). */
