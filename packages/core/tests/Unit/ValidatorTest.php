@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Respect\Validation\Validator as v;
 use SchemableValidator\SV;
 use SchemableValidator\Validator;
+use SchemableValidator\Validation\Adapters\RespectAdapter;
 
 class ValidatorTest extends TestCase
 {
@@ -461,5 +462,59 @@ class ValidatorTest extends TestCase
       $this->assertSame($fromBuilder[$field]['is_valid'], $fromRaw[$field]['is_valid'], "{$field} round-trip parity");
       $this->assertFalse($fromRaw[$field]['is_valid'], "{$field} should reject '{$case['bad']}' via fromJsonSchema");
     }
+  }
+
+  // ── fromJsonSchema() adapter parameter ──────────────────
+
+  public function test_fromJsonSchema_default_adapter_validates_correctly(): void {
+    $schema = [
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => ['name' => ['type' => 'string', 'minLength' => 2]],
+      'required'   => ['name'],
+    ];
+    $result = Validator::fromJsonSchema($schema)->validate(['name' => 'Alice'])->getResult();
+    $this->assertTrue($result['name']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_explicit_null_adapter_behaves_as_default(): void {
+    $schema = [
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => ['n' => ['type' => 'integer']],
+      'required'   => ['n'],
+    ];
+    $default  = Validator::fromJsonSchema($schema)->validate(['n' => '42'])->getResult();
+    $explicit = Validator::fromJsonSchema($schema, [], [], null, null)->validate(['n' => '42'])->getResult();
+    $this->assertSame($default['n']['is_valid'], $explicit['n']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_explicit_respect_adapter_behaves_as_default(): void {
+    $schema = [
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => ['n' => ['type' => 'integer']],
+      'required'   => ['n'],
+    ];
+    $default  = Validator::fromJsonSchema($schema)->validate(['n' => '42'])->getResult();
+    $explicit = Validator::fromJsonSchema($schema, [], [], null, new RespectAdapter())->validate(['n' => '42'])->getResult();
+    $this->assertTrue($default['n']['is_valid']);
+    $this->assertSame($default['n']['is_valid'], $explicit['n']['is_valid']);
+  }
+
+  // ── SchemaBuilder::toValidator() backward-compat (re-verify after W1) ──
+
+  public function test_schemaBuilder_toValidator_still_validates_after_w1_delegation(): void {
+    $result = SV::object(['email' => SV::string()->email()])
+      ->toValidator()
+      ->validate(['email' => 'user@example.com'])
+      ->getResult();
+    $this->assertTrue($result['email']['is_valid']);
+
+    $result2 = SV::object(['email' => SV::string()->email()])
+      ->toValidator()
+      ->validate(['email' => 'not-an-email'])
+      ->getResult();
+    $this->assertFalse($result2['email']['is_valid']);
   }
 }

@@ -83,7 +83,7 @@ final class Validator {
    * @param array<string, mixed> $options
    * @param array<array{field: string, value: mixed, require: string[]}> $conditionals
    */
-  public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null): self {
+  public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
     $required = $jsonSchema['required'] ?? [];
     $schema   = [];
 
@@ -92,7 +92,7 @@ final class Validator {
       $schema[$name] = in_array($name, $required, true) ? $chain : v::optional($chain);
     }
 
-    return new self($schema, $options, $conditionals, $dict);
+    return new self($schema, $options, $conditionals, $dict, $adapter);
   }
 
   /**
