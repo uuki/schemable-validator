@@ -14,6 +14,8 @@ export type PropertySchema = {
   readonly format?: 'email' | 'uri' | 'date' | 'date-time' | 'time' | 'uuid' | 'ipv4' | 'ipv6' | 'hostname'
   readonly pattern?: string
   readonly enum?: readonly string[]
+  // value transforms applied before validation (x-transform catalog: trim, toLowerCase, toUpperCase)
+  readonly 'x-transform'?: readonly string[]
   // numeric constraints
   readonly minimum?: number
   readonly maximum?: number

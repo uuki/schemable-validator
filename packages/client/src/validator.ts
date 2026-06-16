@@ -1,5 +1,5 @@
 import { ok, err, type Result } from './result.js'
-import { constraintsFromSchema, type FieldState } from './constraint.js'
+import { constraintsFromSchema, applyTransform, type FieldState } from './constraint.js'
 import type { ObjectSchema, PropertySchema, ConditionalSchema, WhenEntry } from './schema.js'
 import { applyJsonLogic } from './jsonLogic.js'
 
@@ -21,15 +21,19 @@ const validateField = (
   schema: PropertySchema,
   required: boolean,
 ): Result<string, readonly string[]> => {
-  const isEmpty = value === ''
+  const transformed = schema['x-transform']?.length
+    ? applyTransform(value, schema['x-transform'])
+    : value
+
+  const isEmpty = transformed === ''
 
   if (required && isEmpty) return err(['is required'])
-  if (isEmpty) return ok(value) // optional + empty → always valid
+  if (isEmpty) return ok(transformed) // optional + empty → always valid
 
-  const initial: FieldState = { value, errors: [] }
+  const initial: FieldState = { value: transformed, errors: [] }
   const final = constraintsFromSchema(schema)(initial)
 
-  return final.errors.length === 0 ? ok(value) : err(final.errors)
+  return final.errors.length === 0 ? ok(transformed) : err(final.errors)
 }
 
 const validateArrayField = (
@@ -59,12 +63,12 @@ const validateArrayField = (
 }
 
 const toFieldResult = (
-  value: string | readonly string[],
+  rawValue: string | readonly string[],
   result: Result<string | readonly string[], readonly string[]>,
 ): FieldResult =>
   result._tag === 'Ok'
-    ? { value, is_valid: true, errors: null }
-    : { value, is_valid: false, errors: result.error }
+    ? { value: result.value, is_valid: true, errors: null }
+    : { value: rawValue, is_valid: false, errors: result.error }
 
 // ── Conditional evaluation ────────────────────────────────────────────────────
 

@@ -187,6 +187,38 @@ describe('validateObject: x-unmapped-fields', () => {
   })
 })
 
+// ── validateObject: x-transform ──────────────────────────────────────────────
+
+describe('validateObject: x-transform trim', () => {
+  const s = schema({ name: { type: 'string', 'x-transform': ['trim'] } }, ['name'])
+
+  it('trims whitespace from value before validation', () => {
+    expect(validateObject({ name: '  Alice  ' }, s).name.is_valid).toBe(true)
+  })
+  it('returns trimmed value in result', () => {
+    expect(validateObject({ name: '  Alice  ' }, s).name.value).toBe('Alice')
+  })
+  it('trim producing empty string fails required check', () => {
+    expect(validateObject({ name: '   ' }, s).name.is_valid).toBe(false)
+  })
+})
+
+describe('validateObject: x-transform toLowerCase', () => {
+  const s = schema({ code: { type: 'string', 'x-transform': ['toLowerCase'] } }, ['code'])
+
+  it('lowercases ASCII before returning value', () => {
+    expect(validateObject({ code: 'HELLO' }, s).code.value).toBe('hello')
+  })
+})
+
+describe('validateObject: x-transform pipeline (trim + toLowerCase)', () => {
+  const s = schema({ tag: { type: 'string', 'x-transform': ['trim', 'toLowerCase'] } }, ['tag'])
+
+  it('applies transforms in order', () => {
+    expect(validateObject({ tag: '  HELLO  ' }, s).tag.value).toBe('hello')
+  })
+})
+
 // ── validateObject: x-when (equal / notEqual / field ref) ────────────────────
 
 describe('validateObject: x-when === literal', () => {

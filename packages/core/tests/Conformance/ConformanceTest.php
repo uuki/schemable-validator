@@ -5,6 +5,7 @@ namespace SchemableValidator\Tests\Conformance;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\JsonLogicEval;
+use SchemableValidator\Validation\Transform;
 
 /**
  * Cross-stack conformance runner. Reads the same conformance/*.json fixtures as
@@ -24,16 +25,24 @@ final class ConformanceTest extends TestCase {
    * @param array<string, mixed> $fixture
    */
   public function test_fixture(array $fixture, string $relativePath): void {
+    // Apply per-field x-transform before validation.
+    $input = $fixture['input'];
+    foreach ($fixture['schema']['properties'] ?? [] as $field => $prop) {
+      if (!empty($prop['x-transform']) && isset($input[$field]) && is_string($input[$field])) {
+        $input[$field] = Transform::apply($input[$field], $prop['x-transform']);
+      }
+    }
+
     $executable = (new RespectAdapter())->compile($fixture['schema']);
-    $result     = $executable->validate($fixture['input']);
+    $result     = $executable->validate($input);
 
     // Apply x-when (JSONLogic) conditionals when present in the schema.
     foreach ($fixture['schema']['x-when'] ?? [] as $cond) {
-      if (!JsonLogicEval::apply($cond['condition'], $fixture['input'])) {
+      if (!JsonLogicEval::apply($cond['condition'], $input)) {
         continue;
       }
       foreach ($cond['require'] as $field) {
-        $val     = $fixture['input'][$field] ?? null;
+        $val     = $input[$field] ?? null;
         $isEmpty = $val === null || $val === '' || $val === [];
         if ($isEmpty) {
           $result[$field] = ['value' => $val, 'errors' => "{$field} is required", 'is_valid' => false];

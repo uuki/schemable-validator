@@ -15,6 +15,6 @@ final class EnumSchema extends AbstractFieldSchema implements MappableField {
   }
 
   public function toJsonSchema(): array {
-    return $this->applyErrorMessages($this->applyNullable(['type' => 'string', 'enum' => $this->values]));
+    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable(['type' => 'string', 'enum' => $this->values])));
   }
 }

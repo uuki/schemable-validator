@@ -85,14 +85,19 @@ final class SchemaBuilder implements SchemaProviderInterface {
 
   /** Build a Validator from the schema, passing through optional Validator options. */
   public function toValidator(array $options = []): Validator {
-    $schema = [];
+    $schema     = [];
+    $transforms = [];
     foreach ($this->fields as $name => $field) {
       $respect = RespectAdapter::compileField($field);
       // Optional fields: null or '' should always pass; non-empty values are validated normally.
       $schema[$name] = $field->isRequired() ? $respect : v::optional($respect);
+      $fieldTransforms = $field->getTransforms();
+      if (!empty($fieldTransforms)) {
+        $transforms[$name] = $fieldTransforms;
+      }
     }
     $conditionals = $this->conditionals;
-    return new Validator($schema, $options, $conditionals, $this->messageDict);
+    return new Validator($schema, $options, $conditionals, $this->messageDict, null, $transforms);
   }
 
   /**

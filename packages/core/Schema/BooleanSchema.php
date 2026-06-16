@@ -8,6 +8,6 @@ final class BooleanSchema extends AbstractFieldSchema implements MappableField {
   }
 
   public function toJsonSchema(): array {
-    return $this->applyErrorMessages($this->applyNullable(['type' => 'boolean']));
+    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable(['type' => 'boolean'])));
   }
 }

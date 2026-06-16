@@ -15,6 +15,9 @@ abstract class AbstractFieldSchema {
   /** @var array<string, string> */
   private $errorMessages = [];
 
+  /** @var string[] */
+  private $transforms = [];
+
   /** @return $this */
   public function optional() {
     $this->required = false;
@@ -46,6 +49,23 @@ abstract class AbstractFieldSchema {
     return $this;
   }
 
+  /**
+   * Declare value transforms to apply before validation.
+   * Closed catalog: 'trim', 'toLowerCase', 'toUpperCase'.
+   *
+   * @param string[] $transforms
+   * @return $this
+   */
+  public function transform(array $transforms) {
+    $this->transforms = $transforms;
+    return $this;
+  }
+
+  /** @return string[] */
+  public function getTransforms(): array {
+    return $this->transforms;
+  }
+
   public function isRequired(): bool {
     return $this->required;
   }
@@ -70,6 +90,13 @@ abstract class AbstractFieldSchema {
   protected function applyErrorMessages(array $schema): array {
     if (!empty($this->errorMessages)) {
       $schema['errorMessage'] = $this->errorMessages;
+    }
+    return $schema;
+  }
+
+  protected function applyXTransform(array $schema): array {
+    if (!empty($this->transforms)) {
+      $schema['x-transform'] = $this->transforms;
     }
     return $schema;
   }

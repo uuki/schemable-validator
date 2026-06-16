@@ -115,6 +115,6 @@ final class StringSchema extends AbstractFieldSchema implements MappableField {
         $schema = array_merge($schema, $mapping->jsonSchema);
       }
     }
-    return $this->applyErrorMessages($this->applyNullable($schema));
+    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable($schema)));
   }
 }

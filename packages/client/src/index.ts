@@ -13,6 +13,7 @@ export { applyJsonLogic } from './jsonLogic.js'
 export {
   composeConstraints,
   constraintsFromSchema,
+  applyTransform,
   checkType,
   checkMinLength,
   checkMaxLength,

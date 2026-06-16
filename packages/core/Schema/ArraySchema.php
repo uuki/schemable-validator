@@ -51,6 +51,6 @@ final class ArraySchema extends AbstractFieldSchema implements MappableField {
     if ($this->maxItems !== null) {
       $schema['maxItems'] = $this->maxItems;
     }
-    return $this->applyErrorMessages($this->applyNullable($schema));
+    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable($schema)));
   }
 }

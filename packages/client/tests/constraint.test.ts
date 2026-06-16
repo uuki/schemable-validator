@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   checkFormat,
   checkPattern,
@@ -9,6 +9,7 @@ import {
   checkEnum,
   checkType,
   constraintsFromSchema,
+  applyTransform,
   PATTERN_MAX_INPUT_LENGTH,
 } from '../src/constraint.js'
 
@@ -471,5 +472,61 @@ describe('checkPattern: injection and invisible characters', () => {
     // \\p{L} requires the u flag; checkPattern always compiles with u
     expect(checkPattern('^\\p{L}+$')(state('hello')).errors).toHaveLength(0)
     expect(checkPattern('^\\p{L}+$')(state('123')).errors.length).toBeGreaterThan(0)
+  })
+})
+
+// ── applyTransform ────────────────────────────────────────────────────────────
+
+describe('applyTransform: trim', () => {
+  it('removes leading and trailing spaces', () => {
+    expect(applyTransform('  hello  ', ['trim'])).toBe('hello')
+  })
+  it('removes tabs', () => {
+    expect(applyTransform('\thello\t', ['trim'])).toBe('hello')
+  })
+  it('removes LF', () => {
+    expect(applyTransform('\nhello\n', ['trim'])).toBe('hello')
+  })
+  it('removes CR', () => {
+    expect(applyTransform('\rhello\r', ['trim'])).toBe('hello')
+  })
+  it('all-whitespace becomes empty string', () => {
+    expect(applyTransform('   ', ['trim'])).toBe('')
+  })
+  it('preserves inner whitespace', () => {
+    expect(applyTransform('  hello world  ', ['trim'])).toBe('hello world')
+  })
+})
+
+describe('applyTransform: toLowerCase', () => {
+  it('lowercases ASCII A-Z', () => {
+    expect(applyTransform('Hello World', ['toLowerCase'])).toBe('hello world')
+  })
+  it('leaves non-ASCII untouched', () => {
+    expect(applyTransform('Ñ', ['toLowerCase'])).toBe('Ñ')
+  })
+})
+
+describe('applyTransform: toUpperCase', () => {
+  it('uppercases ASCII a-z', () => {
+    expect(applyTransform('hello world', ['toUpperCase'])).toBe('HELLO WORLD')
+  })
+})
+
+describe('applyTransform: pipeline order', () => {
+  it('trim then toLowerCase', () => {
+    expect(applyTransform('  HELLO  ', ['trim', 'toLowerCase'])).toBe('hello')
+  })
+  it('trim then toUpperCase', () => {
+    expect(applyTransform('  hello  ', ['trim', 'toUpperCase'])).toBe('HELLO')
+  })
+})
+
+describe('applyTransform: unknown transform warns', () => {
+  it('emits console.warn for unknown name', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    applyTransform('value', ['stripHtml'])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("unknown transform 'stripHtml'"))
+    warn.mockRestore()
   })
 })

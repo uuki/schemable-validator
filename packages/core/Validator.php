@@ -19,6 +19,7 @@ use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\JsonLogicEval;
+use SchemableValidator\Validation\Transform;
 use SchemableValidator\Validation\RespectExecutableValidator;
 
 /**
@@ -33,6 +34,9 @@ final class Validator {
 
   /** @var array<array{condition: array, require: string[]}> */
   private array $conditionals;
+
+  /** @var array<string, string[]> field → transform list */
+  private array $transforms;
 
   /** @var array<string, mixed> */
   private array $options;
@@ -49,9 +53,10 @@ final class Validator {
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = []) {
     $this->schema = $schema;
     $this->conditionals = $conditionals;
+    $this->transforms = $transforms;
     $this->dict = $dict;
     $this->adapter = $adapter ?? new RespectAdapter();
     $this->options = array_merge([
@@ -86,12 +91,16 @@ final class Validator {
    * @param array<array{condition: array, require: string[]}> $conditionals
    */
   public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
-    $required = $jsonSchema['required'] ?? [];
-    $schema   = [];
+    $required   = $jsonSchema['required'] ?? [];
+    $schema     = [];
+    $transforms = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
       $chain         = RespectAdapter::compileProperty($prop);
       $schema[$name] = in_array($name, $required, true) ? $chain : v::optional($chain);
+      if (!empty($prop['x-transform'])) {
+        $transforms[$name] = $prop['x-transform'];
+      }
     }
 
     // Merge x-when conditionals from the schema itself (JSONLogic format).
@@ -100,7 +109,7 @@ final class Validator {
       $conditionals = array_merge($xWhen, $conditionals);
     }
 
-    return new self($schema, $options, $conditionals, $dict, $adapter);
+    return new self($schema, $options, $conditionals, $dict, $adapter, $transforms);
   }
 
   /**
@@ -113,6 +122,13 @@ final class Validator {
   public function validate(array $data): self {
     if (!empty($data['recaptcha_token'])) {
       $this->state['recaptcha_token'] = $data['recaptcha_token'];
+    }
+
+    // Pre-transform field values before validation.
+    foreach ($this->transforms as $field => $transforms) {
+      if (isset($data[$field]) && is_string($data[$field])) {
+        $data[$field] = Transform::apply($data[$field], $transforms);
+      }
     }
 
     $executable = new RespectExecutableValidator($this->schema, $this->dict);
