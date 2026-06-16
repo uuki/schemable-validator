@@ -1,0 +1,16 @@
+{
+  "name": "integer type rejects hex literal 0x10",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "n": { "type": "integer" }
+    },
+    "required": ["n"]
+  },
+  "input": { "n": "0x10" },
+  "expected": {
+    "n": { "is_valid": false }
+  }
+}
