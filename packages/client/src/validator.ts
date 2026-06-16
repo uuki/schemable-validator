@@ -1,6 +1,7 @@
 import { ok, err, type Result } from './result.js'
 import { constraintsFromSchema, type FieldState } from './constraint.js'
-import type { ObjectSchema, PropertySchema, ConditionalSchema, WhenCondition, WhenOp } from './schema.js'
+import type { ObjectSchema, PropertySchema, ConditionalSchema, WhenEntry } from './schema.js'
+import { applyJsonLogic } from './jsonLogic.js'
 
 // ── Output types ─────────────────────────────────────────────────────────────
 // Mirror the shape of PHP Validator::getResult() for cross-stack consistency.
@@ -72,30 +73,12 @@ const resolveString = (
 ): string =>
   Array.isArray(value) ? (value as readonly string[]).join(',') : (value as string) ?? ''
 
-const NUMERIC_OPS = new Set<WhenOp>(['>=', '<=', '>', '<'])
-
-const evaluateWhenCondition = (
-  cond: WhenCondition,
+const evaluateWhenEntry = (
+  cond: WhenEntry,
   data: Readonly<Record<string, string | readonly string[]>>,
   result: Record<string, FieldResult>,
 ): void => {
-  const triggerStr = resolveString(data[cond.field])
-  const operandStr = 'equalsField' in cond
-    ? resolveString(data[cond.equalsField])
-    : String(cond.equals)
-
-  let matches: boolean
-  if (NUMERIC_OPS.has(cond.op)) {
-    const t = Number(triggerStr)
-    const o = Number(operandStr)
-    matches = cond.op === '>=' ? t >= o
-            : cond.op === '<=' ? t <= o
-            : cond.op === '>'  ? t >  o
-            :                    t <  o
-  } else {
-    matches = cond.op === '!==' ? triggerStr !== operandStr : triggerStr === operandStr
-  }
-  if (!matches) return
+  if (!applyJsonLogic(cond.condition, data as Record<string, unknown>)) return
   for (const name of cond.require) {
     const val = data[name] ?? ''
     const isEmpty = Array.isArray(val) ? (val as readonly string[]).length === 0 : val === ''
@@ -157,7 +140,7 @@ export const validateObject = (
   // Fall back to standard if/then / allOf for schemas without x-when.
   if (schema['x-when'] !== undefined) {
     for (const cond of schema['x-when']) {
-      evaluateWhenCondition(cond, data, result)
+      evaluateWhenEntry(cond, data, result)
     }
   } else {
     if (schema.if && schema.then) {

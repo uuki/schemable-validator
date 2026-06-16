@@ -4,6 +4,7 @@ namespace SchemableValidator\Tests\Conformance;
 
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Validation\JsonLogicEval;
 
 /**
  * Cross-stack conformance runner. Reads the same conformance/*.json fixtures as
@@ -25,6 +26,20 @@ final class ConformanceTest extends TestCase {
   public function test_fixture(array $fixture, string $relativePath): void {
     $executable = (new RespectAdapter())->compile($fixture['schema']);
     $result     = $executable->validate($fixture['input']);
+
+    // Apply x-when (JSONLogic) conditionals when present in the schema.
+    foreach ($fixture['schema']['x-when'] ?? [] as $cond) {
+      if (!JsonLogicEval::apply($cond['condition'], $fixture['input'])) {
+        continue;
+      }
+      foreach ($cond['require'] as $field) {
+        $val     = $fixture['input'][$field] ?? null;
+        $isEmpty = $val === null || $val === '' || $val === [];
+        if ($isEmpty) {
+          $result[$field] = ['value' => $val, 'errors' => "{$field} is required", 'is_valid' => false];
+        }
+      }
+    }
 
     $knownMismatch = $fixture['knownMismatch'] ?? false;
 

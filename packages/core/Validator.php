@@ -16,10 +16,9 @@ use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 use SchemableValidator\Controllers\CurlController;
 use SchemableValidator\I18n\MessageDict;
-use SchemableValidator\Schema\FieldRef;
-use SchemableValidator\Schema\WhenExpr;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
+use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\RespectExecutableValidator;
 
 /**
@@ -32,7 +31,7 @@ final class Validator {
   /** @var array<string, v> */
   private array $schema;
 
-  /** @var array<array{field: string, value: mixed, require: string[]}> */
+  /** @var array<array{condition: array, require: string[]}> */
   private array $conditionals;
 
   /** @var array<string, mixed> */
@@ -79,9 +78,12 @@ final class Validator {
    * compiled via RespectAdapter, so the resulting Validator behaves the same
    * as one built from SV::object(...)->toValidator().
    *
+   * x-when conditionals embedded in $jsonSchema are extracted automatically;
+   * explicit $conditionals (JSONLogic format) may be supplied to supplement.
+   *
    * @param array<string, mixed> $jsonSchema
    * @param array<string, mixed> $options
-   * @param array<array{field: string, value: mixed, require: string[]}> $conditionals
+   * @param array<array{condition: array, require: string[]}> $conditionals
    */
   public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
     $required = $jsonSchema['required'] ?? [];
@@ -90,6 +92,12 @@ final class Validator {
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
       $chain         = RespectAdapter::compileProperty($prop);
       $schema[$name] = in_array($name, $required, true) ? $chain : v::optional($chain);
+    }
+
+    // Merge x-when conditionals from the schema itself (JSONLogic format).
+    $xWhen = $jsonSchema['x-when'] ?? [];
+    if (!empty($xWhen)) {
+      $conditionals = array_merge($xWhen, $conditionals);
     }
 
     return new self($schema, $options, $conditionals, $dict, $adapter);
@@ -112,45 +120,16 @@ final class Validator {
       $this->state['result'][$name] = $fieldState;
     }
 
-    // Apply conditional requirements
+    // Apply conditional requirements (JSONLogic format)
     foreach ($this->conditionals as $cond) {
-      /** @var WhenExpr $expr */
-      $expr        = $cond['expr'];
-      $triggerRaw  = $data[$cond['field']] ?? null;
-      $triggerStr  = is_array($triggerRaw)
-        ? implode(',', array_map('strval', $triggerRaw))
-        : (string) ($triggerRaw ?? '');
-
-      // Resolve the right-hand operand (literal or field reference)
-      $operand    = $expr->operand;
-      $operandStr = ($operand instanceof FieldRef)
-        ? (string) ($data[$operand->name] ?? '')
-        : (string) $operand;
-
-      $triggerNum = self::toFloat($triggerStr);
-      $operandNum = self::toFloat($operandStr);
-      if ($expr->op === '!==') {
-        $matches = $triggerStr !== $operandStr;
-      } elseif ($expr->op === '>=') {
-        $matches = $triggerNum >= $operandNum;
-      } elseif ($expr->op === '<=') {
-        $matches = $triggerNum <= $operandNum;
-      } elseif ($expr->op === '>') {
-        $matches = $triggerNum > $operandNum;
-      } elseif ($expr->op === '<') {
-        $matches = $triggerNum < $operandNum;
-      } else {
-        $matches = $triggerStr === $operandStr; // '==='
-      }
-
-      if (!$matches) {
+      if (!JsonLogicEval::apply($cond['condition'], $data)) {
         continue;
       }
       foreach ($cond['require'] as $requiredField) {
-        $val = $data[$requiredField] ?? null;
+        $val     = $data[$requiredField] ?? null;
         $isEmpty = $val === null || $val === '' || $val === [];
         if ($isEmpty) {
-          $state = $this->createState();
+          $state           = $this->createState();
           $state['value']  = $val;
           $state['errors'] = $this->dict
             ? $this->dict->resolve($requiredField, 'required', "{$requiredField} is required")
@@ -336,19 +315,6 @@ final class Validator {
       session_start();
       self::$sessionStarted = true;
     }
-  }
-
-  /**
-   * Strict string-to-float conversion that rejects hex literals ("0x…").
-   * PHP's (float) cast already ignores the "x" suffix and returns 0.0 for
-   * "0x10", but this makes the intent explicit and guards against future
-   * PHP behaviour changes that could silently diverge from the TS client.
-   */
-  private static function toFloat(string $str): float {
-    if (is_numeric($str) && !preg_match('/^[+-]?0x/i', $str)) {
-      return (float) $str;
-    }
-    return 0.0;
   }
 
   /**

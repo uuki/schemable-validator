@@ -3,7 +3,11 @@ export { ok, err, isOk, isErr, map, flatMap, mapErr, getOrElse } from './result.
 export type { Ok, Err, Result } from './result.js'
 
 // Schema types (mirror of SchemaBuilder::toJsonSchema() output)
-export type { JsonSchemaType, PropertySchema, ObjectSchema, ConditionalSchema, WhenCondition, WhenOp } from './schema.js'
+export type { JsonSchemaType, PropertySchema, ObjectSchema, ConditionalSchema, WhenEntry } from './schema.js'
+
+// JSONLogic evaluator types (for x-when conditions)
+export type { JLCondition, JLValue, JLVar } from './jsonLogic.js'
+export { applyJsonLogic } from './jsonLogic.js'
 
 // Constraint pipeline (exported for consumers who need custom rules)
 export {

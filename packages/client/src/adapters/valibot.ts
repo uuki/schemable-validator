@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import type { ObjectSchema, PropertySchema, WhenCondition } from '../schema.js'
+import type { ObjectSchema, PropertySchema, WhenEntry } from '../schema.js'
 import { applyWhenConditions, SchemaBuilderBase, type SvConfigBase } from './builder.js'
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -130,7 +130,7 @@ function propertyToValibot(field: PropertySchema): v.GenericSchema {
 }
 
 /** Wrap the shared when-condition iterator with Valibot's rawCheck error API. */
-function buildWhenChecker(conditions: readonly WhenCondition[]): ValibotRefiner {
+function buildWhenChecker(conditions: readonly WhenEntry[]): ValibotRefiner {
   return ({ dataset, addIssue }) => {
     if (!dataset.typed) return
     const data = dataset.value as Record<string, unknown>

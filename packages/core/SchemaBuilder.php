@@ -8,6 +8,7 @@ use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
+use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 
 final class SchemaBuilder implements SchemaProviderInterface {
@@ -15,8 +16,8 @@ final class SchemaBuilder implements SchemaProviderInterface {
   private $fields;
 
   /**
-   * Conditional rules.
-   * @var array<array{field: string, expr: WhenExpr, require: string[]}>
+   * Conditional rules stored as JSONLogic conditions.
+   * @var array<array{condition: array, require: string[]}>
    */
   private $conditionals = [];
 
@@ -52,7 +53,13 @@ final class SchemaBuilder implements SchemaProviderInterface {
     if (!($expr instanceof WhenExpr)) {
       $expr = new WhenExpr('===', $expr);
     }
-    $this->conditionals[] = ['field' => $field, 'expr' => $expr, 'require' => $require];
+    $lhs     = ['var' => $field];
+    $operand = $expr->operand;
+    $rhs     = ($operand instanceof FieldRef) ? ['var' => $operand->name] : $operand;
+    $this->conditionals[] = [
+      'condition' => [$expr->op => [$lhs, $rhs]],
+      'require'   => $require,
+    ];
     return $this;
   }
 
@@ -107,34 +114,34 @@ final class SchemaBuilder implements SchemaProviderInterface {
       $schema['x-unmapped-fields'] = $unmapped;
     }
 
-    // Conditional requirements → x-when (supports ===, !==, field refs)
+    // Conditional requirements → x-when (JSONLogic format)
     if (!empty($this->conditionals)) {
       $schema['x-when'] = array_map(function (array $cond): array {
-        $expr    = $cond['expr'];
-        $operand = $expr->operand;
-        $entry   = ['field' => $cond['field'], 'op' => $expr->op, 'require' => $cond['require']];
-        if ($operand instanceof FieldRef) {
-          $entry['equalsField'] = $operand->name;
-        } else {
-          $entry['equals'] = $operand;
-        }
-        return $entry;
+        return ['condition' => $cond['condition'], 'require' => $cond['require']];
       }, $this->conditionals);
 
       // Also emit standard if/then (or allOf) for literal === conditions,
-      // to remain compatible with JSON Schema validators.
+      // to remain compatible with JSON Schema validators that don't understand x-when.
       $literalEqual = array_values(array_filter(
         $this->conditionals,
-        fn($c) => $c['expr']->op === '===' && !($c['expr']->operand instanceof FieldRef),
+        function (array $c): bool {
+          $op  = (string) array_key_first($c['condition']);
+          $rhs = $c['condition'][$op][1];
+          return $op === '===' && !is_array($rhs);
+        },
       ));
       if (count($literalEqual) === 1) {
-        $cond = $literalEqual[0];
-        $schema['if']   = ['properties' => [$cond['field'] => ['const' => $cond['expr']->operand]]];
+        $cond  = $literalEqual[0];
+        $field = $cond['condition']['==='][0]['var'];
+        $value = $cond['condition']['==='][1];
+        $schema['if']   = ['properties' => [$field => ['const' => $value]]];
         $schema['then'] = ['required' => $cond['require']];
       } elseif (count($literalEqual) > 1) {
         $schema['allOf'] = array_map(function (array $cond): array {
+          $field = $cond['condition']['==='][0]['var'];
+          $value = $cond['condition']['==='][1];
           return [
-            'if'   => ['properties' => [$cond['field'] => ['const' => $cond['expr']->operand]]],
+            'if'   => ['properties' => [$field => ['const' => $value]]],
             'then' => ['required' => $cond['require']],
           ];
         }, $literalEqual);

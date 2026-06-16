@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { ObjectSchema, PropertySchema, WhenCondition } from '../schema.js'
+import type { ObjectSchema, PropertySchema, WhenEntry } from '../schema.js'
 import { applyWhenConditions, SchemaBuilderBase, type SvConfigBase } from './builder.js'
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ function propertyToZod(field: PropertySchema): z.ZodTypeAny {
 }
 
 /** Wrap the shared when-condition iterator with Zod's error API. */
-function buildWhenRefiner(conditions: readonly WhenCondition[]): ZodRefiner {
+function buildWhenRefiner(conditions: readonly WhenEntry[]): ZodRefiner {
   return (data, ctx) => {
     applyWhenConditions(conditions, data, (key) => {
       ctx.addIssue({ code: 'custom', path: [key], message: 'Required' })

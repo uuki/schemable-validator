@@ -512,7 +512,7 @@ describe('zodSv: .when()', () => {
       { type: { type: 'string', enum: ['company', 'individual'] }, company_name: { type: 'string' } },
       ['type'],
     ),
-    'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }],
+    'x-when': [{ condition: { '===': [{ var: 'type' }, 'company'] }, require: ['company_name'] }],
   }
 
   it('enforces conditional requirement when condition matches', () => {
@@ -594,7 +594,7 @@ describe('zodSv: .when() call order independence', () => {
       { type: { type: 'string', enum: ['corp'] }, corp_id: { type: 'string' } },
       ['type'],
     ),
-    'x-when': [{ field: 'type', op: '===', equals: 'corp', require: ['corp_id'] }],
+    'x-when': [{ condition: { '===': [{ var: 'type' }, 'corp'] }, require: ['corp_id'] }],
   }
 
   it('refine before when produces same result as when before refine', () => {
@@ -682,7 +682,7 @@ describe('valibotSv: .when()', () => {
       { type: { type: 'string', enum: ['company', 'individual'] }, company_name: { type: 'string' } },
       ['type'],
     ),
-    'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }],
+    'x-when': [{ condition: { '===': [{ var: 'type' }, 'company'] }, require: ['company_name'] }],
   }
 
   it('enforces conditional requirement when condition matches', () => {

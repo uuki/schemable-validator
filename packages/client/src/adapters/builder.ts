@@ -2,45 +2,32 @@
  * Shared foundation for Zod and Valibot schema builders.
  *
  * Exports:
- *   - evalWhenOp        — WhenOp comparator (pure function)
- *   - applyWhenConditions — iterates x-when conditions; adapter supplies the error callback
+ *   - applyWhenConditions — iterates x-when (JSONLogic) conditions; adapter supplies the error callback
  *   - SvConfigBase<T>   — generic config base; adapters narrow T to their OnUnknown type
  *   - SchemaBuilderBase  — abstract class managing builder state + 5 setter methods
  *
  * The concrete build() logic and when-refiner wrappers live in each adapter because
  * the Zod and Valibot error APIs differ fundamentally.
  */
-import type { ObjectSchema, WhenCondition, WhenOp } from '../schema.js'
+import type { ObjectSchema, WhenEntry } from '../schema.js'
+import { applyJsonLogic } from '../jsonLogic.js'
 
 // ── Shared utilities ──────────────────────────────────────────────────────────
 
-/** Evaluate a single WhenOp comparison between two values. */
-export function evalWhenOp(a: unknown, op: WhenOp, b: unknown): boolean {
-  switch (op) {
-    case '===': return a === b
-    case '!==': return a !== b
-    case '>=':  return (a as number) >= (b as number)
-    case '<=':  return (a as number) <= (b as number)
-    case '>':   return (a as number) >  (b as number)
-    case '<':   return (a as number) <  (b as number)
-  }
-}
-
 /**
- * Iterate x-when conditions and invoke addViolation for every required field
- * whose condition is met but the field value is missing/empty.
+ * Iterate x-when (JSONLogic) conditions and invoke addViolation for every
+ * required field whose condition is met but the field value is missing/empty.
  *
  * The error-reporting format (Zod ctx.addIssue vs Valibot addIssue) is
  * adapter-specific — pass it as addViolation so the iteration logic stays here.
  */
 export function applyWhenConditions(
-  conditions: readonly WhenCondition[],
+  conditions: readonly WhenEntry[],
   data: Record<string, unknown>,
   addViolation: (key: string, value: unknown) => void,
 ): void {
   for (const cond of conditions) {
-    const rhs = 'equalsField' in cond ? data[cond.equalsField] : cond.equals
-    if (!evalWhenOp(data[cond.field], cond.op, rhs)) continue
+    if (!applyJsonLogic(cond.condition, data)) continue
     for (const key of cond.require) {
       const val = data[key]
       if (val === undefined || val === null || val === '') {

@@ -481,10 +481,12 @@ class SchemaBuilderTest extends TestCase {
 
     $this->assertArrayHasKey('x-when', $js);
     $this->assertCount(1, $js['x-when']);
-    $this->assertSame('===',          $js['x-when'][0]['op']);
-    $this->assertSame('type',         $js['x-when'][0]['field']);
-    $this->assertSame('company',      $js['x-when'][0]['equals']);
-    $this->assertSame(['company_name'], $js['x-when'][0]['require']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('condition', $cond);
+    $this->assertArrayHasKey('===', $cond['condition']);
+    $this->assertSame(['var' => 'type'], $cond['condition']['==='][0]);
+    $this->assertSame('company',         $cond['condition']['==='][1]);
+    $this->assertSame(['company_name'], $cond['require']);
     // literal === also emits standard if/then
     $this->assertArrayHasKey('if', $js);
     $this->assertArrayHasKey('then', $js);
@@ -497,8 +499,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('role', SV::notEqual('admin'), ['note'])->toJsonSchema();
 
     $this->assertArrayHasKey('x-when', $js);
-    $this->assertSame('!==',   $js['x-when'][0]['op']);
-    $this->assertSame('admin', $js['x-when'][0]['equals']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('!==', $cond['condition']);
+    $this->assertSame(['var' => 'role'], $cond['condition']['!=='][0]);
+    $this->assertSame('admin',           $cond['condition']['!=='][1]);
     // !== conditions are not expressible in standard JSON Schema
     $this->assertArrayNotHasKey('if', $js);
     $this->assertArrayNotHasKey('then', $js);
@@ -512,10 +516,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('password', SV::equal(SV::field('confirm_password')), ['hint'])->toJsonSchema();
 
     $this->assertArrayHasKey('x-when', $js);
-    $this->assertSame('===',             $js['x-when'][0]['op']);
-    $this->assertArrayHasKey('equalsField', $js['x-when'][0]);
-    $this->assertSame('confirm_password', $js['x-when'][0]['equalsField']);
-    $this->assertArrayNotHasKey('equals', $js['x-when'][0]);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('===', $cond['condition']);
+    $this->assertSame(['var' => 'password'],         $cond['condition']['==='][0]);
+    $this->assertSame(['var' => 'confirm_password'], $cond['condition']['==='][1]);
     // field refs can't emit standard if/then
     $this->assertArrayNotHasKey('if', $js);
   }
@@ -527,8 +531,10 @@ class SchemaBuilderTest extends TestCase {
       'confirmation_msg' => SV::string()->optional(),
     ])->when('new_password', SV::notEqual(SV::field('old_password')), ['confirmation_msg'])->toJsonSchema();
 
-    $this->assertSame('!==',          $js['x-when'][0]['op']);
-    $this->assertSame('old_password', $js['x-when'][0]['equalsField']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('!==', $cond['condition']);
+    $this->assertSame(['var' => 'new_password'], $cond['condition']['!=='][0]);
+    $this->assertSame(['var' => 'old_password'], $cond['condition']['!=='][1]);
   }
 
   // ── Validator: equal / notEqual runtime ──────────────────────
@@ -605,8 +611,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('age', SV::{$method}(18), ['consent'])->toJsonSchema();
 
     $this->assertArrayHasKey('x-when', $js);
-    $this->assertSame($expectedOp, $js['x-when'][0]['op']);
-    $this->assertSame(18, $js['x-when'][0]['equals']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey($expectedOp, $cond['condition']);
+    $this->assertSame(['var' => 'age'], $cond['condition'][$expectedOp][0]);
+    $this->assertSame(18,               $cond['condition'][$expectedOp][1]);
     // Numeric ops are not expressible in standard JSON Schema
     $this->assertArrayNotHasKey('if', $js);
   }
@@ -672,8 +680,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('price', SV::greaterThanOrEqual(SV::field('min_price')), ['note']);
 
     $js = $sb->toJsonSchema();
-    $this->assertSame('>=',        $js['x-when'][0]['op']);
-    $this->assertSame('min_price', $js['x-when'][0]['equalsField']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('>=', $cond['condition']);
+    $this->assertSame(['var' => 'price'],     $cond['condition']['>='][0]);
+    $this->assertSame(['var' => 'min_price'], $cond['condition']['>='][1]);
 
     // price(100) >= min_price(50) → triggers
     $result = $sb->toValidator()->validate(['price' => '100', 'min_price' => '50'])->getResult();
@@ -721,8 +731,7 @@ class SchemaBuilderTest extends TestCase {
     $js2 = SV::object(['type' => SV::enum(['a', 'b']), 'x' => SV::string()->optional()])
       ->when('type', SV::equal('a'), ['x'])->toJsonSchema();
 
-    $this->assertSame($js1['x-when'][0]['op'],     $js2['x-when'][0]['op']);
-    $this->assertSame($js1['x-when'][0]['equals'], $js2['x-when'][0]['equals']);
+    $this->assertSame($js1['x-when'][0]['condition'], $js2['x-when'][0]['condition']);
   }
 
   // ── UISchema (Step 1-e) ──────────────────────────────────────
