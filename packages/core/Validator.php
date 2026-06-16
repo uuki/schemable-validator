@@ -20,6 +20,7 @@ use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
+use SchemableValidator\Validation\RespectExecutableValidator;
 
 /**
  * Class Validator
@@ -106,9 +107,9 @@ final class Validator {
       $this->state['recaptcha_token'] = $data['recaptcha_token'];
     }
 
-    foreach($this->schema as $name => $validator) {
-      $value = $data[$name] ?? null;
-      $this->state['result'][$name] = $this->assert($value, $validator, $name);
+    $executable = new RespectExecutableValidator($this->schema, $this->dict);
+    foreach ($executable->validate($data) as $name => $fieldState) {
+      $this->state['result'][$name] = $fieldState;
     }
 
     // Apply conditional requirements
