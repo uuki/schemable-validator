@@ -251,6 +251,71 @@ class MessageDictTest extends TestCase
     $this->assertSame('3〜20文字で入力してください', $dict->resolve('name', 'length', 'fallback', ['min' => 3, 'max' => 20]));
   }
 
+  // ── BE inline errorMessage resolution (Step 1-a / Step 5 parity) ──
+
+  public function test_be_honors_inline_errorMessage_format_override(): void {
+    $sb = SV::object([
+      'email' => SV::string()->email()->errorMessages(['format' => '有効なメールアドレスを入力してください']),
+    ]);
+    $result = $sb->toValidator()->validate(['email' => 'not-an-email'])->getResult();
+
+    $this->assertFalse($result['email']['is_valid']);
+    $this->assertSame('有効なメールアドレスを入力してください', $result['email']['errors']);
+  }
+
+  public function test_be_interpolates_inline_minLength_template(): void {
+    $sb = SV::object([
+      'name' => SV::string()->min(3)->errorMessages(['minLength' => '最低{min}文字必要です']),
+    ]);
+    $result = $sb->toValidator()->validate(['name' => 'ab'])->getResult();
+
+    $this->assertFalse($result['name']['is_valid']);
+    $this->assertSame('最低3文字必要です', $result['name']['errors']);
+  }
+
+  public function test_be_interpolates_inline_maximum_template(): void {
+    $sb = SV::object([
+      'age' => SV::integer()->max(100)->errorMessages(['maximum' => '{max}以下で入力してください']),
+    ]);
+    $result = $sb->toValidator()->validate(['age' => '200'])->getResult();
+
+    $this->assertFalse($result['age']['is_valid']);
+    $this->assertSame('100以下で入力してください', $result['age']['errors']);
+  }
+
+  public function test_dict_takes_priority_over_inline_errorMessage(): void {
+    // Resolution order: MessageDict (by ruleId) > inline errorMessage (by keyword) > default.
+    $sb = SV::object([
+      'email' => SV::string()->email()->errorMessages(['format' => 'インライン']),
+    ])->withMessages(MessageDict::ja(['email' => ['email' => '辞書が勝つ']]));
+
+    $result = $sb->toValidator()->validate(['email' => 'bad'])->getResult();
+
+    $this->assertSame('辞書が勝つ', $result['email']['errors']);
+  }
+
+  public function test_be_inline_errorMessage_via_fromJsonSchema(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'name' => ['type' => 'string', 'minLength' => 3, 'errorMessage' => ['minLength' => '最低{min}文字']],
+      ],
+      'required'   => ['name'],
+    ]);
+    $result = $validator->validate(['name' => 'ab'])->getResult();
+
+    $this->assertFalse($result['name']['is_valid']);
+    $this->assertSame('最低3文字', $result['name']['errors']);
+  }
+
+  public function test_be_without_inline_errorMessage_uses_respect_default(): void {
+    $sb = SV::object(['email' => SV::string()->email()]);
+    $result = $sb->toValidator()->validate(['email' => 'bad'])->getResult();
+
+    $this->assertFalse($result['email']['is_valid']);
+    $this->assertStringContainsString('valid email', $result['email']['errors']);
+  }
+
   // ── SchemaBuilder::withMessages() ──────────────────────────
 
   public function test_schema_builder_withMessages_passes_dict_to_validator(): void

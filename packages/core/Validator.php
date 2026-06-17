@@ -38,6 +38,9 @@ final class Validator {
   /** @var array<string, string[]> field → transform list */
   private array $transforms;
 
+  /** @var array<string, array<string, string>> field → (JSON Schema keyword → message template) */
+  private array $inlineMessages;
+
   /** @var array<string, mixed> */
   private array $options;
 
@@ -53,10 +56,11 @@ final class Validator {
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = []) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = []) {
     $this->schema = $schema;
     $this->conditionals = $conditionals;
     $this->transforms = $transforms;
+    $this->inlineMessages = $inlineMessages;
     $this->dict = $dict;
     $this->adapter = $adapter ?? new RespectAdapter();
     $this->options = array_merge([
@@ -91,15 +95,19 @@ final class Validator {
    * @param array<array{condition: array, require: string[]}> $conditionals
    */
   public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
-    $required   = $jsonSchema['required'] ?? [];
-    $schema     = [];
-    $transforms = [];
+    $required       = $jsonSchema['required'] ?? [];
+    $schema         = [];
+    $transforms     = [];
+    $inlineMessages = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
       $chain         = RespectAdapter::compileProperty($prop);
       $schema[$name] = in_array($name, $required, true) ? $chain : v::optional($chain);
       if (!empty($prop['x-transform'])) {
         $transforms[$name] = $prop['x-transform'];
+      }
+      if (!empty($prop['errorMessage'])) {
+        $inlineMessages[$name] = $prop['errorMessage'];
       }
     }
 
@@ -109,7 +117,7 @@ final class Validator {
       $conditionals = array_merge($xWhen, $conditionals);
     }
 
-    return new self($schema, $options, $conditionals, $dict, $adapter, $transforms);
+    return new self($schema, $options, $conditionals, $dict, $adapter, $transforms, $inlineMessages);
   }
 
   /**
@@ -131,7 +139,7 @@ final class Validator {
       }
     }
 
-    $executable = new RespectExecutableValidator($this->schema, $this->dict);
+    $executable = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
     foreach ($executable->validate($data) as $name => $fieldState) {
       $this->state['result'][$name] = $fieldState;
     }

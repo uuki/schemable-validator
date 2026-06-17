@@ -1,5 +1,5 @@
 {
-  "name": "errorMessage template: presence does not affect validity check (BE/FE parity)",
+  "name": "errorMessage template: {min} expands identically on both stacks (BE/FE parity)",
   "category": "parity",
   "schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -15,6 +15,9 @@
   },
   "input": { "name": "ab" },
   "expected": {
-    "name": { "is_valid": false }
+    "name": {
+      "is_valid": false,
+      "errors": ["最低3文字必要です"]
+    }
   }
 }

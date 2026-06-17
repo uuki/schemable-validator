@@ -22,7 +22,7 @@ type Fixture = {
   readonly category: 'parity' | 'structural' | 'contract'
   readonly schema: ObjectSchema
   readonly input: Readonly<Record<string, string | readonly string[]>>
-  readonly expected: Readonly<Record<string, { readonly is_valid: boolean }>>
+  readonly expected: Readonly<Record<string, { readonly is_valid: boolean; readonly errors?: readonly string[] }>>
   readonly knownMismatch?: boolean
 }
 
@@ -51,19 +51,25 @@ describe('conformance fixtures', () => {
       for (const [field, exp] of Object.entries(fixture.expected)) {
         const actual = result[field]?.is_valid
 
-        if (actual === exp.is_valid) {
+        if (actual !== exp.is_valid) {
+          if (fixture.knownMismatch) {
+            ctx.skip(
+              `[${fixture.name}] known BE/FE mismatch on field '${field}': ` +
+              `expected is_valid=${exp.is_valid}, FE got ${actual} (see ${relativePath})`
+            )
+          }
           expect(actual).toBe(exp.is_valid)
           continue
         }
 
-        if (fixture.knownMismatch) {
-          ctx.skip(
-            `[${fixture.name}] known BE/FE mismatch on field '${field}': ` +
-            `expected is_valid=${exp.is_valid}, FE got ${actual} (see ${relativePath})`
-          )
-        }
-
         expect(actual).toBe(exp.is_valid)
+
+        // Optional cross-stack message-text parity: when a fixture pins `errors`,
+        // compare the normalized error list (TS errors are already string[]).
+        if (exp.errors !== undefined) {
+          const actualErrors = result[field]?.errors ?? []
+          expect(actualErrors).toEqual(exp.errors)
+        }
       }
     })
   }

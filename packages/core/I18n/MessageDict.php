@@ -30,24 +30,24 @@ final class MessageDict {
     $def = $this->definitions[$field] ?? null;
 
     if (is_array($def) && isset($def[$ruleId])) {
-      return self::substitute($def[$ruleId], $vars);
+      return self::interpolate($def[$ruleId], $vars);
     }
 
     if (is_string($def)) {
-      return self::substitute($def, $vars);
+      return self::interpolate($def, $vars);
     }
 
-    return self::substitute($this->defaults[$ruleId] ?? $fallback, $vars);
+    return self::interpolate($this->defaults[$ruleId] ?? $fallback, $vars);
   }
 
   /**
    * Replace {varName} and {varName, type} placeholders with values from $vars.
    * The ICU type annotation (", type") is accepted and silently ignored.
-   * Unknown keys are left as-is.
+   * Unknown keys are left as-is. Mirrors substituteVars() in packages/client/src/constraint.ts.
    *
    * @param array<string, int|float|string> $vars
    */
-  private static function substitute(string $template, array $vars): string {
+  public static function interpolate(string $template, array $vars): string {
     if (empty($vars)) {
       return $template;
     }

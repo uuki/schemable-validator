@@ -55,28 +55,41 @@ final class ConformanceTest extends TestCase {
     foreach ($fixture['expected'] as $field => $exp) {
       $actual = $result[$field]['is_valid'] ?? null;
 
-      if ($actual === $exp['is_valid']) {
-        $this->assertSame($exp['is_valid'], $actual);
+      if ($actual !== $exp['is_valid']) {
+        if ($knownMismatch) {
+          $this->markTestIncomplete(sprintf(
+            "[%s] known BE/FE mismatch on field '%s': expected is_valid=%s, BE got %s (see %s)",
+            $fixture['name'],
+            $field,
+            var_export($exp['is_valid'], true),
+            var_export($actual, true),
+            $relativePath
+          ));
+        }
+        $this->assertSame($exp['is_valid'], $actual, sprintf(
+          "[%s] field '%s' (%s)",
+          $fixture['name'],
+          $field,
+          $relativePath
+        ));
         continue;
       }
 
-      if ($knownMismatch) {
-        $this->markTestIncomplete(sprintf(
-          "[%s] known BE/FE mismatch on field '%s': expected is_valid=%s, BE got %s (see %s)",
+      $this->assertSame($exp['is_valid'], $actual);
+
+      // Optional cross-stack message-text parity: when a fixture pins `errors`,
+      // compare the normalized error list. PHP joins messages with "\n"; split
+      // back to an array so both stacks compare as string lists.
+      if (array_key_exists('errors', $exp)) {
+        $raw          = $result[$field]['errors'] ?? null;
+        $actualErrors = ($raw === null || $raw === '') ? [] : explode("\n", $raw);
+        $this->assertSame($exp['errors'], $actualErrors, sprintf(
+          "[%s] field '%s' error messages (%s)",
           $fixture['name'],
           $field,
-          var_export($exp['is_valid'], true),
-          var_export($actual, true),
           $relativePath
         ));
       }
-
-      $this->assertSame($exp['is_valid'], $actual, sprintf(
-        "[%s] field '%s' (%s)",
-        $fixture['name'],
-        $field,
-        $relativePath
-      ));
     }
   }
 

@@ -30,15 +30,19 @@ use SchemableValidator\Validation\RespectExecutableValidator;
  */
 final class RespectAdapter implements BackendAdapter {
   public function compile(array $jsonSchema): ExecutableValidator {
-    $required = $jsonSchema['required'] ?? [];
-    $schema   = [];
+    $required       = $jsonSchema['required'] ?? [];
+    $schema         = [];
+    $inlineMessages = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
       $chain          = self::compileProperty($prop);
       $schema[$name]  = in_array($name, $required, true) ? $chain : v::optional($chain);
+      if (!empty($prop['errorMessage'])) {
+        $inlineMessages[$name] = $prop['errorMessage'];
+      }
     }
 
-    return new RespectExecutableValidator($schema);
+    return new RespectExecutableValidator($schema, null, $inlineMessages);
   }
 
   /**
@@ -143,6 +147,101 @@ final class RespectAdapter implements BackendAdapter {
       $messages[$e->getId()] = $e->getMessage();
     }
     return $messages;
+  }
+
+  /**
+   * Describe each rule violation with its Respect ruleId, the JSON Schema keyword
+   * it corresponds to, and the {var} substitution values — so the message
+   * resolution path can honor inline errorMessage[keyword] templates with the
+   * same interpolation the FE applies. Respect knowledge stays isolated here.
+   *
+   * @return array<int, array{ruleId: string, keyword: ?string, vars: array<string, int|float|string>, message: string}>
+   */
+  public static function describeViolations(\Respect\Validation\Exceptions\ValidationException $e): array {
+    $children = [];
+    if ($e instanceof \Respect\Validation\Exceptions\NestedValidationException) {
+      foreach ($e->getIterator() as $child) {
+        $children[] = $child;
+      }
+    }
+    if (empty($children)) {
+      $children[] = $e;
+    }
+
+    $violations = [];
+    foreach ($children as $child) {
+      $ruleId       = $child->getId();
+      $violations[] = [
+        'ruleId'  => $ruleId,
+        'keyword' => self::keywordFor($ruleId, $child),
+        'vars'    => self::varsFor($ruleId, $child),
+        'message' => $child->getMessage(),
+      ];
+    }
+    return $violations;
+  }
+
+  /**
+   * Map a Respect ruleId to the JSON Schema keyword used as the inline
+   * errorMessage key. `length` is split into minLength/maxLength based on
+   * which bound the exception carries. Returns null when no keyword maps.
+   */
+  private static function keywordFor(string $ruleId, \Respect\Validation\Exceptions\ValidationException $e): ?string {
+    if ($ruleId === 'length') {
+      if ($e->getParam('minValue') !== null) {
+        return 'minLength';
+      }
+      if ($e->getParam('maxValue') !== null) {
+        return 'maxLength';
+      }
+      return null;
+    }
+    $map = [
+      'email'      => 'format',
+      'url'        => 'format',
+      'date'       => 'format',
+      'dateTime'   => 'format',
+      'time'       => 'format',
+      'uuid'       => 'format',
+      'ip'         => 'format',
+      'domain'     => 'format',
+      'regex'      => 'pattern',
+      'in'         => 'enum',
+      'stringType' => 'type',
+      'intType'    => 'type',
+      'numericVal' => 'type',
+      'boolType'   => 'type',
+      'min'        => 'minimum',
+      'max'        => 'maximum',
+    ];
+    return $map[$ruleId] ?? null;
+  }
+
+  /**
+   * Extract {var} substitution values from a violation, mirroring the constraint
+   * value the FE substitutes ({min}/{max}).
+   *
+   * @return array<string, int|float|string>
+   */
+  private static function varsFor(string $ruleId, \Respect\Validation\Exceptions\ValidationException $e): array {
+    if ($ruleId === 'length') {
+      if ($e->getParam('minValue') !== null) {
+        return ['min' => $e->getParam('minValue')];
+      }
+      if ($e->getParam('maxValue') !== null) {
+        return ['max' => $e->getParam('maxValue')];
+      }
+      return [];
+    }
+    if ($ruleId === 'min') {
+      $v = $e->getParam('compareTo');
+      return $v !== null ? ['min' => $v] : [];
+    }
+    if ($ruleId === 'max') {
+      $v = $e->getParam('compareTo');
+      return $v !== null ? ['max' => $v] : [];
+    }
+    return [];
   }
 
   /**

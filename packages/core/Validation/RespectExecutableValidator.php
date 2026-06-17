@@ -12,10 +12,17 @@ final class RespectExecutableValidator implements ExecutableValidator {
 
   private ?MessageDict $dict;
 
-  /** @param array<string, v> $schema */
-  public function __construct(array $schema, ?MessageDict $dict = null) {
-    $this->schema = $schema;
-    $this->dict   = $dict;
+  /** @var array<string, array<string, string>> field => (JSON Schema keyword => message template) */
+  private array $inlineMessages;
+
+  /**
+   * @param array<string, v> $schema
+   * @param array<string, array<string, string>> $inlineMessages Inline errorMessage map per field, keyed by JSON Schema keyword.
+   */
+  public function __construct(array $schema, ?MessageDict $dict = null, array $inlineMessages = []) {
+    $this->schema         = $schema;
+    $this->dict           = $dict;
+    $this->inlineMessages = $inlineMessages;
   }
 
   public function validate(array $data): array {
@@ -28,12 +35,18 @@ final class RespectExecutableValidator implements ExecutableValidator {
       try {
         $validator->assert($value);
       } catch (\Respect\Validation\Exceptions\ValidationException $e) {
-        $ruleMessages = RespectAdapter::extractRuleMessages($e);
-        $resolved     = [];
-        foreach ($ruleMessages as $ruleId => $defaultMsg) {
+        $resolved = [];
+        foreach (RespectAdapter::describeViolations($e) as $vio) {
+          // Resolution order: MessageDict (by ruleId) > inline errorMessage (by keyword) > Respect default.
+          // {var} placeholders are interpolated on whichever template wins.
+          $template = $vio['message'];
+          $keyword  = $vio['keyword'];
+          if ($keyword !== null && isset($this->inlineMessages[$field][$keyword])) {
+            $template = $this->inlineMessages[$field][$keyword];
+          }
           $resolved[] = $this->dict !== null
-            ? $this->dict->resolve($field, $ruleId, $defaultMsg)
-            : $defaultMsg;
+            ? $this->dict->resolve($field, $vio['ruleId'], $template, $vio['vars'])
+            : MessageDict::interpolate($template, $vio['vars']);
         }
         $newState['errors'] = implode("\n", $resolved);
       }

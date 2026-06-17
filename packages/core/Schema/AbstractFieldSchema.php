@@ -66,6 +66,11 @@ abstract class AbstractFieldSchema {
     return $this->transforms;
   }
 
+  /** @return array<string, string> JSON Schema keyword => message template */
+  public function getErrorMessages(): array {
+    return $this->errorMessages;
+  }
+
   public function isRequired(): bool {
     return $this->required;
   }

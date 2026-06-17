@@ -85,8 +85,9 @@ final class SchemaBuilder implements SchemaProviderInterface {
 
   /** Build a Validator from the schema, passing through optional Validator options. */
   public function toValidator(array $options = []): Validator {
-    $schema     = [];
-    $transforms = [];
+    $schema         = [];
+    $transforms     = [];
+    $inlineMessages = [];
     foreach ($this->fields as $name => $field) {
       $respect = RespectAdapter::compileField($field);
       // Optional fields: null or '' should always pass; non-empty values are validated normally.
@@ -95,9 +96,13 @@ final class SchemaBuilder implements SchemaProviderInterface {
       if (!empty($fieldTransforms)) {
         $transforms[$name] = $fieldTransforms;
       }
+      $fieldMessages = $field->getErrorMessages();
+      if (!empty($fieldMessages)) {
+        $inlineMessages[$name] = $fieldMessages;
+      }
     }
     $conditionals = $this->conditionals;
-    return new Validator($schema, $options, $conditionals, $this->messageDict, null, $transforms);
+    return new Validator($schema, $options, $conditionals, $this->messageDict, null, $transforms, $inlineMessages);
   }
 
   /**
