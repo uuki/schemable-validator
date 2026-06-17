@@ -1,0 +1,20 @@
+{
+  "name": "errorMessage template: presence does not affect validity check (BE/FE parity)",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 3,
+        "errorMessage": { "minLength": "最低{min}文字必要です" }
+      }
+    },
+    "required": ["name"]
+  },
+  "input": { "name": "ab" },
+  "expected": {
+    "name": { "is_valid": false }
+  }
+}

@@ -214,6 +214,43 @@ class MessageDictTest extends TestCase
     $this->assertSame($r1['email']['errors'], $r2['email']['errors']);
   }
 
+  // ── resolve() variable substitution (Step 5) ────────────────
+
+  public function test_resolve_substitutes_simple_var(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '最低{min}文字必要です']]);
+    $this->assertSame('最低3文字必要です', $dict->resolve('name', 'minLength', 'fallback', ['min' => 3]));
+  }
+
+  public function test_resolve_substitutes_icu_type_annotation(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '{min, number}文字以上']]);
+    $this->assertSame('3文字以上', $dict->resolve('name', 'minLength', 'fallback', ['min' => 3]));
+  }
+
+  public function test_resolve_unknown_var_stays_as_placeholder(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '{foo}文字以上']]);
+    $this->assertSame('{foo}文字以上', $dict->resolve('name', 'minLength', 'fallback', ['min' => 3]));
+  }
+
+  public function test_resolve_no_vars_returns_template_unchanged(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '最低{min}文字']]);
+    $this->assertSame('最低{min}文字', $dict->resolve('name', 'minLength', 'fallback'));
+  }
+
+  public function test_resolve_substitutes_vars_in_defaults(): void {
+    $dict = new MessageDict([], ['minLength' => '最低{min}文字が必要']);
+    $this->assertSame('最低5文字が必要', $dict->resolve('name', 'minLength', 'fallback', ['min' => 5]));
+  }
+
+  public function test_resolve_substitutes_vars_in_field_wide_message(): void {
+    $dict = new MessageDict(['name' => 'エラー: {min}以上']);
+    $this->assertSame('エラー: 10以上', $dict->resolve('name', 'any', 'fallback', ['min' => 10]));
+  }
+
+  public function test_resolve_multiple_vars(): void {
+    $dict = new MessageDict([], ['length' => '{min}〜{max}文字で入力してください']);
+    $this->assertSame('3〜20文字で入力してください', $dict->resolve('name', 'length', 'fallback', ['min' => 3, 'max' => 20]));
+  }
+
   // ── SchemaBuilder::withMessages() ──────────────────────────
 
   public function test_schema_builder_withMessages_passes_dict_to_validator(): void

@@ -530,3 +530,70 @@ describe('applyTransform: unknown transform warns', () => {
     warn.mockRestore()
   })
 })
+
+// ── errorMessage template substitution (Step 5) ───────────────────────────────
+
+describe('constraintsFromSchema: errorMessage template substitution', () => {
+  it('checkMinLength: {min} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '最低{min}文字必要です' },
+    })({ value: 'ab', errors: [] })
+    expect(result.errors).toContain('最低3文字必要です')
+  })
+
+  it('checkMaxLength: {max} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      maxLength: 5,
+      errorMessage: { maxLength: '{max}文字以内で入力してください' },
+    })({ value: 'toolong!', errors: [] })
+    expect(result.errors).toContain('5文字以内で入力してください')
+  })
+
+  it('checkMinimum: {min} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'number',
+      minimum: 10,
+      errorMessage: { minimum: '{min}以上で入力してください' },
+    })({ value: '5', errors: [] })
+    expect(result.errors).toContain('10以上で入力してください')
+  })
+
+  it('checkMaximum: {max} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'number',
+      maximum: 100,
+      errorMessage: { maximum: '{max}以下で入力してください' },
+    })({ value: '200', errors: [] })
+    expect(result.errors).toContain('100以下で入力してください')
+  })
+
+  it('ICU-style {min, number} type annotation is silently ignored', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '{min, number}文字以上' },
+    })({ value: 'a', errors: [] })
+    expect(result.errors).toContain('3文字以上')
+  })
+
+  it('unknown placeholder key remains unchanged', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '{foo}文字以上' },
+    })({ value: 'a', errors: [] })
+    expect(result.errors).toContain('{foo}文字以上')
+  })
+
+  it('static message with no placeholders is returned as-is', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '短すぎます' },
+    })({ value: 'a', errors: [] })
+    expect(result.errors).toContain('短すぎます')
+  })
+})
