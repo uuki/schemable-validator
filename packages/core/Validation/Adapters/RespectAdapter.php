@@ -109,9 +109,11 @@ final class RespectAdapter implements BackendAdapter {
       case 'uuid':
         return v::uuid();
       case 'ipv4':
-        return v::ip('*', FILTER_FLAG_IPV4);
+        // setName so the violation id is 'ipv4' (not Respect's generic 'ip'),
+        // letting describeViolations() map it to the distinct ipv4 message.
+        return v::create()->addRule((new \Respect\Validation\Rules\Ip('*', FILTER_FLAG_IPV4))->setName('ipv4'));
       case 'ipv6':
-        return v::ip('*', FILTER_FLAG_IPV6);
+        return v::create()->addRule((new \Respect\Validation\Rules\Ip('*', FILTER_FLAG_IPV6))->setName('ipv6'));
       case 'slug':
         return v::slug();
       case 'domain':
@@ -172,13 +174,52 @@ final class RespectAdapter implements BackendAdapter {
     foreach ($children as $child) {
       $ruleId       = $child->getId();
       $violations[] = [
-        'ruleId'  => $ruleId,
-        'keyword' => self::keywordFor($ruleId, $child),
-        'vars'    => self::varsFor($ruleId, $child),
-        'message' => $child->getMessage(),
+        'ruleId'        => $ruleId,
+        'keyword'       => self::keywordFor($ruleId, $child),
+        'neutralRuleId' => self::neutralRuleIdFor($ruleId, $child),
+        'vars'          => self::varsFor($ruleId, $child),
+        'message'       => $child->getMessage(),
       ];
     }
     return $violations;
+  }
+
+  /**
+   * Map a Respect ruleId to the engine-neutral rule vocabulary used to key the
+   * canonical DefaultMessages catalog and user MessageDict definitions. Unlike
+   * keywordFor() (which collapses formats into `format` for inline errorMessage),
+   * this keeps formats and types distinct so messages stay fine-grained.
+   */
+  private static function neutralRuleIdFor(string $ruleId, \Respect\Validation\Exceptions\ValidationException $e): ?string {
+    if ($ruleId === 'length') {
+      if ($e->getParam('minValue') !== null) {
+        return 'minLength';
+      }
+      if ($e->getParam('maxValue') !== null) {
+        return 'maxLength';
+      }
+      return null;
+    }
+    $map = [
+      'stringType' => 'string',
+      'intType'    => 'integer',
+      'numericVal' => 'number',
+      'boolType'   => 'boolean',
+      'min'        => 'minimum',
+      'max'        => 'maximum',
+      'email'      => 'email',
+      'url'        => 'uri',
+      'date'       => 'date',
+      'dateTime'   => 'date-time',
+      'time'       => 'time',
+      'uuid'       => 'uuid',
+      'ipv4'       => 'ipv4',
+      'ipv6'       => 'ipv6',
+      'domain'     => 'hostname',
+      'regex'      => 'pattern',
+      'in'         => 'enum',
+    ];
+    return $map[$ruleId] ?? null;
   }
 
   /**
@@ -225,11 +266,13 @@ final class RespectAdapter implements BackendAdapter {
    */
   private static function varsFor(string $ruleId, \Respect\Validation\Exceptions\ValidationException $e): array {
     if ($ruleId === 'length') {
-      if ($e->getParam('minValue') !== null) {
-        return ['min' => $e->getParam('minValue')];
+      $min = $e->getParam('minValue');
+      if ($min !== null) {
+        return ['min' => $min, 'plural' => $min === 1 ? '' : 's'];
       }
-      if ($e->getParam('maxValue') !== null) {
-        return ['max' => $e->getParam('maxValue')];
+      $max = $e->getParam('maxValue');
+      if ($max !== null) {
+        return ['max' => $max, 'plural' => $max === 1 ? '' : 's'];
       }
       return [];
     }
@@ -240,6 +283,10 @@ final class RespectAdapter implements BackendAdapter {
     if ($ruleId === 'max') {
       $v = $e->getParam('compareTo');
       return $v !== null ? ['max' => $v] : [];
+    }
+    if ($ruleId === 'in') {
+      $haystack = $e->getParam('haystack');
+      return is_array($haystack) ? ['values' => implode(', ', $haystack)] : [];
     }
     return [];
   }

@@ -1,0 +1,8 @@
+{
+  "name": "default message: enum values list (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "string", "enum": ["a", "b", "c"] } }, "required": ["f"] },
+  "input": { "f": "z" },
+  "expected": { "f": { "is_valid": false, "errors": ["must be one of: a, b, c"] } }
+}

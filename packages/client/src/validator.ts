@@ -2,6 +2,7 @@ import { ok, err, type Result } from './result.js'
 import { constraintsFromSchema, applyTransform, type FieldState } from './constraint.js'
 import type { ObjectSchema, PropertySchema, ConditionalSchema, WhenEntry } from './schema.js'
 import { applyJsonLogic } from './jsonLogic.js'
+import { DEFAULT_MESSAGES } from './messages.js'
 
 // ── Output types ─────────────────────────────────────────────────────────────
 // Mirror the shape of PHP Validator::getResult() for cross-stack consistency.
@@ -27,7 +28,7 @@ const validateField = (
 
   const isEmpty = transformed === ''
 
-  if (required && isEmpty) return err(['is required'])
+  if (required && isEmpty) return err([DEFAULT_MESSAGES.required])
   if (isEmpty) return ok(transformed) // optional + empty → always valid
 
   const initial: FieldState = { value: transformed, errors: [] }
@@ -41,7 +42,7 @@ const validateArrayField = (
   schema: PropertySchema,
   required: boolean,
 ): Result<readonly string[], readonly string[]> => {
-  if (required && values.length === 0) return err(['is required'])
+  if (required && values.length === 0) return err([DEFAULT_MESSAGES.required])
   if (values.length === 0) return ok(values)
 
   const itemSchema = schema.items
@@ -87,7 +88,7 @@ const evaluateWhenEntry = (
     const val = data[name] ?? ''
     const isEmpty = Array.isArray(val) ? (val as readonly string[]).length === 0 : val === ''
     if (isEmpty) {
-      result[name] = { value: val as string, is_valid: false, errors: ['is required'] }
+      result[name] = { value: val as string, is_valid: false, errors: [DEFAULT_MESSAGES.required] }
     }
   }
 }
@@ -107,7 +108,7 @@ const evaluateConditional = (
     const val = data[name] ?? ''
     const isEmpty = Array.isArray(val) ? (val as readonly string[]).length === 0 : val === ''
     if (isEmpty) {
-      result[name] = { value: val as string, is_valid: false, errors: ['is required'] }
+      result[name] = { value: val as string, is_valid: false, errors: [DEFAULT_MESSAGES.required] }
     }
   }
 }

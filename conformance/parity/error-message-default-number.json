@@ -1,0 +1,8 @@
+{
+  "name": "default message: number (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "number" } }, "required": ["f"] },
+  "input": { "f": "abc" },
+  "expected": { "f": { "is_valid": false, "errors": ["must be a number"] } }
+}

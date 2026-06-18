@@ -284,7 +284,7 @@ class MessageDictTest extends TestCase
   }
 
   public function test_dict_takes_priority_over_inline_errorMessage(): void {
-    // Resolution order: MessageDict (by ruleId) > inline errorMessage (by keyword) > default.
+    // Resolution order: MessageDict (by neutral ruleId) > inline errorMessage (by keyword) > canonical default.
     $sb = SV::object([
       'email' => SV::string()->email()->errorMessages(['format' => 'インライン']),
     ])->withMessages(MessageDict::ja(['email' => ['email' => '辞書が勝つ']]));
@@ -329,12 +329,37 @@ class MessageDictTest extends TestCase
     $this->assertSame("F\nP", $result['code']['errors']);
   }
 
-  public function test_be_without_inline_errorMessage_uses_respect_default(): void {
+  public function test_be_default_uses_neutral_catalog_not_respect_text(): void {
+    // No dict, no inline: BE emits the engine-neutral canonical message
+    // (DefaultMessages), NOT Respect's value-prefixed text. Byte-identical to FE.
     $sb = SV::object(['email' => SV::string()->email()]);
     $result = $sb->toValidator()->validate(['email' => 'bad'])->getResult();
 
     $this->assertFalse($result['email']['is_valid']);
-    $this->assertStringContainsString('valid email', $result['email']['errors']);
+    $this->assertSame('must be a valid email', $result['email']['errors']);
+  }
+
+  public function test_be_default_interpolates_catalog_plural(): void {
+    // Canonical minLength template carries a {plural} var resolved per value.
+    $sb1 = SV::object(['a' => SV::string()->min(3)]);
+    $this->assertSame(
+      'must be at least 3 characters long',
+      $sb1->toValidator()->validate(['a' => 'ab'])->getResult()['a']['errors']
+    );
+
+    $sb2 = SV::object(['a' => SV::string()->max(1)]);
+    $this->assertSame(
+      'must be no more than 1 character long',
+      $sb2->toValidator()->validate(['a' => 'ab'])->getResult()['a']['errors']
+    );
+  }
+
+  public function test_be_default_enum_lists_values(): void {
+    $sb = SV::object(['a' => SV::enum(['x', 'y', 'z'])]);
+    $this->assertSame(
+      'must be one of: x, y, z',
+      $sb->toValidator()->validate(['a' => 'q'])->getResult()['a']['errors']
+    );
   }
 
   // ── SchemaBuilder::withMessages() ──────────────────────────

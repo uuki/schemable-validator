@@ -1,0 +1,8 @@
+{
+  "name": "default message: pattern (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "string", "pattern": "^[0-9]+$" } }, "required": ["f"] },
+  "input": { "f": "ab" },
+  "expected": { "f": { "is_valid": false, "errors": ["must match the required format"] } }
+}
