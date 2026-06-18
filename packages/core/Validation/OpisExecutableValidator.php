@@ -40,6 +40,16 @@ final class OpisExecutableValidator implements ExecutableValidator {
    * @param array<string, array<string, string>> $inlineMessages
    */
   public function __construct(array $properties, array $required, array $inlineMessages = []) {
+    // opis/json-schema is an optional dependency (see composer.json "suggest").
+    // The Respect and Native adapters cover the default and dependency-free
+    // paths; fail with an actionable message if this adapter is used without it.
+    if (!class_exists(OpisValidator::class)) {
+      throw new \RuntimeException(
+        'OpisExecutableValidator requires opis/json-schema, which is an optional '
+        . 'dependency. Install it with: composer require opis/json-schema'
+      );
+    }
+
     $this->properties     = $properties;
     $this->required       = $required;
     $this->inlineMessages = $inlineMessages;
