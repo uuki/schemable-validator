@@ -308,6 +308,27 @@ class MessageDictTest extends TestCase
     $this->assertSame('最低3文字', $result['name']['errors']);
   }
 
+  public function test_be_multi_rule_failure_order_matches_fe_contract(): void {
+    // Rule-ordering contract: format → pattern → enum, mirroring
+    // constraintsFromSchema() in packages/client/src/constraint.ts.
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'code' => [
+          'type'         => 'string',
+          'format'       => 'email',
+          'pattern'      => '^[0-9]+$',
+          'errorMessage' => ['format' => 'F', 'pattern' => 'P'],
+        ],
+      ],
+      'required'   => ['code'],
+    ]);
+    $result = $validator->validate(['code' => 'zz'])->getResult();
+
+    $this->assertFalse($result['code']['is_valid']);
+    $this->assertSame("F\nP", $result['code']['errors']);
+  }
+
   public function test_be_without_inline_errorMessage_uses_respect_default(): void {
     $sb = SV::object(['email' => SV::string()->email()]);
     $result = $sb->toValidator()->validate(['email' => 'bad'])->getResult();

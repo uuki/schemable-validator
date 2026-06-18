@@ -290,12 +290,10 @@ final class RespectAdapter implements BackendAdapter {
     if (isset($prop['maximum'])) {
       $descriptors[] = ['rule' => 'max', 'args' => [$prop['maximum']]];
     }
-    if (isset($prop['pattern'])) {
-      $descriptors[] = ['rule' => 'pattern', 'args' => [$prop['pattern']]];
-    }
-    if (isset($prop['enum'])) {
-      $descriptors[] = ['rule' => 'in', 'args' => [$prop['enum']]];
-    }
+    // Rule order is the BE/FE message-ordering contract: keep this sequence
+    // (… minimum, maximum, format, pattern, enum) identical to
+    // constraintsFromSchema() in packages/client/src/constraint.ts so that
+    // multi-rule failures emit messages in the same order on both stacks.
     if (isset($prop['format'])) {
       switch ($prop['format']) {
         case 'email':
@@ -326,6 +324,12 @@ final class RespectAdapter implements BackendAdapter {
           $descriptors[] = ['rule' => 'domain', 'args' => []];
           break;
       }
+    }
+    if (isset($prop['pattern'])) {
+      $descriptors[] = ['rule' => 'pattern', 'args' => [$prop['pattern']]];
+    }
+    if (isset($prop['enum'])) {
+      $descriptors[] = ['rule' => 'in', 'args' => [$prop['enum']]];
     }
 
     return $descriptors;
