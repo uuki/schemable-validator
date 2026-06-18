@@ -17,9 +17,16 @@ use SchemableValidator\Validation\OpisExecutableValidator;
  */
 final class OpisAdapter implements BackendAdapter {
   public function compile(array $jsonSchema): ExecutableValidator {
-    $properties = $jsonSchema['properties'] ?? [];
-    $required   = $jsonSchema['required'] ?? [];
+    $properties     = $jsonSchema['properties'] ?? [];
+    $required       = $jsonSchema['required'] ?? [];
+    $inlineMessages = [];
 
-    return new OpisExecutableValidator($properties, $required);
+    foreach ($properties as $name => $prop) {
+      if (!empty($prop['errorMessage'])) {
+        $inlineMessages[$name] = $prop['errorMessage'];
+      }
+    }
+
+    return new OpisExecutableValidator($properties, $required, $inlineMessages);
   }
 }

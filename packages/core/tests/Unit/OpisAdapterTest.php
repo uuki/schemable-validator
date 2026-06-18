@@ -88,4 +88,48 @@ class OpisAdapterTest extends TestCase {
 
     $this->assertTrue($result['name']['is_valid']);
   }
+
+  // ── engine-neutral messages (A: same canonical text as RespectAdapter/FE) ──
+
+  /** @dataProvider neutralMessageProvider */
+  public function test_emits_canonical_neutral_message(array $prop, $value, string $expected): void {
+    $executable = (new OpisAdapter())->compile($this->schema(['f' => $prop], ['f']));
+    $result     = $executable->validate(['f' => $value]);
+
+    $this->assertFalse($result['f']['is_valid']);
+    $this->assertSame($expected, $result['f']['errors']);
+  }
+
+  public function neutralMessageProvider(): array {
+    return [
+      'type integer'  => [['type' => 'integer'], 3.14, 'must be an integer'],
+      'minLength'     => [['type' => 'string', 'minLength' => 3], 'ab', 'must be at least 3 characters long'],
+      'maxLength sg'  => [['type' => 'string', 'maxLength' => 1], 'ab', 'must be no more than 1 character long'],
+      'minimum'       => [['type' => 'integer', 'minimum' => 10], 5, 'must be at least 10'],
+      'maximum'       => [['type' => 'integer', 'maximum' => 100], 200, 'must be no more than 100'],
+      'pattern'       => [['type' => 'string', 'pattern' => '^[0-9]+$'], 'ab', 'must match the required format'],
+      'enum'          => [['type' => 'string', 'enum' => ['a', 'b', 'c']], 'z', 'must be one of: a, b, c'],
+      'format email'  => [['type' => 'string', 'format' => 'email'], 'bad', 'must be a valid email'],
+    ];
+  }
+
+  public function test_required_missing_uses_canonical_message(): void {
+    $executable = (new OpisAdapter())->compile(
+      $this->schema(['name' => ['type' => 'string', 'minLength' => 1]], ['name'])
+    );
+    $result = $executable->validate([]);
+
+    $this->assertFalse($result['name']['is_valid']);
+    $this->assertSame('is required', $result['name']['errors']);
+  }
+
+  public function test_inline_errorMessage_overrides_and_interpolates(): void {
+    $executable = (new OpisAdapter())->compile($this->schema([
+      'f' => ['type' => 'string', 'minLength' => 3, 'errorMessage' => ['minLength' => '最低{min}文字']],
+    ], ['f']));
+    $result = $executable->validate(['f' => 'ab']);
+
+    $this->assertFalse($result['f']['is_valid']);
+    $this->assertSame('最低3文字', $result['f']['errors']);
+  }
 }
