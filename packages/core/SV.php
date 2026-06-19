@@ -3,6 +3,7 @@
 namespace SchemableValidator;
 
 use Respect\Validation\Validator as v;
+use SchemableValidator\Drivers\Respect\RespectRules;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\ArraySchema;
 use SchemableValidator\Schema\BooleanSchema;
@@ -58,24 +59,28 @@ final class SV {
     return new CustomFieldSchema($predicate, $message);
   }
 
-  /** Escape hatch: wrap an arbitrary Respect/Validation rule. */
+  /**
+   * @deprecated Use the optional Respect driver: RespectRules::rule($rule).
+   *   Kept for back-compat; delegates to the driver. The dependency-free
+   *   alternative is SV::custom(callable). See docs/backend-adapters.md.
+   */
   public static function respect(v $rule): RawRespectSchema {
-    return new RawRespectSchema($rule);
+    return RespectRules::rule($rule);
   }
 
-  /** Country-specific postal code validation (x-unmapped-fields). */
+  /** @deprecated Use RespectRules::postalCode($countryCode) (optional Respect driver). */
   public static function postalCode(string $countryCode): RawRespectSchema {
-    return new RawRespectSchema(v::postalCode($countryCode));
+    return RespectRules::postalCode($countryCode);
   }
 
-  /** Credit card number validation via Luhn algorithm (x-unmapped-fields). */
+  /** @deprecated Use RespectRules::creditCard(...$brands) (optional Respect driver). */
   public static function creditCard(string ...$brands): RawRespectSchema {
-    return new RawRespectSchema(empty($brands) ? v::creditCard() : v::creditCard(...$brands));
+    return RespectRules::creditCard(...$brands);
   }
 
-  /** IBAN (International Bank Account Number) validation (x-unmapped-fields). */
+  /** @deprecated Use RespectRules::iban() (optional Respect driver). */
   public static function iban(): RawRespectSchema {
-    return new RawRespectSchema(v::iban());
+    return RespectRules::iban();
   }
 
   // ── Conditional expression builders ──────────────────────────
