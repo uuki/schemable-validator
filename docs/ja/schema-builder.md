@@ -2,7 +2,7 @@
 
 `SchemaBuilder` は Schemable Validator の中心となるクラスです。バリデーションルールを PHP で一度定義するだけで、以下の2通りの用途に同時に使えます。
 
-- **サーバーサイド** — `toValidator()` で Respect/Validation ベースの `Validator` に変換して検証。
+- **サーバーサイド** — `toValidator()` で `Validator` に変換して検証（デフォルトは NativeAdapter、依存なし）。
 - **クライアントサイド** — `toJson()` / `toJsonSchema()` で標準 JSON Schema (draft 2020-12) にエクスポートし、Zod・Valibot・AJV などの JS バリデーターで利用。
 
 ### 主な機能
@@ -47,7 +47,8 @@ echo $schema->toJson();
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
 | `SV::file(['image/jpeg'])` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
-| `SV::respect(v::...)` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::respect(v::...)` | - | **@deprecated** — 代わりに `SV::custom()` または `RespectRules::rule()` を使用。JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::custom(callable, message)` | - | 依存なしのエスケープハッチ。`CustomFieldSchema` を返す。`x-unmapped-fields` に記録される |
 
 修飾子:
 
@@ -167,18 +168,61 @@ $schema = SV::object([
 
 ## `x-unmapped-fields` について
 
-JSON Schema に変換できないフィールド（ファイルアップロード・カスタム Respect ルール）は
+JSON Schema に変換できないフィールド（ファイルアップロード・カスタム callable など）は
 `x-unmapped-fields` 拡張キーに名前だけ記録されます。
-バリデーション自体は `toValidator()` を通じて Respect/Validation で行われます。
+バリデーション自体は `toValidator()` を通じて BackendAdapter（デフォルトは NativeAdapter）で行われます。
 
 ```php
 // JSON Schema として渡す場合
-$jsonSchema = $schema->toJsonSchema(); // array
-$json       = $schema->toJson();       // string
+$jsonSchema = $schema->toJsonSchema();                       // array
+$jsonMeta   = $schema->toJsonSchema(['metaSchema' => true]); // array ($schema URI を含む)
+$json       = $schema->toJson();                             // string
 
-// Respect バリデーターとして使う場合（ファイルフィールドも含む）
+// バリデーターとして使う場合（ファイルフィールドも含む）
 $validator = $schema->toValidator();
 $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
+```
+
+### `toValidator()` のパラメータ
+
+```php
+$schema->toValidator(
+  array $options = [],
+  ?BackendAdapter $adapter = null,
+  ?FileValidationDriver $fileDriver = null
+): Validator
+```
+
+| パラメータ | 型 | 説明 |
+|:--|:--|:--|
+| `$options` | `array` | Validator のオプション（reCAPTCHA 設定など） |
+| `$adapter` | `?BackendAdapter` | バリデーション用バックエンドアダプター。`null` = NativeAdapter（デフォルト、依存なし） |
+| `$fileDriver` | `?FileValidationDriver` | ファイルバリデーション用ドライバー。`null` = デフォルトドライバー |
+
+### `toJsonSchema()` のオプション
+
+```php
+$schema->toJsonSchema(array $options = []): array
+```
+
+| オプション | 型 | デフォルト | 説明 |
+|:--|:--|:--|:--|
+| `metaSchema` | `bool` | `false` | `true` の場合、出力に `$schema` URI を含める |
+
+### `toUiSchema()`
+
+JSON Forms / RJSF 互換の UI Schema 配列を返します。
+
+```php
+$uiSchema = $schema->toUiSchema(); // array
+```
+
+### `customFields()`
+
+`x-custom-fields` 拡張キーでカスタムフィールド名を宣言します。
+
+```php
+$schema->customFields(array $names): self
 ```
 
 ---

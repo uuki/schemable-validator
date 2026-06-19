@@ -48,7 +48,10 @@ After installing via `composer require`, the classes under the `SchemableValidat
 | `Template` | Injects validated data into template strings |
 | `FormController` | Persists validated data across multi-page forms using sessions |
 | `MessageDict` | Defines error messages per field × rule (i18n) |
-| `Rules\FileExtension` | Custom rule that validates a file's MIME type |
+| `Rules\FileExtension` | Custom rule that validates a file's MIME type (legacy; Respect/Validation dependency) |
+| `NativeFileValidator` | Dependency-free file validation via `FileValidationDriver` (default) |
+
+> **Note:** File validation now primarily uses `NativeFileValidator` via `FileValidationDriver` (dependency-free). `Rules\FileExtension` is a legacy adapter that requires Respect/Validation.
 
 See [Feature Guide](/feature-guide) and [SchemaBuilder](/schema-builder) for details.
 
@@ -75,8 +78,35 @@ packages/
     Validator.php
     Template.php
     Controllers/FormController.php
-    Interfaces/WordPress.php
-    Rules/FileExtension.php
+    Interfaces/
+      AbstractInterface.php
+      WordPress.php
+    Rules/FileExtension.php      # Legacy (Respect dependency)
+    Validation/
+      BackendAdapter.php         # Adapter interface
+      ExecutableValidator.php
+      NativeExecutableValidator.php
+      NativeFileValidator.php    # Dependency-free file validation
+      FileValidationDriver.php
+      CustomField.php
+      Formats.php
+      Transform.php
+      Coercion.php
+      CalendarDate.php
+      JsonLogicEval.php
+      Adapters/
+        RespectAdapter.php
+        OpisAdapter.php
+        NativeAdapter.php        # Default (dependency-free)
+    I18n/
+      MessageDict.php
+      DefaultMessages.php
+      Locales/                   # Locale message files
+    Drivers/Respect/
+      RespectRules.php
+    Schema/
+      CustomFieldSchema.php
+      meta-schema.json
     Helpers/Security.php
     Helpers/Environment.php
   wp-schemable-validator/        # WordPress plugin
@@ -87,3 +117,5 @@ packages/
       helpers.php                # schv_* global functions
     examples/                    # Sample shortcodes (for local development)
 ```
+
+> **Note:** `respect/validation` and `opis/json-schema` are optional (`suggest`) dependencies. The default engine (`NativeAdapter`) works without any external validation library.

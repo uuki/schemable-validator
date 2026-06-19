@@ -6,7 +6,7 @@
 
 このプラグインは、フィールドの型・形式・文字数といった**構造的な制約**を PHP 側で一元定義し、JSON Schema を通じてクライアントと共有することを目的としています。
 
-一方で、実際のフォームにはロケール・環境に固有の「原理的な検証」（電話番号の番号体系検証など）が必要になる場面もあります。こうした制約は JSON Schema では表現が難しいため、任意のバリデーションロジックを組み込める拡張ポイント（`SV::respect()`）を用意しています。
+一方で、実際のフォームにはロケール・環境に固有の「原理的な検証」（電話番号の番号体系検証など）が必要になる場面もあります。こうした制約は JSON Schema では表現が難しいため、**`SV::custom(callable)`** を依存なしの主要エスケープハッチとして用意しています。Respect/Validation ライブラリを既に使用しているプロジェクト向けに `SV::respect()`（@deprecated）もオプションとして利用可能です。
 
 ---
 
@@ -23,10 +23,18 @@ JSON Schema (draft 2020-12) はフィールドの**構造と形式**を記述す
 
 これらは「文字列の形式チェック」ではなく、**ドメイン固有のルールや外部データベースに基づいた検証**であり、正規表現や JSON Schema のキーワードで近似することはできても、完全な表現は原理的に不可能です。
 
-このプラグインでは、こうした制約を `SV::respect()` でラップし、JSON Schema 出力の `x-unmapped-fields` に記録する設計としています。
+このプラグインでは、こうした制約を `SV::custom()` または `SV::respect()` でラップし、JSON Schema 出力の `x-unmapped-fields` に記録する設計としています。
 
 ```
-SV::respect($rule)
+SV::custom($predicate)                        [主要 - 依存なし]
+  │
+  ├─ サーバー側: callable の述語で検証
+  │
+  └─ JSON Schema: x-unmapped-fields に記録（properties には含まれない）
+       │
+       └─ クライアント側: @uuki/schemable-validator-client / Zod で独自に追加検証
+
+SV::respect($rule)                            [@deprecated - Respect/Validation が必要]
   │
   ├─ サーバー側: Respect/Validation でそのまま検証
   │
@@ -39,9 +47,22 @@ SV::respect($rule)
 
 ## 外部ライブラリとの結合パターン
 
-JSON Schema で表現できない制約を実装する場合、バックエンドとフロントエンドでそれぞれ適切なライブラリを選び、このプラグインのエスケープハッチ（`SV::respect()`）を介して結合する。
+JSON Schema で表現できない制約を実装する場合、バックエンドとフロントエンドでそれぞれ適切なライブラリを選び、このプラグインのエスケープハッチを介して結合する。
 
 ### PHP 側（サーバー）
+
+**主要: `SV::custom(callable, message)`**（依存なし）
+
+`SV::custom()` は `bool` を返す callable を受け取る。外部依存は不要。
+
+```php
+SV::custom(
+  fn(mixed $value): bool => someExternalLibrary::validate($value),
+  '検証に失敗しました'
+)
+```
+
+**代替: `SV::respect(rule)`**（@deprecated -- `respect/validation` が必要）
 
 `SV::respect()` は Respect/Validation の `Validator` インスタンスを受け取る。`v::callback()` を使えば任意のロジック・外部ライブラリを注入できる。
 
@@ -93,8 +114,8 @@ const schema = buildZodSchema(jsonSchema).extend({
 |:--|:--|:--|:--|
 | 電話番号 (E.164 / 国別) | `giggsey/libphonenumber-for-php` | `libphonenumber-js` | UNMAPPABLE |
 | IBAN / 口座番号 | `globalcitizen/php-iban` | `ibantools` | UNMAPPABLE |
-| クレジットカード (Luhn) | Respect `v::creditCard()` 組み込み | 独自 Luhn 実装 | UNMAPPABLE |
-| 郵便番号 (国別) | `axlon/laravel-postal-code-validation` 等 | `postal-codes-js` | `pattern` で近似可 |
+| クレジットカード (Luhn) | @deprecated -- `RespectRules` に移動。代わりに `SV::custom()` + Luhn ライブラリを使用 | 独自 Luhn 実装 | UNMAPPABLE |
+| 郵便番号 (国別) | @deprecated -- `RespectRules` に移動。代わりに `SV::custom()` + 郵便番号ライブラリを使用 | `postal-codes-js` | `pattern` で近似可 |
 | パスワード強度 | カスタム callback | `zxcvbn` | UNMAPPABLE |
 
 ---
@@ -111,10 +132,10 @@ const schema = buildZodSchema(jsonSchema).extend({
 composer require giggsey/libphonenumber-for-php
 ```
 
-#### カスタム Respect ルール
+#### 主要: SV::custom() を使う
 
 ```php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 use libphonenumber\PhoneNumberUtil;
 use libphonenumber\NumberParseException;
 
@@ -122,6 +143,44 @@ use libphonenumber\NumberParseException;
  * 地域コードを指定した libphonenumber ベースの電話番号バリデーター。
  * $region = null のときは E.164 形式 (+81...) を要求する。
  */
+function makePhonePredicate(string $region = null): callable {
+  $util = PhoneNumberUtil::getInstance();
+
+  return function (mixed $value) use ($util, $region): bool {
+    if (!is_string($value) || $value === '') {
+      return false;
+    }
+    try {
+      $number = $util->parse($value, $region);
+      return $region !== null
+        ? $util->isValidNumberForRegion($number, $region)
+        : $util->isValidNumber($number);
+    } catch (NumberParseException) {
+      return false;
+    }
+  };
+}
+```
+
+#### SchemaBuilder への組み込み (SV::custom)
+
+```php
+use SchemableValidator\SV;
+
+$schema = SV::object([
+  'name'  => SV::string()->min(1)->max(100),
+  'email' => SV::string()->email(),
+  'tel'   => SV::custom(makePhonePredicate('JP'), '有効な電話番号を入力してください')->optional(),
+]);
+```
+
+#### 代替: SV::respect() を使う (@deprecated)
+
+```php
+use Respect\Validation\Validator as v;
+use libphonenumber\PhoneNumberUtil;
+use libphonenumber\NumberParseException;
+
 function makePhoneRule(string $region = null): \Respect\Validation\Validator {
   $util = PhoneNumberUtil::getInstance();
 
@@ -139,12 +198,6 @@ function makePhoneRule(string $region = null): \Respect\Validation\Validator {
     }
   });
 }
-```
-
-#### SchemaBuilder への組み込み
-
-```php
-use SchemableValidator\SV;
 
 $schema = SV::object([
   'name'  => SV::string()->min(1)->max(100),

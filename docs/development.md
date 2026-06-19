@@ -142,7 +142,29 @@ pnpm --filter @schemable-validator/e2e run test
 │   │   │   ├── AbstractInterface.php
 │   │   │   └── WordPress.php
 │   │   ├── Rules/
-│   │   │   └── FileExtension.php
+│   │   │   └── FileExtension.php   # Legacy (Respect dependency)
+│   │   ├── Validation/
+│   │   │   ├── BackendAdapter.php
+│   │   │   ├── NativeExecutableValidator.php
+│   │   │   ├── NativeFileValidator.php
+│   │   │   ├── FileValidationDriver.php
+│   │   │   ├── CustomField.php
+│   │   │   ├── Formats.php
+│   │   │   ├── Coercion.php
+│   │   │   ├── JsonLogicEval.php
+│   │   │   └── Adapters/
+│   │   │       ├── RespectAdapter.php
+│   │   │       ├── OpisAdapter.php
+│   │   │       └── NativeAdapter.php
+│   │   ├── I18n/
+│   │   │   ├── MessageDict.php
+│   │   │   ├── DefaultMessages.php
+│   │   │   └── Locales/
+│   │   ├── Drivers/Respect/
+│   │   │   └── RespectRules.php
+│   │   ├── Schema/
+│   │   │   ├── CustomFieldSchema.php
+│   │   │   └── meta-schema.json
 │   │   └── Helpers/
 │   │       ├── Security.php
 │   │       └── Environment.php

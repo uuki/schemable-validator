@@ -4,6 +4,9 @@
 
 **スコープ:** `SV::` ファサード・`SchemaBuilder`・`Validator` クラス（クライアントパッケージを含む）。WordPress ヘルパー・`Template`・CSRF・reCAPTCHA は対象外です。
 
+> **デフォルトエンジンに関する注意**  
+> デフォルトのバリデーションエンジンは `NativeAdapter`（外部依存なし）になりました。デフォルト構成を使用している場合、Respect/Validation の依存はないため削除の必要はありません。本ガイドは `RespectAdapter` を明示的に使用しているプロジェクトが対象です。
+
 > **バージョン前提**  
 > PHP 側は Respect/Validation **2.x** を対象とします。将来このプラグインの依存バージョンが 3.x に上がった際は、別途 Respect/Validation 3.x 移行ガイドを追加予定です。
 
@@ -29,36 +32,36 @@
 
 ### 1.1 型マッピング早見表
 
-| SV API | Respect/Validation 2.x |
-|:--|:--|
-| `SV::string()` | `v::stringType()` |
-| `SV::integer()` | `v::intType()` |
-| `SV::number()` | `v::numericVal()` |
-| `SV::boolean()` | `v::boolType()` |
-| `SV::string()->length($min, $max)` | `v::stringType()->length($min, $max)` |
-| `SV::string()->min($n)` | `v::stringType()->length($n, null)` |
-| `SV::string()->max($n)` | `v::stringType()->length(null, $n)` |
-| `SV::integer()->min($n)` | `v::intType()->min($n)` |
-| `SV::integer()->max($n)` | `v::intType()->max($n)` |
-| `SV::number()->min($n)` | `v::numericVal()->min($n)` |
-| `SV::number()->max($n)` | `v::numericVal()->max($n)` |
-| `SV::string()->email()` | `v::email()` |
-| `SV::string()->url()` | `v::url()` |
-| `SV::string()->pattern('...')` | `v::regex('/pattern/u')` |
-| `SV::string()->date()` | `v::date('Y-m-d')` |
-| `SV::string()->dateTime()` | `v::dateTime()` |
-| `SV::string()->time()` | `v::time('H:i:s')` |
-| `SV::string()->uuid()` | `v::uuid()` |
-| `SV::string()->ipv4()` | `v::ip('*', FILTER_FLAG_IPV4)` |
-| `SV::string()->ipv6()` | `v::ip('*', FILTER_FLAG_IPV6)` |
-| `SV::string()->slug()` | `v::slug()` |
-| `SV::string()->domain()` | `v::domain()` |
-| `SV::enum(['a', 'b'])` | `v::in(['a', 'b'])` |
-| `SV::array(SV::string())` | `v::each(v::stringType())` |
-| `SV::respect(v::...)` | `v::...` をそのまま使用 |
-| `SV::postalCode('JP')` | `v::postalCode('JP')` |
-| `SV::creditCard()` | `v::creditCard()` |
-| `SV::iban()` | `v::iban()` |
+| SV API | Respect/Validation 2.x | 備考 |
+|:--|:--|:--|
+| `SV::string()` | `v::stringType()` | |
+| `SV::integer()` | `v::intType()` | |
+| `SV::number()` | `v::numericVal()` | |
+| `SV::boolean()` | `v::boolType()` | |
+| `SV::string()->length($min, $max)` | `v::stringType()->length($min, $max)` | |
+| `SV::string()->min($n)` | `v::stringType()->length($n, null)` | |
+| `SV::string()->max($n)` | `v::stringType()->length(null, $n)` | |
+| `SV::integer()->min($n)` | `v::intType()->min($n)` | |
+| `SV::integer()->max($n)` | `v::intType()->max($n)` | |
+| `SV::number()->min($n)` | `v::numericVal()->min($n)` | |
+| `SV::number()->max($n)` | `v::numericVal()->max($n)` | |
+| `SV::string()->email()` | `v::email()` | |
+| `SV::string()->url()` | `v::url()` | |
+| `SV::string()->pattern('...')` | `v::regex('/pattern/u')` | |
+| `SV::string()->date()` | `v::date('Y-m-d')` | |
+| `SV::string()->dateTime()` | `v::dateTime()` | |
+| `SV::string()->time()` | `v::time('H:i:s')` | |
+| `SV::string()->uuid()` | `v::uuid()` | |
+| `SV::string()->ipv4()` | `v::ip('*', FILTER_FLAG_IPV4)` | |
+| `SV::string()->ipv6()` | `v::ip('*', FILTER_FLAG_IPV6)` | |
+| `SV::string()->slug()` | `v::slug()` | |
+| `SV::string()->domain()` | `v::domain()` | |
+| `SV::enum(['a', 'b'])` | `v::in(['a', 'b'])` | |
+| `SV::array(SV::string())` | `v::each(v::stringType())` | |
+| `SV::respect(v::...)` | `v::...` をそのまま使用 | |
+| `SV::postalCode('JP')` | `v::postalCode('JP')` | @deprecated |
+| `SV::creditCard()` | `v::creditCard()` | @deprecated |
+| `SV::iban()` | `v::iban()` | @deprecated |
 
 ### 1.2 Validator の直接利用
 

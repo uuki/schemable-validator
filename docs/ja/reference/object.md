@@ -34,8 +34,12 @@ $schema = SV::object([
 スキーマを **JSON Schema draft 2020-12 の配列**として返す。
 
 ```php
-$schema->toJsonSchema(): array
+$schema->toJsonSchema(array $options = []): array
 ```
+
+| オプション | 型 | デフォルト | 説明 |
+|:--|:--|:--|:--|
+| `metaSchema` | `bool` | `false` | `true` の場合、出力に `$schema` URI を含める |
 
 - `SV::file()` / `SV::respect()` フィールドは `properties` から除外され、`x-unmapped-fields` に記録されます
 - `optional()` が付いていないフィールドは `required` 配列に含まれます
@@ -86,16 +90,22 @@ echo $schema->toJson();
 
 ## .toValidator() {#tovalidator}
 
-スキーマから Respect/Validation ベースの **`Validator` インスタンス**を生成する。  
-`SV::file()` / `SV::respect()` を含むすべてのフィールドを検証できる。
+スキーマから **`Validator` インスタンス**を生成する。デフォルトバックエンドは依存なしの NativeAdapter。  
+`SV::file()` / `SV::respect()` / `SV::custom()` を含むすべてのフィールドを検証できる。
 
 ```php
-$schema->toValidator(array $options = []): Validator
+$schema->toValidator(
+  array $options = [],
+  ?BackendAdapter $adapter = null,
+  ?FileValidationDriver $fileDriver = null
+): Validator
 ```
 
 | パラメータ | 型 | 説明 |
 |:--|:--|:--|
 | `$options` | `array` | `Validator` のオプション（reCAPTCHA 設定など） |
+| `$adapter` | `?BackendAdapter` | バックエンドアダプター。`null` = NativeAdapter（デフォルト） |
+| `$fileDriver` | `?FileValidationDriver` | ファイルバリデーション用ドライバー。`null` = デフォルトドライバー |
 
 **用途:** サーバー側でのフォーム検証。`toJsonSchema()` と組み合わせることで、定義の二重管理を避ける。
 
@@ -124,6 +134,30 @@ $result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
   "email": { "value": "bad",   "is_valid": false, "errors": "\"bad\" must be valid email" }
 }
 ```
+
+---
+
+## .toUiSchema() {#touischema}
+
+JSON Forms / RJSF 互換の UI Schema 配列を返す。
+
+```php
+$schema->toUiSchema(): array
+```
+
+---
+
+## .customFields(names) {#customfields}
+
+`x-custom-fields` 拡張キーでカスタムフィールド名を宣言する。
+
+```php
+$schema->customFields(array $names): self
+```
+
+| パラメータ | 型 | 説明 |
+|:--|:--|:--|
+| `$names` | `string[]` | カスタムフィールド名の配列 |
 
 ---
 

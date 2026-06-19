@@ -2,7 +2,7 @@
 
 `SchemaBuilder` is the central class of Schemable Validator. It lets you define all validation rules in PHP once and use them in two ways simultaneously:
 
-- **Server-side** — convert to a Respect/Validation-based `Validator` via `toValidator()`.
+- **Server-side** — convert to a `Validator` (NativeAdapter by default, dependency-free) via `toValidator()`.
 - **Client-side** — export to standard JSON Schema (draft 2020-12) via `toJson()` / `toJsonSchema()`, then consume from any JS validator (Zod, Valibot, AJV, …).
 
 ### Key features
@@ -47,7 +47,8 @@ echo $schema->toJson();
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
 | `SV::file(['image/jpeg'])` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
-| `SV::respect(v::...)` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
+| `SV::respect(v::...)` | - | **@deprecated** — use `SV::custom()` or `RespectRules::rule()` instead. Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
+| `SV::custom(callable, message)` | - | Dependency-free escape hatch. Returns `CustomFieldSchema`. Recorded in `x-unmapped-fields` |
 
 Modifiers:
 
@@ -167,18 +168,61 @@ Output:
 
 ## About `x-unmapped-fields`
 
-Fields that cannot be converted to JSON Schema (file uploads and custom Respect rules)
+Fields that cannot be converted to JSON Schema (file uploads, custom callables, etc.)
 are recorded by name only under the `x-unmapped-fields` extension key.
-Validation itself is performed via Respect/Validation through `toValidator()`.
+Validation is performed via the BackendAdapter (NativeAdapter by default) through `toValidator()`.
 
 ```php
 // Use as JSON Schema
-$jsonSchema = $schema->toJsonSchema(); // array
-$json       = $schema->toJson();       // string
+$jsonSchema = $schema->toJsonSchema();                       // array
+$jsonMeta   = $schema->toJsonSchema(['metaSchema' => true]); // array (includes $schema URI)
+$json       = $schema->toJson();                             // string
 
-// Use as a Respect validator (includes file fields)
+// Use as a validator (includes file fields)
 $validator = $schema->toValidator();
 $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
+```
+
+### `toValidator()` parameters
+
+```php
+$schema->toValidator(
+  array $options = [],
+  ?BackendAdapter $adapter = null,
+  ?FileValidationDriver $fileDriver = null
+): Validator
+```
+
+| Parameter | Type | Description |
+|:--|:--|:--|
+| `$options` | `array` | Validator options (e.g. reCAPTCHA configuration) |
+| `$adapter` | `?BackendAdapter` | Backend adapter for validation. `null` = NativeAdapter (default, dependency-free) |
+| `$fileDriver` | `?FileValidationDriver` | File validation driver. `null` = default driver |
+
+### `toJsonSchema()` options
+
+```php
+$schema->toJsonSchema(array $options = []): array
+```
+
+| Option | Type | Default | Description |
+|:--|:--|:--|:--|
+| `metaSchema` | `bool` | `false` | When `true`, includes the `$schema` URI in the output |
+
+### `toUiSchema()`
+
+Returns a JSON Forms / RJSF compatible UI Schema array.
+
+```php
+$uiSchema = $schema->toUiSchema(); // array
+```
+
+### `customFields()`
+
+Declares custom field names via the `x-custom-fields` extension key.
+
+```php
+$schema->customFields(array $names): self
 ```
 
 ---

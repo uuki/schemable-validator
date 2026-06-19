@@ -4,11 +4,11 @@ Low-level building blocks used internally by `validateObject`. Export them when 
 
 ```ts
 import {
-  constraintsFromSchema, composeConstraints,
+  constraintsFromSchema, composeConstraints, applyTransform,
   checkType, checkMinLength, checkMaxLength,
   checkMinimum, checkMaximum, checkFormat,
   checkPattern, checkEnum,
-  PATTERN_MAX_INPUT_LENGTH,
+  PATTERN_MAX_INPUT_LENGTH, DEFAULT_MESSAGES,
 } from '@uuki/schemable-validator-client'
 ```
 
@@ -52,30 +52,45 @@ validate({ value: 'x', errors: [] })
 
 ---
 
+## `applyTransform(value, transforms)`
+
+Apply the `x-transform` catalog transforms to a string value before validation. Returns the transformed string.
+
+Supported transforms: `trim`, `toLowerCase`, `toUpperCase`.
+
+```ts
+import { applyTransform } from '@uuki/schemable-validator-client'
+
+applyTransform('  Hello World  ', ['trim', 'toLowerCase'])
+// 'hello world'
+```
+
+---
+
 ## Individual constraint factories
 
-Each factory returns a `Constraint` — `(state: FieldState) => FieldState`.
+Each factory returns a `Constraint` -- `(state: FieldState) => FieldState`. All factories accept an optional trailing `message?` parameter to override the default error text from `DEFAULT_MESSAGES`.
 
 | Function | Description |
 |---|---|
-| `checkType(type)` | Validates `integer` / `number` / `boolean` coercion. Strings are always accepted. |
-| `checkMinLength(min)` | String length ≥ min. |
-| `checkMaxLength(max)` | String length ≤ max. |
-| `checkMinimum(min)` | Numeric value ≥ min. |
-| `checkMaximum(max)` | Numeric value ≤ max. |
-| `checkFormat(format)` | Matches one of the built-in format regexes (see table below). |
-| `checkPattern(pattern, maxLen?)` | Tests against a user-supplied regex string. Inputs longer than `maxLen` (default `500`) are skipped to prevent ReDoS. |
-| `checkEnum(values)` | Value must be in the given list. |
+| `checkType(type, message?)` | Validates `integer` / `number` / `boolean` coercion. Strings are always accepted. |
+| `checkMinLength(min, message?)` | String length >= min. |
+| `checkMaxLength(max, message?)` | String length <= max. |
+| `checkMinimum(min, message?)` | Numeric value >= min. |
+| `checkMaximum(max, message?)` | Numeric value <= max. |
+| `checkFormat(format, message?)` | Matches one of the built-in format regexes (see table below). |
+| `checkPattern(pattern, maxLen?, message?)` | Tests against a user-supplied regex string. Inputs longer than `maxLen` (default `500`) are skipped to prevent ReDoS. |
+| `checkEnum(values, message?)` | Value must be in the given list. |
 
 **Built-in formats for `checkFormat`**
 
 | Format | Pattern |
 |---|---|
-| `email` | `local@domain.tld` — rejects control chars and zero-width Unicode |
-| `uri` | `https?://…` — rejects control chars |
+| `email` | `local@domain.tld` -- rejects control chars and zero-width Unicode |
+| `uri` | `https?://...` -- rejects control chars |
 | `date` | `YYYY-MM-DD` |
-| `date-time` | `YYYY-MM-DDTHH:MM:SS[.ms](Z\|±HH:MM)` |
-| `time` | `HH:MM:SS[.ms][Z\|±HH:MM]` |
+| `date-time` | `YYYY-MM-DDTHH:MM:SS[.ms](Z\|+-HH:MM)` |
+| `time` | `HH:MM:SS[.ms][Z\|+-HH:MM]` |
 | `uuid` | RFC 4122 |
 | `ipv4` | dotted-decimal |
 | `ipv6` | full / compressed |
@@ -92,6 +107,14 @@ emailField({ value: '', errors: [] })
 emailField({ value: 'not-an-email', errors: [] })
 // { value: 'not-an-email', errors: ['must be a valid email'] }
 ```
+
+---
+
+## `DEFAULT_MESSAGES` and `substituteVars`
+
+`DEFAULT_MESSAGES` is a frozen catalog of default error strings keyed by rule name (`required`, `minLength`, `email`, etc.). Override individual messages via the `message?` parameter on each constraint factory, or via the `errorMessage` property on `PropertySchema`.
+
+Message templates use `{var}` placeholders (an ICU subset) resolved by `substituteVars`. For example, `'must be at least {min} character{plural} long'` is interpolated at runtime with the constraint's actual values.
 
 ---
 

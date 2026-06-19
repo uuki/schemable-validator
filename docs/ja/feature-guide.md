@@ -22,19 +22,19 @@ $validator = schv_validator($schema);
 
 ### 2. スキーマ定義
 
-スキーマは `フィールド名 => バリデーションルール` の連想配列で定義します。[Respect/Validation](https://respect-validation.readthedocs.io/en/latest/validators/) のルールをそのまま使えます。
+スキーマは `フィールド名 => バリデーションルール` の連想配列で定義します。推奨は SchemaBuilder API（`SV::string()`、`SV::object()` など）で、外部依存なしで動作します。
 
 `name` フィールドを例に取ると:
 
 ```php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
-$schema = [
-  'name' => v::stringType()->length(2, 50),
-];
+$schema = SV::object([
+  'name' => SV::string()->min(2)->max(50),
+]);
 ```
 
-`v::stringType()->length(2, 50)` は「文字列型かつ 2〜50 文字」を意味します。複数のルールはメソッドチェーンで結合でき、左から順に評価されます。
+`SV::string()->min(2)->max(50)` は「文字列型かつ 2〜50 文字」を意味します。複数の制約はメソッドチェーンで結合できます。
 
 | 値 | 結果 | 理由 |
 |:--|:--|:--|
@@ -46,14 +46,18 @@ $schema = [
 よくあるフィールドを定義した例:
 
 ```php
-$schema = [
-  'name'  => v::stringType()->length(2, 50),
-  'email' => v::email(),
-  'tel'   => v::regex('/^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$/'),
-  'type'  => v::in(['general', 'support', 'sales', 'other']),
-  'body'  => v::regex('/^.{10,}$/su'),
-];
+$schema = SV::object([
+  'name'  => SV::string()->min(2)->max(50),
+  'email' => SV::string()->email(),
+  'tel'   => SV::string()->pattern('^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$')->optional(),
+  'type'  => SV::enum(['general', 'support', 'sales', 'other']),
+  'body'  => SV::string()->min(10),
+]);
 ```
+
+::: tip Respect スキーマの利用
+オプションの `respect/validation` パッケージをインストールすると、Respect ルールも直接使えます（例: `'name' => v::stringType()->length(2, 50)`）。SchemaBuilder 内では `SV::respect(v::...)` でラップしてください。
+:::
 
 通る例・弾く例:
 
@@ -97,7 +101,7 @@ $result = $validator->validate($_POST)->getResult();
   'email' => [
     'value'    => 'not-an-email',
     'is_valid' => false,
-    'errors'   => '"not-an-email" must be valid email',
+    'errors'   => 'must be a valid email',
   ],
   'tel' => [
     'value'    => '090-1234-5678',
@@ -126,18 +130,24 @@ $result = $validator->validateFiles($_FILES)->getResult();
 $result = $validator->validateFiles($data, ['native_files' => false])->getResult();
 ```
 
-`FileExtension` カスタムルールで許可する MIME タイプを制限できます:
+`SV::file()`（内部で `NativeFileValidator` を使用）で許可する MIME タイプを制限できます:
 
 ```php
-use SchemableValidator\Rules\FileExtension;
+use SchemableValidator\SV;
 
-$schema = [
-  'file' => new FileExtension(['image/jpeg', 'image/png']),
-];
+$schema = SV::object([
+  'file' => SV::file(['image/jpeg', 'image/png']),
+]);
 ```
 
+::: info レガシー
+`FileExtension` ルールクラスは引き続き動作しますが、レガシーとみなされます。新規コードでは `SV::file()` を推奨します。
+:::
+
 ::: tip
-住所やクレジットカード検証など、独自ルールの定義に類する高度な利用については [Custom Validation](/ja/custom-validation) を参照してください。
+住所検証など、独自ルールの定義に類する高度な利用については [Custom Validation](/ja/custom-validation) を参照してください。依存なしの一回限りのルールには `SV::custom(callable)` をエスケープハッチとして使えます。
+
+注意: `creditCard` および `postalCode` ルールは **@deprecated** であり、`Drivers\Respect\RespectRules` に移動されました。
 :::
 
 ### メソッドチェーン
@@ -240,7 +250,7 @@ $result = $schema->toValidator()
 
 ### エラーメッセージの取得
 
-`getResult()` の各フィールドに `errors` キーが含まれます。値は検証が通った場合 `null`、失敗した場合はメッセージ文字列です。デフォルトは Respect/Validation が生成する英語メッセージです。
+`getResult()` の各フィールドに `errors` キーが含まれます。値は検証が通った場合 `null`、失敗した場合はメッセージ文字列です。デフォルトは DefaultMessages カタログ（エンジン中立）の英語メッセージです。
 
 ```php
 $result = $validator->validate($_POST)->getResult();
@@ -255,32 +265,28 @@ foreach ($result as $field => $state) {
 複数のルールが失敗した場合、エラーは `"\n"` で結合された文字列として返されます。
 
 ```php
-// name が stringType と length の両方に失敗した場合
+// name が string と minLength の両方に失敗した場合
 $result['name']['errors'];
-// → '"123" must be a string
-//    "123" must have a length between 2 and 50'
+// → 'must be a string
+//    must be at least 2 characters'
 ```
 
 ### ルールへの直接指定
 
-Respect/Validation の `setTemplate()` をルールにチェーンすると、メッセージを上書きできます。
+フィールドの `errorMessage()` メソッドを使い、`{var}` 補間でメッセージを上書きできます。
 
 ```php
-$schema = [
-  'email' => v::email()->setTemplate('有効なメールアドレスを入力してください'),
-  'name'  => v::stringType()->length(2, 50)->setTemplate('名前は2〜50文字で入力してください'),
-];
+$schema = SV::object([
+  'email' => SV::string()->email()->errorMessage('有効なメールアドレスを入力してください'),
+  'name'  => SV::string()->min(2)->max(50)
+               ->errorMessage('{field}は{min}〜{max}文字で入力してください'),
+]);
 ```
 
-`setName()` を組み合わせると、メッセージ内のフィールド識別子も変更できます。
-
-```php
-'name' => v::stringType()->setName('お名前')->length(2, 50),
-// → "お名前" must have a length between 2 and 50
-```
+利用可能なプレースホルダーは制約に依存します: `{field}`、`{min}`、`{max}`、`{pattern}` など。
 
 ::: info
-複数ルールをチェーンした場合、`setTemplate()` が適用されるのは最後に失敗したルールのメッセージ 1 件のみです。フィールド×ルール単位で個別に制御したい場合は MessageDict を使ってください。
+`errorMessage()` はフィールド全体に単一のメッセージを適用します。ルール単位で個別に制御したい場合は MessageDict を使ってください。
 :::
 
 ### 多言語化
@@ -294,21 +300,18 @@ $schema = [
 **ロケールデフォルト** - ルール ID をキーとし、フィールドを問わず共通で使うメッセージを定義します。
 
 ```php
-// messages/ja.php
+// messages/ja.php — エンジン中立のボキャブラリキーを使用（I18n/DefaultMessages.php 参照）
 return [
-  'stringType'  => '文字列で入力してください',
-  'length'      => '文字数が範囲外です',
-  'email'       => '有効なメールアドレスを入力してください',
-  'notEmpty'    => '入力必須です',
-  'notOptional' => '入力必須です',
-  'integer'     => '整数で入力してください',
-  'intType'     => '整数で入力してください',
-  'numeric'     => '数値で入力してください',
-  'url'         => '有効なURLを入力してください',
-  'regex'       => '入力形式が正しくありません',
-  'in'          => '選択肢から選んでください',
-  'anyOf'       => '選択肢から選んでください',
-  'required'    => '必須項目です',
+  'string'    => '文字列で入力してください',
+  'minLength' => '最低{min}文字で入力してください',
+  'maxLength' => '最大{max}文字まで入力できます',
+  'email'     => '有効なメールアドレスを入力してください',
+  'required'  => '必須項目です',
+  'integer'   => '整数で入力してください',
+  'number'    => '数値で入力してください',
+  'uri'       => '有効なURLを入力してください',
+  'pattern'   => '入力形式が正しくありません',
+  'enum'      => '選択肢から選んでください',
 ];
 ```
 
@@ -327,8 +330,8 @@ return [
 
   // パターン3: 複数ルールをまとめて個別指定
   'body' => [
-    'notEmpty' => '本文を入力してください',
-    'regex'    => '本文は10文字以上で入力してください',
+    'required' => '本文を入力してください',
+    'pattern'  => '本文は10文字以上で入力してください',
   ],
 ];
 ```
@@ -339,7 +342,7 @@ return [
 1. フィールド×ルール固有 - `['name' => ['length' => '...']]`
 2. フィールド全体 - `['email' => '...']`
 3. ロケールデフォルト - `messages/ja.php` の内容
-4. Respect デフォルトメッセージ（英語）
+4. DefaultMessages カタログ（エンジン中立）
 :::
 
 #### Step 2: 読み込み
@@ -364,7 +367,7 @@ $dict = MessageDict::ja(
 );
 ```
 
-`MessageDict::en()` は Respect デフォルトのメッセージをそのまま返します。
+`MessageDict::en()` は DefaultMessages カタログ（エンジン中立）のメッセージをそのまま返します。
 
 #### Step 3: Validator への渡し方
 

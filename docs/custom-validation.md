@@ -6,7 +6,7 @@
 
 This plugin is designed to centrally define **structural constraints** — such as field types, formats, and character limits — on the PHP side, and share them with the client via JSON Schema.
 
-That said, real-world forms sometimes require "principled validation" that is locale- or environment-specific (e.g., verifying that a phone number belongs to a valid numbering plan). Because such constraints are difficult to express in JSON Schema, the plugin provides an extension point (`SV::respect()`) that lets you inject arbitrary validation logic.
+That said, real-world forms sometimes require "principled validation" that is locale- or environment-specific (e.g., verifying that a phone number belongs to a valid numbering plan). Because such constraints are difficult to express in JSON Schema, the plugin provides **`SV::custom(callable)`** as the primary dependency-free escape hatch for injecting arbitrary validation logic. For projects that already use the Respect/Validation library, `SV::respect()` (@deprecated) is also available as an optional alternative.
 
 ---
 
@@ -23,12 +23,20 @@ For example, the following constraints cannot be represented with keywords like 
 
 These are not "string format checks" but rather **validations based on domain-specific rules or external databases**. While a regular expression or a JSON Schema keyword can approximate them, a complete representation is fundamentally impossible.
 
-In this plugin, such constraints are wrapped with `SV::respect()` and recorded in the `x-unmapped-fields` extension of the JSON Schema output.
+In this plugin, such constraints are wrapped with `SV::custom()` or `SV::respect()` and recorded in the `x-unmapped-fields` extension of the JSON Schema output.
 
 ```
-SV::respect($rule)
+SV::custom($predicate)                        [PRIMARY - dependency-free]
   │
-  ├─ Server side: validated as-is with Respect/Validation
+  ├─ Server side: validated with the callable predicate
+  │
+  └─ JSON Schema: recorded in x-unmapped-fields (not included in properties)
+       │
+       └─ Client side: add custom validation via @uuki/schemable-validator-client / Zod
+
+SV::respect($rule)                            [@deprecated - requires Respect/Validation]
+  │
+  ├─ Server side: validated with Respect/Validation
   │
   └─ JSON Schema: recorded in x-unmapped-fields (not included in properties)
        │
@@ -39,9 +47,22 @@ SV::respect($rule)
 
 ## Integration Patterns with External Libraries
 
-When implementing constraints that cannot be expressed in JSON Schema, choose appropriate libraries for both the backend and frontend, and connect them through the plugin's escape hatch (`SV::respect()`).
+When implementing constraints that cannot be expressed in JSON Schema, choose appropriate libraries for both the backend and frontend, and connect them through the plugin's escape hatches.
 
 ### PHP Side (Server)
+
+**Primary: `SV::custom(callable, message)`** (dependency-free)
+
+`SV::custom()` accepts a callable predicate that returns `bool`. No external dependencies are required.
+
+```php
+SV::custom(
+  fn(mixed $value): bool => someExternalLibrary::validate($value),
+  'Validation failed'
+)
+```
+
+**Alternative: `SV::respect(rule)`** (@deprecated -- requires `respect/validation`)
 
 `SV::respect()` accepts a Respect/Validation `Validator` instance. Using `v::callback()`, you can inject any logic or external library.
 
@@ -93,8 +114,8 @@ const schema = buildZodSchema(jsonSchema).extend({
 |:--|:--|:--|:--|
 | Phone number (E.164 / per-country) | `giggsey/libphonenumber-for-php` | `libphonenumber-js` | UNMAPPABLE |
 | IBAN / bank account number | `globalcitizen/php-iban` | `ibantools` | UNMAPPABLE |
-| Credit card (Luhn) | Respect built-in `v::creditCard()` | Custom Luhn implementation | UNMAPPABLE |
-| Postal code (per-country) | `axlon/laravel-postal-code-validation`, etc. | `postal-codes-js` | Approximable with `pattern` |
+| Credit card (Luhn) | @deprecated -- moved to `RespectRules`. Use `SV::custom()` with a Luhn library instead | Custom Luhn implementation | UNMAPPABLE |
+| Postal code (per-country) | @deprecated -- moved to `RespectRules`. Use `SV::custom()` with a postal code library instead | `postal-codes-js` | Approximable with `pattern` |
 | Password strength | Custom callback | `zxcvbn` | UNMAPPABLE |
 
 ---
@@ -111,10 +132,10 @@ Phone numbers are a canonical example where regex approximations fall short. `li
 composer require giggsey/libphonenumber-for-php
 ```
 
-#### Custom Respect Rule
+#### Primary: Using SV::custom()
 
 ```php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 use libphonenumber\PhoneNumberUtil;
 use libphonenumber\NumberParseException;
 
@@ -122,6 +143,44 @@ use libphonenumber\NumberParseException;
  * A libphonenumber-based phone number validator with a region code.
  * When $region = null, E.164 format (+81...) is required.
  */
+function makePhonePredicate(string $region = null): callable {
+  $util = PhoneNumberUtil::getInstance();
+
+  return function (mixed $value) use ($util, $region): bool {
+    if (!is_string($value) || $value === '') {
+      return false;
+    }
+    try {
+      $number = $util->parse($value, $region);
+      return $region !== null
+        ? $util->isValidNumberForRegion($number, $region)
+        : $util->isValidNumber($number);
+    } catch (NumberParseException) {
+      return false;
+    }
+  };
+}
+```
+
+#### Integrating into SchemaBuilder (SV::custom)
+
+```php
+use SchemableValidator\SV;
+
+$schema = SV::object([
+  'name'  => SV::string()->min(1)->max(100),
+  'email' => SV::string()->email(),
+  'tel'   => SV::custom(makePhonePredicate('JP'), 'Please enter a valid phone number')->optional(),
+]);
+```
+
+#### Alternative: Using SV::respect() (@deprecated)
+
+```php
+use Respect\Validation\Validator as v;
+use libphonenumber\PhoneNumberUtil;
+use libphonenumber\NumberParseException;
+
 function makePhoneRule(string $region = null): \Respect\Validation\Validator {
   $util = PhoneNumberUtil::getInstance();
 
@@ -139,12 +198,6 @@ function makePhoneRule(string $region = null): \Respect\Validation\Validator {
     }
   });
 }
-```
-
-#### Integrating into SchemaBuilder
-
-```php
-use SchemableValidator\SV;
 
 $schema = SV::object([
   'name'  => SV::string()->min(1)->max(100),

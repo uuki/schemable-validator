@@ -14,7 +14,7 @@
 |:--|:--|
 | [Core Validator](./core-validator) | `validateObject`, `isAllValid`, `extractErrors` |
 | [Result Primitives](./result) | `ok`, `err`, `isOk`, `isErr`, `map`, `flatMap`, `mapErr`, `getOrElse` |
-| [Constraint Pipeline](./constraint-pipeline) | `constraintsFromSchema`, `composeConstraints`, constraint factories, `PATTERN_MAX_INPUT_LENGTH` |
+| [Constraint Pipeline](./constraint-pipeline) | `constraintsFromSchema`, `composeConstraints`, `applyTransform`, constraint factories, `PATTERN_MAX_INPUT_LENGTH`, `DEFAULT_MESSAGES` |
 | [Zod Adapter](./zod-adapter) | `sv`, `createSv`, `ZodRefiner`, `ZodAsyncRefiner`, `toZodSchema`, `checkZodSchema` |
 | [Valibot Adapter](./valibot-adapter) | `sv`, `createSv`, `ValibotRefiner`, `ValibotAsyncRefiner`, `toValibotSchema`, `checkValibotSchema` |
-| [Type Reference](./types) | `ObjectSchema`, `PropertySchema`, `WhenCondition`, `FieldResult`, `FieldState`, `Constraint` |
+| [Type Reference](./types) | `ObjectSchema`, `PropertySchema`, `WhenEntry`, `JLCondition`, `JLValue`, `JLVar`, `UiSchema`, `UiSchemaControl`, `FieldResult`, `FieldState`, `Constraint` |

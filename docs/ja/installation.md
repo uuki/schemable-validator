@@ -48,7 +48,10 @@ WordPress 管理画面のプラグイン一覧から **Schemable Validator** を
 | `Template` | テンプレート文字列に検証済みデータを差し込む |
 | `FormController` | マルチページフォームの検証済みデータをセッションで保持する |
 | `MessageDict` | エラーメッセージをフィールド×ルール単位で定義する（i18n） |
-| `Rules\FileExtension` | ファイルの MIME タイプを検証するカスタムルール |
+| `Rules\FileExtension` | ファイルの MIME タイプを検証するカスタムルール（レガシー; Respect/Validation 依存） |
+| `NativeFileValidator` | `FileValidationDriver` 経由の依存なしファイルバリデーション（デフォルト） |
+
+> **Note:** ファイルバリデーションは現在 `NativeFileValidator` を `FileValidationDriver` 経由で使用するのがデフォルトです（外部依存なし）。`Rules\FileExtension` は Respect/Validation を必要とするレガシーアダプターです。
 
 詳細は [Feature Guide](/ja/feature-guide) および [SchemaBuilder](/ja/schema-builder) を参照してください。
 
@@ -75,8 +78,35 @@ packages/
     Validator.php
     Template.php
     Controllers/FormController.php
-    Interfaces/WordPress.php
-    Rules/FileExtension.php
+    Interfaces/
+      AbstractInterface.php
+      WordPress.php
+    Rules/FileExtension.php      # レガシー（Respect 依存）
+    Validation/
+      BackendAdapter.php         # アダプターインターフェース
+      ExecutableValidator.php
+      NativeExecutableValidator.php
+      NativeFileValidator.php    # 依存なしファイルバリデーション
+      FileValidationDriver.php
+      CustomField.php
+      Formats.php
+      Transform.php
+      Coercion.php
+      CalendarDate.php
+      JsonLogicEval.php
+      Adapters/
+        RespectAdapter.php
+        OpisAdapter.php
+        NativeAdapter.php        # デフォルト（依存なし）
+    I18n/
+      MessageDict.php
+      DefaultMessages.php
+      Locales/                   # ロケールメッセージファイル
+    Drivers/Respect/
+      RespectRules.php
+    Schema/
+      CustomFieldSchema.php
+      meta-schema.json
     Helpers/Security.php
     Helpers/Environment.php
   wp-schemable-validator/        # WordPress プラグイン
@@ -87,3 +117,5 @@ packages/
       helpers.php                # schv_* グローバル関数
     examples/                    # サンプルショートコード（ローカル開発用）
 ```
+
+> **Note:** `respect/validation` および `opis/json-schema` はオプション（`suggest`）依存です。デフォルトエンジン（`NativeAdapter`）は外部バリデーションライブラリなしで動作します。

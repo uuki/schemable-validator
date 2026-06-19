@@ -12,7 +12,11 @@ import type {
   FieldResult, ValidationResult,
   // Schema
   JsonSchemaType, PropertySchema, ObjectSchema,
-  ConditionalSchema, WhenCondition, WhenOp,
+  ConditionalSchema, WhenEntry,
+  // JSONLogic
+  JLCondition, JLValue, JLVar,
+  // UI Schema
+  UiSchema, UiSchemaControl,
 } from '@uuki/schemable-validator-client'
 ```
 
@@ -26,10 +30,11 @@ Top-level JSON Schema from `SchemaBuilder::toJsonSchema()`.
 type ObjectSchema = {
   $schema: string
   type: 'object'
-  properties: Record<string, PropertySchema>
+  properties: Readonly<Record<string, PropertySchema>>
   required?: readonly string[]
   'x-unmapped-fields'?: readonly string[]   // SV::file / SV::respect fields
-  'x-when'?: readonly WhenCondition[]       // SchemaBuilder::when() conditions
+  'x-custom-fields'?:   readonly string[]   // SchemaBuilder::customFields() — BE-only logic
+  'x-when'?: readonly WhenEntry[]           // SchemaBuilder::when() conditions (JSONLogic)
   if?: ConditionalSchema['if']
   then?: ConditionalSchema['then']
   allOf?: readonly ConditionalSchema[]
@@ -50,26 +55,68 @@ type PropertySchema = {
   format?:    'email' | 'uri' | 'date' | 'date-time' | 'time' | 'uuid' | 'ipv4' | 'ipv6' | 'hostname'
   pattern?:   string
   enum?:      readonly string[]
+  'x-transform'?: readonly string[]                // value transforms applied before validation (trim, toLowerCase, toUpperCase)
   minimum?:   number
   maximum?:   number
   items?:     PropertySchema   // array element schema
   minItems?:  number
   maxItems?:  number
+  errorMessage?: Readonly<Record<string, string>>  // inline error messages keyed by JSON Schema keyword
 }
 ```
 
 ---
 
-## `WhenCondition`
+## `WhenEntry`
 
-One entry in the `x-when` array.
+One entry in the `x-when` array. Uses a JSONLogic condition instead of the legacy operator format.
 
 ```ts
-type WhenOp = '===' | '!==' | '>=' | '<=' | '>' | '<'
+type WhenEntry = {
+  readonly condition: JLCondition
+  readonly require: readonly string[]
+}
+```
 
-type WhenCondition =
-  | { field: string; op: WhenOp; equals: unknown;      require: readonly string[] }
-  | { field: string; op: WhenOp; equalsField: string;  require: readonly string[] }
+---
+
+## JSONLogic Types
+
+Minimal JSONLogic subset used by `x-when` conditions and `applyJsonLogic`.
+
+```ts
+type JLVar = { readonly var: string }
+
+type JLValue = string | number | boolean | null | JLVar
+
+type JLCondition =
+  | { readonly '===': readonly [JLValue, JLValue] }
+  | { readonly '!==': readonly [JLValue, JLValue] }
+  | { readonly '>=':  readonly [JLValue, JLValue] }
+  | { readonly '<=':  readonly [JLValue, JLValue] }
+  | { readonly '>':   readonly [JLValue, JLValue] }
+  | { readonly '<':   readonly [JLValue, JLValue] }
+  | { readonly and:   readonly JLCondition[] }
+  | { readonly or:    readonly JLCondition[] }
+```
+
+---
+
+## `UiSchema` / `UiSchemaControl`
+
+JSON Forms / RJSF UI Schema companion document produced by `SchemaBuilder::toUiSchema()`.
+
+```ts
+type UiSchemaControl = {
+  readonly type: 'Control'
+  readonly scope: string
+  readonly label: string
+}
+
+type UiSchema = {
+  readonly type: 'VerticalLayout'
+  readonly elements: readonly UiSchemaControl[]
+}
 ```
 
 ---

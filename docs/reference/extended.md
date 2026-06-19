@@ -1,6 +1,7 @@
-# SV::file() / SV::respect() - Non-JSON Schema Types
+# SV::file() / SV::custom() / SV::respect() - Non-JSON Schema Types
 
-These types perform server-side validation via Respect/Validation but cannot be converted to JSON Schema.
+These types perform server-side validation but cannot be converted to JSON Schema.
+`SV::file()` uses NativeFileValidator (dependency-free). `SV::custom()` accepts any callable predicate (dependency-free). `SV::respect()` uses the optional Respect/Validation library.
 In `toJsonSchema()` output they are excluded from `properties`, and their field names are recorded in `x-unmapped-fields`.
 
 The client's `validateObject` automatically skips these fields and defers them to the server.
@@ -64,7 +65,77 @@ $result = $schema->toValidator()
 
 ---
 
+## SV::custom(callable, message) {#custom}
+
+A dependency-free escape hatch for specifying arbitrary validation logic via a callable predicate. Use this for constraints that cannot be expressed with the built-in types.
+
+```php
+SV::custom(callable $predicate, string $message = 'Validation failed')
+```
+
+| Parameter | Type | Description |
+|:--|:--|:--|
+| `$predicate` | `callable` | A callable that receives the field value and returns `bool` |
+| `$message` | `string` | Error message shown when validation fails (default: `'Validation failed'`) |
+
+Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
+
+**Use case:** Phone number validation, custom business rules, integration with any PHP library -- without requiring Respect/Validation as a dependency.
+
+```php
+// Simple inline predicate
+SV::custom(
+  fn(mixed $value): bool => is_string($value) && strlen($value) === 8 && ctype_digit($value),
+  'Must be an 8-digit number'
+)->optional()
+
+// Wrapping an external library
+SV::custom(
+  fn(mixed $value): bool => SomeLibrary::validate($value),
+  'Invalid value'
+)
+```
+
+### Integration with External Libraries
+
+```php
+use libphonenumber\PhoneNumberUtil;
+use libphonenumber\NumberParseException;
+
+$phoneUtil = PhoneNumberUtil::getInstance();
+
+$schema = SV::object([
+  'tel' => SV::custom(
+    function ($value) use ($phoneUtil) {
+      try {
+        $number = $phoneUtil->parse($value, 'JP');
+        return $phoneUtil->isValidNumberForRegion($number, 'JP');
+      } catch (NumberParseException) {
+        return false;
+      }
+    },
+    'Please enter a valid Japanese phone number'
+  )->optional(),
+]);
+```
+
+See [Advanced Usage](/custom-validation) for more details.
+
+### JSON Schema Output
+
+```json
+{
+  "type": "object",
+  "properties": {},
+  "x-unmapped-fields": ["tel"]
+}
+```
+
+---
+
 ## SV::postalCode(countryCode) {#postalcode}
+
+> **@deprecated** -- Moved to `RespectRules`. Use `SV::custom()` with a postal code validation library instead.
 
 Validates a **postal code** for a specific country. A shorthand that wraps Respect/Validation's `postalCode()` rule.
 
@@ -89,6 +160,8 @@ This is syntactic sugar for `SV::respect(v::postalCode('JP'))`.
 
 ## SV::creditCard(...brands) {#creditcard}
 
+> **@deprecated** -- Moved to `RespectRules`. Use `SV::custom()` with a Luhn algorithm library instead.
+
 Validates a **credit card number** using the Luhn algorithm.
 
 ```php
@@ -110,6 +183,8 @@ SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard only
 
 ## SV::iban() {#iban}
 
+> **@deprecated** -- Moved to `RespectRules`. Use `SV::custom()` with an IBAN validation library instead.
+
 Validates an **IBAN** (International Bank Account Number).
 
 ```php
@@ -125,6 +200,8 @@ SV::iban()->optional()
 ---
 
 ## SV::respect(rule) {#respect}
+
+> **@deprecated** -- Use `SV::custom(callable, message)` instead for a dependency-free alternative. This method requires the optional `respect/validation` package.
 
 An escape hatch for specifying Respect/Validation rules directly. Use this for constraints that cannot be expressed with the built-in types.
 
