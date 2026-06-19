@@ -38,17 +38,19 @@ rule id and resolves text via the shared catalog (see
 
 | Adapter | Dependency | Coercion Contract v1 | Use case |
 |:--|:--|:--|:--|
-| `RespectAdapter` (default) | `respect/validation` (required) | yes | Form-string input; full rule surface |
-| `NativeAdapter` | none | yes | Dependency-free, FE-faithful; drop-in for the form-string path |
+| `NativeAdapter` (default) | none | yes | Dependency-free, FE-faithful; the default engine |
+| `RespectAdapter` | `respect/validation` (optional) | yes | Full Respect rule surface / escape hatches |
 | `OpisAdapter` | `opis/json-schema` (optional) | **no** (strict JSON Schema) | Typed-JSON input; structural validation |
 
-- **RespectAdapter** is the default and the only one wired into
-  `SchemaBuilder::toValidator()` today.
-- **NativeAdapter** ports the FE `constraint.ts`/`validator.ts` semantics to PHP
-  with zero third-party dependencies. It honors Coercion Contract v1, so it
-  accepts form strings (`"42"` for `integer`) exactly like the FE and Respect.
+- **NativeAdapter** is the default engine, wired into `SchemaBuilder::toValidator()`
+  and `Validator::fromJsonSchema()`. It ports the FE `constraint.ts`/`validator.ts`
+  semantics to PHP with zero third-party dependencies and honors Coercion Contract
+  v1, so it accepts form strings (`"42"` for `integer`) exactly like the FE.
   Verified against every `conformance/*.json` fixture
   (`tests/Conformance/NativeConformanceTest.php`).
+- **RespectAdapter** is opt-in (pass it to `toValidator()`/`fromJsonSchema()`).
+  It is also used implicitly by the Respect escape hatches (SV::respect /
+  RespectRules) and by raw `v` schemas. Requires the optional `respect/validation`.
 - **OpisAdapter** applies strict JSON Schema semantics (no coercion), so a form
   string `"42"` fails `type: integer`. Intended for already-typed JSON.
 
@@ -62,18 +64,25 @@ JSON, not `$_POST`-style strings.
 
 ## Optional dependencies
 
-- `opis/json-schema` is an **optional** dependency (composer `suggest`). The
-  default Respect path and the dependency-free `NativeAdapter` need it not at
-  all. Install it only to use `OpisAdapter`:
+The default path (NativeAdapter + the dependency-free NativeFileValidator +
+SV::custom) needs no external validator. Both engine packages are composer
+`suggest`s, loaded only when you opt in:
+
+- `respect/validation` — enables `RespectAdapter`, the Respect escape hatches
+  (`RespectRules` / `SV::respect` / `postalCode` / `creditCard` / `iban`), and raw
+  `v` schemas. Respect's factory is bootstrapped lazily by those paths only, so the
+  Native default never loads it.
+
+  ```
+  composer require respect/validation
+  ```
+
+- `opis/json-schema` — enables `OpisAdapter`. Constructing it without the package
+  throws a clear runtime error.
 
   ```
   composer require opis/json-schema
   ```
-
-  Constructing `OpisExecutableValidator` without it throws a clear runtime error.
-- `respect/validation` remains a hard dependency (default engine). Making it
-  optional — leaning on `NativeAdapter` as the default — is a future major-boundary
-  decision, not yet taken.
 
 ---
 

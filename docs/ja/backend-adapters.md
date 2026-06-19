@@ -37,15 +37,17 @@ interface ExecutableValidator {
 
 | アダプタ | 依存 | Coercion Contract v1 | 用途 |
 |:--|:--|:--|:--|
-| `RespectAdapter`（既定） | `respect/validation`（必須） | あり | フォーム文字列入力・全ルール |
-| `NativeAdapter` | なし | あり | 依存ゼロ・FE 等価。フォーム文字列経路の drop-in |
+| `NativeAdapter`（既定） | なし | あり | 依存ゼロ・FE 等価。既定エンジン |
+| `RespectAdapter` | `respect/validation`（任意） | あり | Respect 全ルール / エスケープハッチ |
 | `OpisAdapter` | `opis/json-schema`（任意） | **なし**（厳密 JSON Schema） | 型付き JSON 入力・構造検証 |
 
-- **RespectAdapter** は既定で、現状 `SchemaBuilder::toValidator()` に配線されている唯一のアダプタ。
-- **NativeAdapter** は FE `constraint.ts`/`validator.ts` の意味論を依存ゼロで PHP 移植。
-  Coercion Contract v1 を honor するため、FE/Respect と同様にフォーム文字列（`integer` に
-  `"42"`）を受理します。全 `conformance/*.json` フィクスチャで検証済み
-  （`tests/Conformance/NativeConformanceTest.php`）。
+- **NativeAdapter** が既定エンジンで、`SchemaBuilder::toValidator()` と
+  `Validator::fromJsonSchema()` に配線済み。FE `constraint.ts`/`validator.ts` の意味論を
+  依存ゼロで PHP 移植し、Coercion Contract v1 を honor（`integer` に `"42"` を FE 同様受理）。
+  全 `conformance/*.json` フィクスチャで検証済み（`tests/Conformance/NativeConformanceTest.php`）。
+- **RespectAdapter** はオプトイン（`toValidator()`/`fromJsonSchema()` に渡す）。Respect エスケープ
+  ハッチ（`SV::respect` / `RespectRules`）や生 `v` スキーマでも暗黙に使われる。任意依存
+  `respect/validation` が必要。
 - **OpisAdapter** は厳密 JSON Schema 意味論（coercion なし）。フォーム文字列 `"42"` は
   `type: integer` で不合格。型付き JSON 向け。
 
@@ -59,16 +61,22 @@ interface ExecutableValidator {
 
 ## 任意依存
 
-- `opis/json-schema` は**任意**依存（composer `suggest`）です。既定の Respect 経路と
-  依存ゼロの `NativeAdapter` には不要。`OpisAdapter` を使う場合のみインストールします。
+既定経路（NativeAdapter ＋ 依存ゼロの NativeFileValidator ＋ SV::custom）は外部バリデータ不要。
+両エンジンパッケージは composer `suggest` で、オプトイン時のみロードされます。
+
+- `respect/validation` — `RespectAdapter`、Respect エスケープハッチ（`RespectRules` /
+  `SV::respect` / `postalCode` / `creditCard` / `iban`）、生 `v` スキーマを有効化。Respect の
+  factory はこれらの経路でのみ遅延初期化され、Native 既定では一切ロードされません。
+
+  ```
+  composer require respect/validation
+  ```
+
+- `opis/json-schema` — `OpisAdapter` を有効化。未インストールで生成すると明確な実行時エラー。
 
   ```
   composer require opis/json-schema
   ```
-
-  未インストールで `OpisExecutableValidator` を生成すると明確な実行時エラーになります。
-- `respect/validation` は現状ハード依存（既定エンジン）。`NativeAdapter` を既定にして
-  respect を任意化するのは将来のメジャー境界の判断であり、まだ実施していません。
 
 ---
 

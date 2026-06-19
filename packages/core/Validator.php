@@ -12,10 +12,10 @@ namespace SchemableValidator;
 require_once __DIR__ . '/constants.php';
 require_once SV_VENDOR_DIR . '/autoload.php';
 
-use Respect\Validation\Factory;
 use Respect\Validation\Validator as v;
 use SchemableValidator\Controllers\CurlController;
 use SchemableValidator\I18n\MessageDict;
+use SchemableValidator\Validation\Adapters\NativeAdapter;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\FileValidationDriver;
@@ -99,7 +99,10 @@ final class Validator {
     $this->fileConfigs = $fileConfigs;
     $this->fileDriver = $fileDriver ?? new NativeFileValidator();
     $this->dict = $dict;
-    $this->adapter = $adapter ?? new RespectAdapter();
+    // Default engine is the dependency-free NativeAdapter, so respect/validation
+    // is optional (composer "suggest"). Pass a RespectAdapter explicitly (or use
+    // SV::respect/RespectRules / a raw `v` schema) to opt into Respect.
+    $this->adapter = $adapter ?? new NativeAdapter();
     $this->options = array_merge([
       'recaptcha_provider' => 'https://www.google.com/recaptcha/api/siteverify',
       'recaptcha_secret' => '',
@@ -111,11 +114,9 @@ final class Validator {
       'recaptcha_token' => null,
     ];
 
-    Factory::setDefaultInstance(
-      (new Factory())
-        ->withRuleNamespace('SchemableValidator\\Rules')
-        ->withExceptionNamespace('SchemableValidator\\Exceptions')
-    );
+    // Respect's factory is configured lazily by the Respect-backed paths
+    // (RespectAdapter / RespectExecutableValidator) so the default Native path
+    // never loads respect/validation — keeping it a truly optional dependency.
   }
 
   /**

@@ -21,6 +21,9 @@ final class RespectExecutableValidator implements ExecutableValidator {
    * @param array<string, array<string, string>> $inlineMessages Inline errorMessage map per field, keyed by JSON Schema keyword.
    */
   public function __construct(array $schema, ?MessageDict $dict = null, array $inlineMessages = []) {
+    // Ensure Respect's factory (custom rule/exception namespaces) is configured
+    // before any v->assert(); the Native default path never reaches here.
+    RespectAdapter::bootstrap();
     $this->schema         = $schema;
     $this->dict           = $dict;
     $this->inlineMessages = $inlineMessages;

@@ -18,12 +18,12 @@ use SchemableValidator\Validation\Adapters\RespectAdapter;
  */
 final class AdapterDispatchTest extends TestCase {
 
-  // ── default engine unchanged (Respect, coercing) ──
+  // ── default engine is Native (dependency-free, coercing) ──
 
-  public function test_default_adapter_is_respect_and_coerces(): void {
+  public function test_default_adapter_is_native_and_coerces(): void {
     $r = SV::object(['age' => SV::integer()])->toValidator()
       ->validate(['age' => '42'])->getResult();
-    $this->assertTrue($r['age']['is_valid']); // Coercion Contract v1
+    $this->assertTrue($r['age']['is_valid']); // Coercion Contract v1, no Respect needed
   }
 
   // ── engine is actually swapped ──

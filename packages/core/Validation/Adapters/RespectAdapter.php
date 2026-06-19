@@ -30,6 +30,26 @@ use SchemableValidator\Validation\RespectExecutableValidator;
  *   moved from Validator::extractRuleMessages().
  */
 final class RespectAdapter implements BackendAdapter {
+  /** @var bool Whether Respect's factory has been configured this process. */
+  private static $factoryReady = false;
+
+  /**
+   * Configure Respect's factory (custom rule/exception namespaces) once, lazily.
+   * Called by the Respect-backed build/execute paths only, so the default Native
+   * path never loads respect/validation (it stays an optional dependency).
+   */
+  public static function bootstrap(): void {
+    if (self::$factoryReady) {
+      return;
+    }
+    \Respect\Validation\Factory::setDefaultInstance(
+      (new \Respect\Validation\Factory())
+        ->withRuleNamespace('SchemableValidator\\Rules')
+        ->withExceptionNamespace('SchemableValidator\\Exceptions')
+    );
+    self::$factoryReady = true;
+  }
+
   public function compile(array $jsonSchema, ?MessageDict $dict = null): ExecutableValidator {
     $required       = $jsonSchema['required'] ?? [];
     $schema         = [];
@@ -80,6 +100,7 @@ final class RespectAdapter implements BackendAdapter {
 
   /** Dispatch a single {rule, args} descriptor to its Respect validator. */
   public static function compileDescriptor(string $rule, array $args): v {
+    self::bootstrap();
     switch ($rule) {
       case 'string':
         return v::stringType();
