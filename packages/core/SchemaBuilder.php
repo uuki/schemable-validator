@@ -116,11 +116,19 @@ final class SchemaBuilder implements SchemaProviderInterface {
     return new Validator([], $options, $conditionals, $this->messageDict, $adapter, $transforms, [], $jsonSchema, $fileConfigs, $fileDriver, $customFields);
   }
 
+  /** URI of the schemable meta-schema extending draft 2020-12 with x-* keywords. */
+  public const META_SCHEMA_URI = 'https://schemable-validator.dev/schema/2026-06/schemable.json';
+
   /**
    * Export the schema as a JSON Schema (draft 2020-12) array.
    * Fields where isMappable() === false are excluded and listed in x-unmapped-fields.
+   *
+   * @param array{metaSchema?: bool} $options
+   *   metaSchema: when true, $schema points to the schemable meta-schema URI
+   *     (IDE completion + no unknown-property warnings for x-*). Default false
+   *     (standard draft 2020-12 URI).
    */
-  public function toJsonSchema(): array {
+  public function toJsonSchema(array $options = []): array {
     $properties = [];
     $required   = [];
     $unmapped   = [];
@@ -136,8 +144,9 @@ final class SchemaBuilder implements SchemaProviderInterface {
       }
     }
 
+    $metaSchema = !empty($options['metaSchema']);
     $schema = [
-      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      '$schema'    => $metaSchema ? self::META_SCHEMA_URI : 'https://json-schema.org/draft/2020-12/schema',
       'type'       => 'object',
       'properties' => $properties,
     ];

@@ -280,6 +280,34 @@ class SchemaBuilderTest extends TestCase {
     $this->assertSame(['file'], $js['x-unmapped-fields']);
   }
 
+  // ── meta-schema ──────────────────────────────────────────────
+
+  public function test_toJsonSchema_default_uses_draft_2020_12(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema();
+    $this->assertSame('https://json-schema.org/draft/2020-12/schema', $js['$schema']);
+  }
+
+  public function test_toJsonSchema_metaSchema_option_uses_schemable_uri(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema(['metaSchema' => true]);
+    $this->assertSame(SchemaBuilder::META_SCHEMA_URI, $js['$schema']);
+  }
+
+  public function test_meta_schema_json_is_valid(): void {
+    $path = dirname(__DIR__, 2) . '/Schema/meta-schema.json';
+    $this->assertFileExists($path);
+    $json = json_decode((string) file_get_contents($path), true);
+    $this->assertIsArray($json);
+    $this->assertArrayHasKey('$id', $json);
+    $this->assertSame(SchemaBuilder::META_SCHEMA_URI, $json['$id']);
+    // Has all x-* keywords defined
+    $this->assertArrayHasKey('x-when', $json['properties']);
+    $this->assertArrayHasKey('x-custom-fields', $json['properties']);
+    $this->assertArrayHasKey('x-unmapped-fields', $json['properties']);
+    // Has $defs for property-level extensions
+    $this->assertArrayHasKey('transformCatalog', $json['$defs']);
+    $this->assertArrayHasKey('errorMessageMap', $json['$defs']);
+  }
+
   public function test_schemaBuilder_toJson_produces_valid_json(): void {
     $sb = SV::object(['name' => SV::string()->min(2)]);
     $json = $sb->toJson();
