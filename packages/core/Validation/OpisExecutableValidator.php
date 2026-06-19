@@ -32,6 +32,8 @@ final class OpisExecutableValidator implements ExecutableValidator {
   /** @var array<string, array<string, string>> field => (JSON Schema keyword => message template) */
   private array $inlineMessages;
 
+  private ?MessageDict $dict;
+
   private OpisValidator $validator;
 
   /**
@@ -39,7 +41,7 @@ final class OpisExecutableValidator implements ExecutableValidator {
    * @param string[] $required
    * @param array<string, array<string, string>> $inlineMessages
    */
-  public function __construct(array $properties, array $required, array $inlineMessages = []) {
+  public function __construct(array $properties, array $required, array $inlineMessages = [], ?MessageDict $dict = null) {
     // opis/json-schema is an optional dependency (see composer.json "suggest").
     // The Respect and Native adapters cover the default and dependency-free
     // paths; fail with an actionable message if this adapter is used without it.
@@ -53,6 +55,7 @@ final class OpisExecutableValidator implements ExecutableValidator {
     $this->properties     = $properties;
     $this->required       = $required;
     $this->inlineMessages = $inlineMessages;
+    $this->dict           = $dict;
     $this->validator      = new OpisValidator();
   }
 
@@ -64,10 +67,20 @@ final class OpisExecutableValidator implements ExecutableValidator {
       $required = in_array($field, $this->required, true);
 
       if (in_array($value, [null, ''], true)) {
+        $errors = null;
+        if ($required) {
+          $template = DefaultMessages::template('required');
+          if (isset($this->inlineMessages[$field]['required'])) {
+            $template = $this->inlineMessages[$field]['required'];
+          }
+          $errors = $this->dict !== null
+            ? $this->dict->resolve($field, 'required', $template, [])
+            : $template;
+        }
         $result[$field] = [
           'value'    => $value,
           'is_valid' => !$required,
-          'errors'   => $required ? DefaultMessages::template('required') : null,
+          'errors'   => $errors,
         ];
         continue;
       }
@@ -88,8 +101,9 @@ final class OpisExecutableValidator implements ExecutableValidator {
   }
 
   /**
-   * Resolution order: inline errorMessage(keyword) > canonical catalog(neutral ruleId)
-   * > opis's own message (last resort). {var} placeholders interpolated throughout.
+   * Resolution order: MessageDict(neutral ruleId) > inline errorMessage(keyword)
+   * > canonical catalog(neutral ruleId) > opis's own message (last resort).
+   * {var} placeholders interpolated throughout.
    *
    * @param array<string, mixed> $propSchema
    */
@@ -102,7 +116,9 @@ final class OpisExecutableValidator implements ExecutableValidator {
       $template = $this->inlineMessages[$field][$keyword];
     }
 
-    return MessageDict::interpolate($template, $vars);
+    return $this->dict !== null
+      ? $this->dict->resolve($field, $neutral ?? ($keyword ?? ''), $template, $vars)
+      : MessageDict::interpolate($template, $vars);
   }
 
   /**

@@ -2,6 +2,7 @@
 
 namespace SchemableValidator\Validation\Adapters;
 
+use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\ExecutableValidator;
 use SchemableValidator\Validation\OpisExecutableValidator;
@@ -16,7 +17,7 @@ use SchemableValidator\Validation\OpisExecutableValidator;
  * — see OpisExecutableValidator.
  */
 final class OpisAdapter implements BackendAdapter {
-  public function compile(array $jsonSchema): ExecutableValidator {
+  public function compile(array $jsonSchema, ?MessageDict $dict = null): ExecutableValidator {
     $properties     = $jsonSchema['properties'] ?? [];
     $required       = $jsonSchema['required'] ?? [];
     $inlineMessages = [];
@@ -27,6 +28,6 @@ final class OpisAdapter implements BackendAdapter {
       }
     }
 
-    return new OpisExecutableValidator($properties, $required, $inlineMessages);
+    return new OpisExecutableValidator($properties, $required, $inlineMessages, $dict);
   }
 }

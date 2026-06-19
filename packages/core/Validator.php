@@ -29,8 +29,22 @@ use SchemableValidator\Validation\RespectExecutableValidator;
  */
 final class Validator {
 
-  /** @var array<string, v> */
+  /**
+   * Respect validator instances executed directly. In legacy mode (constructed
+   * with raw `v` objects) this is the full field set. In IR mode (built via
+   * SchemaBuilder/fromJsonSchema) this holds ONLY the UnmappableField escape
+   * hatches (FileSchema/RawRespectSchema) — mappable fields go through $adapter.
+   * @var array<string, v>
+   */
   private array $schema;
+
+  /**
+   * Mappable-field JSON Schema (IR). When non-null, validate() dispatches
+   * field validation through $adapter->compile($jsonSchema); when null, the
+   * legacy RespectExecutableValidator path over $schema is used.
+   * @var array<string, mixed>|null
+   */
+  private ?array $jsonSchema;
 
   /** @var array<array{condition: array, require: string[]}> */
   private array $conditionals;
@@ -56,8 +70,9 @@ final class Validator {
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = []) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null) {
     $this->schema = $schema;
+    $this->jsonSchema = $jsonSchema;
     $this->conditionals = $conditionals;
     $this->transforms = $transforms;
     $this->inlineMessages = $inlineMessages;
@@ -95,19 +110,11 @@ final class Validator {
    * @param array<array{condition: array, require: string[]}> $conditionals
    */
   public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
-    $required       = $jsonSchema['required'] ?? [];
-    $schema         = [];
-    $transforms     = [];
-    $inlineMessages = [];
+    $transforms = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
-      $chain         = RespectAdapter::compileProperty($prop);
-      $schema[$name] = in_array($name, $required, true) ? $chain : v::optional($chain);
       if (!empty($prop['x-transform'])) {
         $transforms[$name] = $prop['x-transform'];
-      }
-      if (!empty($prop['errorMessage'])) {
-        $inlineMessages[$name] = $prop['errorMessage'];
       }
     }
 
@@ -117,7 +124,9 @@ final class Validator {
       $conditionals = array_merge($xWhen, $conditionals);
     }
 
-    return new self($schema, $options, $conditionals, $dict, $adapter, $transforms, $inlineMessages);
+    // IR mode: field validation is dispatched through $adapter->compile($jsonSchema).
+    // Raw JSON Schema input has no UnmappableField escape hatches, so $schema is empty.
+    return new self([], $options, $conditionals, $dict, $adapter, $transforms, [], $jsonSchema);
   }
 
   /**
@@ -139,9 +148,24 @@ final class Validator {
       }
     }
 
-    $executable = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
-    foreach ($executable->validate($data) as $name => $fieldState) {
-      $this->state['result'][$name] = $fieldState;
+    // IR mode (SchemaBuilder / fromJsonSchema): dispatch mappable fields through
+    // the BackendAdapter, then run any UnmappableField escape hatches (file/raw)
+    // via Respect directly. Legacy mode (raw `v` schema): run everything via Respect.
+    if ($this->jsonSchema !== null) {
+      foreach ($this->adapter->compile($this->jsonSchema, $this->dict)->validate($data) as $name => $fieldState) {
+        $this->state['result'][$name] = $fieldState;
+      }
+      if (!empty($this->schema)) {
+        $escapeHatch = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
+        foreach ($escapeHatch->validate($data) as $name => $fieldState) {
+          $this->state['result'][$name] = $fieldState;
+        }
+      }
+    } else {
+      $executable = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
+      foreach ($executable->validate($data) as $name => $fieldState) {
+        $this->state['result'][$name] = $fieldState;
+      }
     }
 
     // Apply conditional requirements (JSONLogic format)

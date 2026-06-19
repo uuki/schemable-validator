@@ -10,6 +10,7 @@ use SchemableValidator\Rules\FileExtension;
 use SchemableValidator\Rules\IntegerCoercion;
 use SchemableValidator\Rules\NumberCoercion;
 use SchemableValidator\Rules\TimeFormat;
+use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\MappableField;
 use SchemableValidator\Schema\UnmappableField;
@@ -29,7 +30,7 @@ use SchemableValidator\Validation\RespectExecutableValidator;
  *   moved from Validator::extractRuleMessages().
  */
 final class RespectAdapter implements BackendAdapter {
-  public function compile(array $jsonSchema): ExecutableValidator {
+  public function compile(array $jsonSchema, ?MessageDict $dict = null): ExecutableValidator {
     $required       = $jsonSchema['required'] ?? [];
     $schema         = [];
     $inlineMessages = [];
@@ -42,7 +43,7 @@ final class RespectAdapter implements BackendAdapter {
       }
     }
 
-    return new RespectExecutableValidator($schema, null, $inlineMessages);
+    return new RespectExecutableValidator($schema, $dict, $inlineMessages);
   }
 
   /**

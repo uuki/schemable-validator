@@ -2,6 +2,7 @@
 
 namespace SchemableValidator\Validation\Adapters;
 
+use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\ExecutableValidator;
 use SchemableValidator\Validation\NativeExecutableValidator;
@@ -16,7 +17,7 @@ use SchemableValidator\Validation\NativeExecutableValidator;
  * matching the FE-authored `expected` blocks.
  */
 final class NativeAdapter implements BackendAdapter {
-  public function compile(array $jsonSchema): ExecutableValidator {
+  public function compile(array $jsonSchema, ?MessageDict $dict = null): ExecutableValidator {
     $properties     = $jsonSchema['properties'] ?? [];
     $required       = $jsonSchema['required'] ?? [];
     $inlineMessages = [];
@@ -27,6 +28,6 @@ final class NativeAdapter implements BackendAdapter {
       }
     }
 
-    return new NativeExecutableValidator($properties, $required, $inlineMessages);
+    return new NativeExecutableValidator($properties, $required, $inlineMessages, $dict);
   }
 }

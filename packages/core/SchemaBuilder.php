@@ -8,6 +8,7 @@ use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\WhenExpr;
+use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 
@@ -84,25 +85,31 @@ final class SchemaBuilder implements SchemaProviderInterface {
   }
 
   /** Build a Validator from the schema, passing through optional Validator options. */
-  public function toValidator(array $options = []): Validator {
-    $schema         = [];
+  public function toValidator(array $options = [], ?BackendAdapter $adapter = null): Validator {
+    // Mappable fields are validated through the BackendAdapter via the JSON
+    // Schema IR (engine-swappable). UnmappableField escape hatches (file/raw)
+    // have no JSON Schema form, so they keep running on Respect `v` objects.
+    $jsonSchema     = $this->toJsonSchema();
+    $unmappable     = [];
     $transforms     = [];
     $inlineMessages = [];
     foreach ($this->fields as $name => $field) {
-      $respect = RespectAdapter::compileField($field);
-      // Optional fields: null or '' should always pass; non-empty values are validated normally.
-      $schema[$name] = $field->isRequired() ? $respect : v::optional($respect);
+      if (!$field->isMappable()) {
+        $respect          = RespectAdapter::compileField($field);
+        $unmappable[$name] = $field->isRequired() ? $respect : v::optional($respect);
+        $fieldMessages    = $field->getErrorMessages();
+        if (!empty($fieldMessages)) {
+          $inlineMessages[$name] = $fieldMessages;
+        }
+        continue;
+      }
       $fieldTransforms = $field->getTransforms();
       if (!empty($fieldTransforms)) {
         $transforms[$name] = $fieldTransforms;
       }
-      $fieldMessages = $field->getErrorMessages();
-      if (!empty($fieldMessages)) {
-        $inlineMessages[$name] = $fieldMessages;
-      }
     }
     $conditionals = $this->conditionals;
-    return new Validator($schema, $options, $conditionals, $this->messageDict, null, $transforms, $inlineMessages);
+    return new Validator($unmappable, $options, $conditionals, $this->messageDict, $adapter, $transforms, $inlineMessages, $jsonSchema);
   }
 
   /**

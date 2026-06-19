@@ -35,15 +35,18 @@ final class NativeExecutableValidator implements ExecutableValidator {
   /** @var array<string, array<string, string>> field => (JSON Schema keyword => template) */
   private array $inlineMessages;
 
+  private ?MessageDict $dict;
+
   /**
    * @param array<string, array<string, mixed>> $properties
    * @param string[] $required
    * @param array<string, array<string, string>> $inlineMessages
    */
-  public function __construct(array $properties, array $required, array $inlineMessages = []) {
+  public function __construct(array $properties, array $required, array $inlineMessages = [], ?MessageDict $dict = null) {
     $this->properties     = $properties;
     $this->required       = $required;
     $this->inlineMessages = $inlineMessages;
+    $this->dict           = $dict;
   }
 
   public function validate(array $data): array {
@@ -84,7 +87,7 @@ final class NativeExecutableValidator implements ExecutableValidator {
   private function validateScalar(string $value, array $prop, bool $required, string $field): array {
     $isEmpty = $value === '';
     if ($required && $isEmpty) {
-      return [false, [DefaultMessages::template('required')]];
+      return [false, [$this->message($field, 'required', 'required', [])]];
     }
     if ($isEmpty) {
       return [true, []]; // optional + empty → always valid
@@ -101,7 +104,7 @@ final class NativeExecutableValidator implements ExecutableValidator {
    */
   private function validateArray(array $values, array $prop, bool $required, string $field): array {
     if ($required && count($values) === 0) {
-      return [false, [DefaultMessages::template('required')]];
+      return [false, [$this->message($field, 'required', 'required', [])]];
     }
     if (count($values) === 0) {
       return [true, []];
@@ -200,11 +203,15 @@ final class NativeExecutableValidator implements ExecutableValidator {
    * @param array<string, int|float|string> $vars
    */
   private function message(string $field, string $keyword, string $neutralRuleId, array $vars): string {
-    if (isset($this->inlineMessages[$field][$keyword])) {
-      return MessageDict::interpolate($this->inlineMessages[$field][$keyword], $vars);
-    }
+    // Resolution order: MessageDict(neutral) > inline errorMessage(keyword)
+    // > canonical catalog(neutral) > generic fallback.
     $template = DefaultMessages::template($neutralRuleId) ?? "must be a valid {$neutralRuleId}";
-    return MessageDict::interpolate($template, $vars);
+    if (isset($this->inlineMessages[$field][$keyword])) {
+      $template = $this->inlineMessages[$field][$keyword];
+    }
+    return $this->dict !== null
+      ? $this->dict->resolve($field, $neutralRuleId, $template, $vars)
+      : MessageDict::interpolate($template, $vars);
   }
 
   /**
