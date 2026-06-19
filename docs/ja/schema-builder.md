@@ -5,8 +5,6 @@
 - **サーバーサイド** — `toValidator()` で `Validator` に変換して検証（デフォルトは NativeAdapter、依存なし）。
 - **クライアントサイド** — `toJson()` / `toJsonSchema()` で標準 JSON Schema (draft 2020-12) にエクスポートし、Zod・Valibot・AJV などの JS バリデーターで利用。
 
-### 主な機能
-
 | 機能 | 説明 |
 |---|---|
 | フルエント API | `SV::string()->email()->min(3)->max(100)` |
@@ -16,7 +14,7 @@
 | WordPress REST | `schv_register_schema('/contact', $schema)` — スキーマを GET エンドポイントとして公開 |
 | 変換不可フィールド | `SV::file()` / `SV::respect()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
 
-### 最小構成の例
+## クイックスタート
 
 ```php
 use SchemableValidator\SV;
@@ -188,16 +186,17 @@ $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 ```php
 $schema->toValidator(
   array $options = [],
-  ?BackendAdapter $adapter = null,
-  ?FileValidationDriver $fileDriver = null
+  array $config  = []
 ): Validator
 ```
 
 | パラメータ | 型 | 説明 |
 |:--|:--|:--|
-| `$options` | `array` | Validator のオプション（reCAPTCHA 設定など） |
-| `$adapter` | `?BackendAdapter` | バリデーション用バックエンドアダプター。`null` = NativeAdapter（デフォルト、依存なし） |
-| `$fileDriver` | `?FileValidationDriver` | ファイルバリデーション用ドライバー。`null` = デフォルトドライバー |
+| `$options` | `array` | レガシー `validateReCaptcha()` 用ランタイムオプション（`recaptcha_secret`、`recaptcha_valid_score`、`recaptcha_provider`） |
+| `$config['adapter']` | `BackendAdapter` | バリデーションエンジン。デフォルト: `NativeAdapter`（依存なし） |
+| `$config['fileDriver']` | `FileValidationDriver` | ファイル検証ドライバー。デフォルト: `NativeFileValidator` |
+| `$config['imageDriver']` | `ImageDriver` | 画像制約ドライバー。デフォルト: `null`（画像制約をスキップ） |
+| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA 検証ドライバー。デフォルト: `null`（レガシー `validateReCaptcha()` を使用） |
 
 ### `toJsonSchema()` のオプション
 

@@ -10,8 +10,10 @@ use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\FileSchema;
 use SchemableValidator\Schema\WhenExpr;
 use SchemableValidator\Validation\BackendAdapter;
+use SchemableValidator\Validation\CaptchaDriver;
 use SchemableValidator\Validation\CustomField;
 use SchemableValidator\Validation\FileValidationDriver;
+use SchemableValidator\Validation\ImageDriver;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 
@@ -87,11 +89,22 @@ final class SchemaBuilder implements SchemaProviderInterface {
     return $this;
   }
 
-  /** Build a Validator from the schema, passing through optional Validator options. */
-  public function toValidator(array $options = [], ?BackendAdapter $adapter = null, ?FileValidationDriver $fileDriver = null): Validator {
-    // Mappable fields are validated through the BackendAdapter via the JSON
-    // Schema IR (engine-swappable). UnmappableField escape hatches (file/raw)
-    // have no JSON Schema form, so they keep running on Respect `v` objects.
+  /**
+   * Build a Validator from the schema.
+   *
+   * @param array $options  Runtime options (e.g. recaptcha_secret, recaptcha_valid_score).
+   * @param array $config   Engine config:
+   *                        'adapter'       => BackendAdapter      (default: NativeAdapter)
+   *                        'fileDriver'    => FileValidationDriver (default: NativeFileValidator)
+   *                        'imageDriver'   => ImageDriver          (default: null — skips image checks)
+   *                        'captchaDriver' => CaptchaDriver        (default: null — use validateReCaptcha())
+   */
+  public function toValidator(array $options = [], array $config = []): Validator {
+    $adapter       = $config['adapter']       ?? null;
+    $fileDriver    = $config['fileDriver']    ?? null;
+    $imageDriver   = $config['imageDriver']   ?? null;
+    $captchaDriver = $config['captchaDriver'] ?? null;
+
     $jsonSchema     = $this->toJsonSchema();
     $customFields   = [];
     $transforms     = [];
@@ -100,6 +113,10 @@ final class SchemaBuilder implements SchemaProviderInterface {
       // File fields → dependency-free FileValidationDriver (handled by validateFiles()).
       if ($field instanceof FileSchema) {
         $fileConfigs[$name] = ['accept' => $field->getAccept()];
+        $imageConstraints = $field->getImageConstraints();
+        if (!empty($imageConstraints)) {
+          $fileConfigs[$name]['image'] = $imageConstraints;
+        }
         continue;
       }
       // (B) escape hatches → engine-agnostic CustomField::evaluate().
@@ -113,7 +130,7 @@ final class SchemaBuilder implements SchemaProviderInterface {
       }
     }
     $conditionals = $this->conditionals;
-    return new Validator([], $options, $conditionals, $this->messageDict, $adapter, $transforms, [], $jsonSchema, $fileConfigs, $fileDriver, $customFields);
+    return new Validator([], $options, $conditionals, $this->messageDict, $adapter, $transforms, [], $jsonSchema, $fileConfigs, $fileDriver, $customFields, $imageDriver, $captchaDriver);
   }
 
   /** URI of the schemable meta-schema extending draft 2020-12 with x-* keywords. */

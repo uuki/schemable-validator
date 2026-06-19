@@ -1,5 +1,8 @@
 # Installation
 
+Schemable Validator ships as three independent packages — a PHP core library, a WordPress plugin, and a TypeScript client.
+Install only the packages you need.
+
 ## Requirements
 
 | | Version | Purpose |
@@ -8,15 +11,13 @@
 | WordPress | 5.9+ | WP plugin only |
 | Node.js | >=22.12.0 | `@uuki/schemable-validator-client` only |
 
-## Installation
-
-### PHP library
+## PHP library
 
 ```shell
 composer require uuki/schemable-validator
 ```
 
-### Plugin pattern - WordPress
+## WordPress plugin
 
 Clone the repository, place it in your plugins directory, and install the dependencies.
 
@@ -34,9 +35,9 @@ composer install --no-dev
 
 Activate **Schemable Validator** from the plugin list in the WordPress admin dashboard.
 
-## Key features
+## What's included
 
-### PHP library - Core classes
+### Core classes
 
 After installing via `composer require`, the classes under the `SchemableValidator\` namespace become available.
 
@@ -51,11 +52,13 @@ After installing via `composer require`, the classes under the `SchemableValidat
 | `Rules\FileExtension` | Custom rule that validates a file's MIME type (legacy; Respect/Validation dependency) |
 | `NativeFileValidator` | Dependency-free file validation via `FileValidationDriver` (default) |
 
-> **Note:** File validation now primarily uses `NativeFileValidator` via `FileValidationDriver` (dependency-free). `Rules\FileExtension` is a legacy adapter that requires Respect/Validation.
+::: info
+File validation uses `NativeFileValidator` via `FileValidationDriver` by default (no external dependencies). `Rules\FileExtension` is a legacy adapter that requires Respect/Validation.
+:::
 
 See [Feature Guide](/feature-guide) and [SchemaBuilder](/schema-builder) for details.
 
-### WordPress - Global functions
+### WordPress helper functions
 
 Once the plugin is activated, the following `schv_*` functions become available globally.
 
@@ -70,7 +73,7 @@ Once the plugin is activated, the following `schv_*` functions become available 
 
 See [Feature Guide](/feature-guide) and [Interfaces](/interfaces) for details.
 
-## Package structure
+## Package layout
 
 ```
 packages/
@@ -118,4 +121,6 @@ packages/
     examples/                    # Sample shortcodes (for local development)
 ```
 
-> **Note:** `respect/validation` and `opis/json-schema` are optional (`suggest`) dependencies. The default engine (`NativeAdapter`) works without any external validation library.
+::: info
+`respect/validation` and `opis/json-schema` are optional (`suggest`) dependencies. The default engine (`NativeAdapter`) works without any external validation library.
+:::

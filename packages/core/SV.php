@@ -42,8 +42,13 @@ final class SV {
     return new EnumSchema($values);
   }
 
-  public static function file(array $accept = []): FileSchema {
-    return new FileSchema($accept);
+  /**
+   * @param string[] $accept           Allowed MIME types (empty = any).
+   * @param array<string, int> $imageConstraints  Optional image constraints for ImageDriver:
+   *                                   maxWidth, maxHeight, minWidth, minHeight (px), maxSize (bytes).
+   */
+  public static function file(array $accept = [], array $imageConstraints = []): FileSchema {
+    return new FileSchema($accept, $imageConstraints);
   }
 
   /** Array field: validates each element with the given item schema. */

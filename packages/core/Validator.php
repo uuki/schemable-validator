@@ -18,7 +18,9 @@ use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Validation\Adapters\NativeAdapter;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
+use SchemableValidator\Validation\CaptchaDriver;
 use SchemableValidator\Validation\FileValidationDriver;
+use SchemableValidator\Validation\ImageDriver;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\NativeFileValidator;
 use SchemableValidator\Validation\Transform;
@@ -84,12 +86,18 @@ final class Validator {
 
   private FileValidationDriver $fileDriver;
 
+  /** @var ImageDriver|null Null = image constraints are skipped. */
+  private ?ImageDriver $imageDriver;
+
+  /** @var CaptchaDriver|null Null = use legacy validateReCaptcha() path. */
+  private ?CaptchaDriver $captchaDriver;
+
   /**
    * Validator constructor.
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null, array $fileConfigs = [], ?FileValidationDriver $fileDriver = null, array $customFields = []) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null, array $fileConfigs = [], ?FileValidationDriver $fileDriver = null, array $customFields = [], ?ImageDriver $imageDriver = null, ?CaptchaDriver $captchaDriver = null) {
     $this->schema = $schema;
     $this->jsonSchema = $jsonSchema;
     $this->customFields = $customFields;
@@ -98,6 +106,8 @@ final class Validator {
     $this->inlineMessages = $inlineMessages;
     $this->fileConfigs = $fileConfigs;
     $this->fileDriver = $fileDriver ?? new NativeFileValidator();
+    $this->imageDriver   = $imageDriver;
+    $this->captchaDriver = $captchaDriver;
     $this->dict = $dict;
     // Default engine is the dependency-free NativeAdapter, so respect/validation
     // is optional (composer "suggest"). Pass a RespectAdapter explicitly (or use
@@ -109,9 +119,10 @@ final class Validator {
       'recaptcha_valid_score' => 0.5,
     ], $options);
     $this->state = [
-      'result' => [],
-      'token' => null,
+      'result'          => [],
+      'token'           => null,
       'recaptcha_token' => null,
+      'captcha_token'   => null,
     ];
 
     // Respect's factory is configured lazily by the Respect-backed paths
@@ -160,8 +171,13 @@ final class Validator {
    * @return static
    */
   public function validate(array $data): self {
-    if (!empty($data['recaptcha_token'])) {
-      $this->state['recaptcha_token'] = $data['recaptcha_token'];
+    // Capture CAPTCHA token from whichever field name the provider uses.
+    foreach (['recaptcha_token', 'g-recaptcha-response', 'h-captcha-response', 'cf-turnstile-response'] as $field) {
+      if (!empty($data[$field])) {
+        $this->state['recaptcha_token'] = $data[$field]; // legacy key, kept for validateReCaptcha()
+        $this->state['captcha_token']   = $data[$field];
+        break;
+      }
     }
 
     // Pre-transform field values before validation.
@@ -239,11 +255,22 @@ final class Validator {
     }
 
     foreach ($normalized_data as $name => $files) {
-      // SV::file() fields → dependency-free FileValidationDriver.
+      // SV::file() fields → dependency-free FileValidationDriver (+ optional ImageDriver).
       if (isset($this->fileConfigs[$name])) {
+        $config = $this->fileConfigs[$name];
         $this->state['result'][$name] = [];
         foreach ($files as $file_data) {
-          $this->state['result'][$name][] = $this->fileDriver->validate($file_data, $this->fileConfigs[$name]);
+          $fileResult = $this->fileDriver->validate($file_data, $config);
+          // Run ImageDriver only when the file passed MIME validation, a driver is
+          // configured, and the field declares image constraints.
+          if ($fileResult['is_valid'] && $this->imageDriver !== null && !empty($config['image'])) {
+            $imgResult = $this->imageDriver->validate($file_data, $config['image']);
+            if (!$imgResult['is_valid']) {
+              $fileResult['is_valid'] = false;
+              $fileResult['errors']   = $imgResult['errors'];
+            }
+          }
+          $this->state['result'][$name][] = $fileResult;
         }
         continue;
       }
@@ -329,6 +356,39 @@ final class Validator {
     }
 
     $this->state['result']['recaptcha'] = $newState;
+
+    return $this;
+  }
+
+  /**
+   * Verify a CAPTCHA token using the injected CaptchaDriver.
+   *
+   * The token is read from the POST field that was captured by validate():
+   * 'recaptcha_token', 'g-recaptcha-response', 'h-captcha-response', or
+   * 'cf-turnstile-response' — whichever was present first.
+   *
+   * The result is written to $result['captcha'].
+   *
+   * @param array<string, mixed> $options Passed through to CaptchaDriver::verify()
+   *                                      (e.g. ['action' => 'contact'] for reCAPTCHA v3).
+   * @return static
+   * @throws \RuntimeException if no CaptchaDriver was configured
+   */
+  public function validateCaptcha(array $options = []): self {
+    if ($this->captchaDriver === null) {
+      throw new \RuntimeException(
+        'A CaptchaDriver must be set via toValidator([...], [\'captchaDriver\' => ...]) before calling validateCaptcha()'
+      );
+    }
+
+    $token = (string) ($this->state['captcha_token'] ?? $this->state['recaptcha_token'] ?? '');
+    $verifyResult = $this->captchaDriver->verify($token, $options);
+
+    $this->state['result']['captcha'] = [
+      'value'    => $verifyResult['score'],
+      'is_valid' => $verifyResult['is_valid'],
+      'errors'   => $verifyResult['errors'],
+    ];
 
     return $this;
   }

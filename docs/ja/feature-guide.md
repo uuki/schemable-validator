@@ -1,5 +1,8 @@
 # 機能ガイド
 
+このページでは `Validator` クラス、エラーメッセージ、セキュリティ（CSRF、reCAPTCHA）、セッション管理、`Template` ヘルパーについて説明します。
+スキーマ定義 API は [SchemaBuilder](./schema-builder.md)、ローカライズは [MessageDict](./message-dict.md) を参照してください。
+
 ## Validator
 
 フィールドスキーマに対して入力値を検証する中核クラスです。テキスト・ファイル・reCAPTCHA の検証をメソッドチェーンで組み合わせられます。
@@ -156,7 +159,7 @@ $schema = SV::object([
 $result = $validator
   ->validate($_POST)
   ->validateFiles($_FILES)
-  ->validateReCaptcha()
+  ->validateCaptcha()
   ->getResult();
 ```
 
@@ -164,82 +167,27 @@ $result = $validator
 
 ## SchemaBuilder
 
-`SV::object()` を起点とする宣言的なスキーマ定義 API です。同一の定義から **JSON Schema (draft 2020-12) への出力** と **Validator インスタンスの生成** の両方を行えます。Validator を直接定義する場合と異なり、クライアントサイドのバリデーションライブラリや OpenAPI ツールとの連携が可能になります。
-
-### フィールド定義
-
-`SV::object()` にフィールド名とフィールドスキーマの連想配列を渡して定義します。
+`SchemaBuilder` はスキーマ定義の推奨方法です。
+同一の定義から、サーバーサイドの `Validator`（`toValidator()` 経由）とフロントエンド向け JSON Schema（`toJson()` 経由）の両方を生成できます。
 
 ```php
 use SchemableValidator\SV;
 
 $schema = SV::object([
-  'name'    => SV::string()->min(2)->max(50),
-  'email'   => SV::string()->email(),
-  'tel'     => SV::string()->pattern('^0\d{9,10}$')->optional(),
-  'type'    => SV::enum(['general', 'support', 'other']),
-  'age'     => SV::integer()->min(0)->max(150)->optional(),
-  'website' => SV::string()->url()->nullable()->optional(),
-  'avatar'  => SV::file(['image/jpeg', 'image/png'])->optional(),
+  'name'  => SV::string()->min(2)->max(50),
+  'email' => SV::string()->email(),
+  'type'  => SV::enum(['general', 'support', 'other']),
 ]);
-```
 
-主なフィールド型:
+// サーバーサイド検証
+$result = $schema->toValidator()->validate($_POST)->validateFiles($_FILES)->getResult();
 
-| メソッド | JSON Schema `type` | 主な制約メソッド |
-|:--|:--|:--|
-| `SV::string()` | `"string"` | `.min()` `.max()` `.email()` `.url()` `.pattern()` |
-| `SV::integer()` | `"integer"` | `.min()` `.max()` |
-| `SV::number()` | `"number"` | `.min()` `.max()` |
-| `SV::boolean()` | `"boolean"` | - |
-| `SV::enum(['a', 'b'])` | `"string"` + `enum` | - |
-| `SV::file(['image/jpeg'])` | - ※JSON Schema 変換不可 | - |
-| `SV::respect(v::...)` | - ※JSON Schema 変換不可 | - |
-
-修飾子:
-
-| 修飾子 | 効果 |
-|:--|:--|
-| `.optional()` | `required` 配列から除外 |
-| `.nullable()` | `null` を許容する型に拡張 |
-
-### JSON Schema への出力
-
-```php
-echo $schema->toJson();          // JSON 文字列
-$array = $schema->toJsonSchema(); // 配列
-```
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "name":  { "type": "string", "minLength": 2, "maxLength": 50 },
-    "email": { "type": "string", "format": "email" },
-    "type":  { "type": "string", "enum": ["general", "support", "other"] }
-  },
-  "required": ["name", "email", "type"]
-}
-```
-
-::: info フロントエンドとのルール共有
-フロントエンドとバリデーションルールを共有したい場合は SchemaBuilder を使います。`toJson()` で出力した JSON Schema を REST API 経由でフロントエンドに渡せば、PHP 側のルール定義を唯一の情報源として管理できます。重複定義や実装の乖離を防げます。
-:::
-
-### Validator への変換
-
-`toValidator()` で `Validator` インスタンスを生成します。`validateFiles()` や `validateReCaptcha()` をそのままチェーンできます。
-
-```php
-$result = $schema->toValidator()
-  ->validate($_POST)
-  ->validateFiles($_FILES)
-  ->getResult();
+// フロントエンド向け JSON Schema エクスポート
+echo $schema->toJson();
 ```
 
 ::: tip
-条件付き必須（`.when()`）・WordPress REST エンドポイント登録（`schv_register_schema()`）など詳細は [SchemaBuilder](/ja/schema-builder) を参照してください。
+フィールド型リファレンス、`.nullable()`、`.optional()`、条件付き必須（`.when()`）、`x-unmapped-fields`、WordPress REST エンドポイント登録については [SchemaBuilder](./schema-builder.md) を参照してください。
 :::
 
 ---
@@ -291,142 +239,29 @@ $schema = SV::object([
 
 ### 多言語化
 
-`MessageDict` を使うと、フィールド×ルール単位でエラーメッセージを辞書的に定義できます。日本語プリセットや WordPress フィルターによるサイト全体への適用もサポートしています。
-
-#### Step 1: 辞書ファイルの用意
-
-`MessageDict` には **ロケールデフォルト** と **フィールド定義** の2種類を渡せます。それぞれ PHP ファイルとして用意しておくと管理しやすくなります。
-
-**ロケールデフォルト** - ルール ID をキーとし、フィールドを問わず共通で使うメッセージを定義します。
-
-```php
-// messages/ja.php — エンジン中立のボキャブラリキーを使用（I18n/DefaultMessages.php 参照）
-return [
-  'string'    => '文字列で入力してください',
-  'minLength' => '最低{min}文字で入力してください',
-  'maxLength' => '最大{max}文字まで入力できます',
-  'email'     => '有効なメールアドレスを入力してください',
-  'required'  => '必須項目です',
-  'integer'   => '整数で入力してください',
-  'number'    => '数値で入力してください',
-  'uri'       => '有効なURLを入力してください',
-  'pattern'   => '入力形式が正しくありません',
-  'enum'      => '選択肢から選んでください',
-];
-```
-
-**フィールド定義** - フィールド名をキーとし、フィールド固有のメッセージを上書きします。3つの書き方があります。
-
-```php
-// messages/fields.php
-return [
-  // パターン1: フィールド全体（どのルールが失敗しても同じメッセージ）
-  'email' => 'メールアドレスを正しく入力してください',
-
-  // パターン2: フィールド×ルール固有（ルールごとに個別指定）
-  'name' => [
-    'length' => '名前は2〜50文字で入力してください',
-  ],
-
-  // パターン3: 複数ルールをまとめて個別指定
-  'body' => [
-    'required' => '本文を入力してください',
-    'pattern'  => '本文は10文字以上で入力してください',
-  ],
-];
-```
-
-::: info 優先順位
-同一フィールド・ルールに複数の定義が存在する場合、以下の順で解決されます。
-
-1. フィールド×ルール固有 - `['name' => ['length' => '...']]`
-2. フィールド全体 - `['email' => '...']`
-3. ロケールデフォルト - `messages/ja.php` の内容
-4. DefaultMessages カタログ（エンジン中立）
-:::
-
-#### Step 2: 読み込み
-
-用意したファイルを `MessageDict` に渡してインスタンスを生成します。
-
-```php
-use SchemableValidator\I18n\MessageDict;
-
-// 組み込みの日本語プリセットをそのまま使う
-$dict = MessageDict::ja();
-
-// カスタム辞書ファイルを使う
-$dict = new MessageDict(
-  require __DIR__ . '/messages/fields.php', // フィールド定義
-  require __DIR__ . '/messages/ja.php'       // ロケールデフォルト
-);
-
-// 日本語プリセット + フィールド定義を組み合わせる
-$dict = MessageDict::ja(
-  require __DIR__ . '/messages/fields.php'
-);
-```
-
-`MessageDict::en()` は DefaultMessages カタログ（エンジン中立）のメッセージをそのまま返します。
-
-#### Step 3: Validator への渡し方
-
-::: code-group
-
-```php [Core]
-use SchemableValidator\Validator;
-use SchemableValidator\I18n\MessageDict;
-
-$dict = MessageDict::ja(require __DIR__ . '/messages/fields.php');
-
-$validator = new Validator($schema, [], [], $dict);
-```
-
-```php [WordPress]
-use SchemableValidator\I18n\MessageDict;
-
-$dict = MessageDict::ja(require __DIR__ . '/messages/fields.php');
-
-$validator = schv_validator($schema, [], $dict);
-```
-
-:::
-
-SchemaBuilder 経由で渡す場合:
+`MessageDict` を使うと、フィールド×ルール単位でエラーメッセージを定義し、日本語プリセットをまとめて適用できます。
 
 ```php
 use SchemableValidator\SV;
 use SchemableValidator\I18n\MessageDict;
 
-$dict = MessageDict::ja(require __DIR__ . '/messages/fields.php');
-
 $result = SV::object([
   'name'  => SV::string()->min(2)->max(50),
   'email' => SV::string()->email(),
-])->withMessages($dict)
-  ->toValidator()
-  ->validate($_POST)
-  ->getResult();
+])->withMessages(MessageDict::ja([
+  'email' => 'メールアドレスが正しくありません',
+]))->toValidator()->validate($_POST)->getResult();
 ```
 
-#### サイト全体のデフォルト（WordPress）
-
-`schv_message_dict` フィルターで辞書を上書きすると、`schv_validator()` 呼び出し時に自動で適用されます。
-
-```php
-add_filter('schv_message_dict', function (MessageDict $dict): MessageDict {
-  return $dict->merge(require __DIR__ . '/messages/fields.php');
-});
-
-// $dict を省略すると schv_message_dict フィルターの結果が自動適用される
-$validator = schv_validator($schema);
-```
+::: tip
+ロケールプリセット、ルール単位キー、プレースホルダー補間（`{min}`、`{max}`）、解決優先順位、WordPress フィルター、Respect ルール ID からの移行については [MessageDict](./message-dict.md) を参照してください。
+:::
 
 ---
 
 ## セキュリティ
 
-フォームのセキュリティに関わる機能とベストプラクティスを説明します。
+CSRF トークン管理、CAPTCHA 検証、フォームセキュリティのベストプラクティスをまとめます。
 
 ### CSRF トークン
 
@@ -446,12 +281,61 @@ $is_valid = $validator->checkToken($_POST['schv_csrf_token'] ?? '');
 <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
 ```
 
+### CAPTCHA
+
+`toValidator()` に `CaptchaDriver` を注入し、`validateCaptcha()` を呼び出します。
+組み込みの実装として `ReCaptchaV3Driver`、`HCaptchaDriver`、`TurnstileDriver` の 3 つが提供されています。
+
+```php
+use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
+
+$validator = $schema->toValidator([], [
+  'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
+]);
+
+$result = $validator
+  ->validate($_POST)          // g-recaptcha-response / h-captcha-response / cf-turnstile-response を読み取る
+  ->validateCaptcha([
+    'action' => 'contact',    // action 検証はオプション（reCAPTCHA v3 のみ）
+  ])
+  ->getResult();
+```
+
+結果は `$result['captcha']` に書き込まれます。
+
+```json
+{ "value": 0.9, "is_valid": true, "errors": null }
+```
+
+プロバイダを切り替えるにはドライバを差し替えます。
+
+```php
+use SchemableValidator\Validation\Captcha\HCaptchaDriver;
+use SchemableValidator\Validation\Captcha\TurnstileDriver;
+
+// hCaptcha
+'captchaDriver' => new HCaptchaDriver('YOUR_SECRET')
+
+// Cloudflare Turnstile
+'captchaDriver' => new TurnstileDriver('YOUR_SECRET')
+```
+
+テスト・ローカル開発では `NullCaptchaDriver` を使うとネットワーク通信を一切行いません。
+
+```php
+use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
+
+'captchaDriver' => new NullCaptchaDriver() // 常に通る。false を渡すと常に弾く
+```
+
+セキュリティ特性、スコア閾値、レガシー `validateReCaptcha()` との違いについては [バックエンドアダプタ](./backend-adapters.md#captcha-検証ドライバを注入する) を参照してください。
+
 ### ベストプラクティス
 
 | 項目 | 説明 |
 |:--|:--|
 | CSRF トークンの使用 | すべての POST フォームで `createToken()` / `checkToken()` を有効にする |
-| reCAPTCHA の活用 | 公開フォームには `validateReCaptcha()` を組み合わせてスパムや自動送信を防止する |
+| CAPTCHA の活用 | 公開フォームには `CaptchaDriver` を注入して `validateCaptcha()` を呼び出し、スパムを防止する |
 | 出力のエスケープ | `getResult()` の `value` は `strip_tags` + `htmlspecialchars` 済みだが、HTML に出力する際は改めてエスケープする |
 
 ---
@@ -598,37 +482,3 @@ $all        = $template->getAll();
 `templates` の値は WP オプション名として解釈され、`get_option()` で本文を取得します。テンプレート文字列を直接渡さないでください。
 :::
 
----
-
-## その他機能
-
-### reCAPTCHA v3
-
-フロントエンドから `$_POST['recaptcha_token']` を送信してください。
-
-::: code-group
-
-```php [Core]
-$validator = new Validator($schema, [
-  'recaptcha_secret'      => 'YOUR_SECRET_KEY',
-  'recaptcha_valid_score' => 0.5,
-]);
-```
-
-```php [WordPress]
-$validator = schv_validator($schema, [
-  'recaptcha_secret'      => 'YOUR_SECRET_KEY',
-  'recaptcha_valid_score' => 0.5,
-]);
-```
-
-:::
-
-```php
-$result = $validator
-  ->validate($_POST)
-  ->validateReCaptcha([
-    'action' => 'contact', // オプション: action 名の一致も検証
-  ])
-  ->getResult();
-```

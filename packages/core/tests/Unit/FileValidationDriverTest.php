@@ -75,7 +75,7 @@ final class FileValidationDriverTest extends TestCase {
     $sb    = SV::object(['doc' => SV::file(['application/pdf'])]);
     $files = ['doc' => ['name' => 'd.pdf', 'type' => 'application/pdf', 'tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 1]];
 
-    $result = $sb->toValidator([], null, $alwaysFail)->validateFiles($files)->getResult();
+    $result = $sb->toValidator([], ['fileDriver' => $alwaysFail])->validateFiles($files)->getResult();
 
     $this->assertFalse($result['doc'][0]['is_valid']);
     $this->assertSame('rejected by custom driver', $result['doc'][0]['errors']);

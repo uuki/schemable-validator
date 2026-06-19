@@ -1,6 +1,9 @@
-# MessageDict - Multilingual Error Messages
+# MessageDict
 
-`MessageDict` is a value object that lets you define validation error messages as a dictionary, keyed by field and **neutral rule id**.
+`MessageDict` defines validation error messages as a dictionary keyed by field name and **neutral rule id**.
+Pass it to any `Validator` or `SchemaBuilder` instance to localise error text or override individual field messages.
+
+> **Breaking change (rule-id rekeying).**
 
 > **Breaking change (rule-id rekeying).** Message keys are now an engine-neutral
 > vocabulary (`minLength`, `maxLength`, `minimum`, `maximum`, `email`, `uri`,

@@ -1,4 +1,4 @@
-# Custom Validation - Advanced Usage
+# Custom Validation
 
 ---
 

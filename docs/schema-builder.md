@@ -5,8 +5,6 @@
 - **Server-side** — convert to a `Validator` (NativeAdapter by default, dependency-free) via `toValidator()`.
 - **Client-side** — export to standard JSON Schema (draft 2020-12) via `toJson()` / `toJsonSchema()`, then consume from any JS validator (Zod, Valibot, AJV, …).
 
-### Key features
-
 | Feature | Description |
 |---|---|
 | Fluent builder | `SV::string()->email()->min(3)->max(100)` |
@@ -16,7 +14,7 @@
 | WordPress REST | `schv_register_schema('/contact', $schema)` — exposes schema as a GET endpoint |
 | Unmapped fields | `SV::file()` / `SV::respect()` are tracked in `x-unmapped-fields`, validated server-side only |
 
-### Minimal example
+## Quick start
 
 ```php
 use SchemableValidator\SV;
@@ -188,16 +186,17 @@ $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 ```php
 $schema->toValidator(
   array $options = [],
-  ?BackendAdapter $adapter = null,
-  ?FileValidationDriver $fileDriver = null
+  array $config  = []
 ): Validator
 ```
 
 | Parameter | Type | Description |
 |:--|:--|:--|
-| `$options` | `array` | Validator options (e.g. reCAPTCHA configuration) |
-| `$adapter` | `?BackendAdapter` | Backend adapter for validation. `null` = NativeAdapter (default, dependency-free) |
-| `$fileDriver` | `?FileValidationDriver` | File validation driver. `null` = default driver |
+| `$options` | `array` | Runtime options for the legacy `validateReCaptcha()` path (`recaptcha_secret`, `recaptcha_valid_score`, `recaptcha_provider`) |
+| `$config['adapter']` | `BackendAdapter` | Validation engine. Default: `NativeAdapter` (dependency-free) |
+| `$config['fileDriver']` | `FileValidationDriver` | File validation driver. Default: `NativeFileValidator` |
+| `$config['imageDriver']` | `ImageDriver` | Image constraint driver. Default: `null` (image constraints are skipped) |
+| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA verification driver. Default: `null` (use the legacy `validateReCaptcha()` path) |
 
 ### `toJsonSchema()` options
 

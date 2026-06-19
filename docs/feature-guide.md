@@ -1,8 +1,12 @@
 # Feature Guide
 
+This page covers the primary runtime features: the `Validator` class, error messages, security (CSRF, reCAPTCHA), session management, and the `Template` helper.
+For the schema definition API, see [SchemaBuilder](./schema-builder.md).
+For localisation, see [MessageDict](./message-dict.md).
+
 ## Validator
 
-The core class for validating input values against a field schema. Text, file, and reCAPTCHA validation can be combined via method chaining.
+`Validator` runs field validation against a schema. Text, file, and reCAPTCHA checks can be chained in any combination.
 
 ### 1. Instantiation
 
@@ -156,7 +160,7 @@ Note: `creditCard` and `postalCode` rules are **@deprecated** and have been move
 $result = $validator
   ->validate($_POST)
   ->validateFiles($_FILES)
-  ->validateReCaptcha()
+  ->validateCaptcha()
   ->getResult();
 ```
 
@@ -164,82 +168,27 @@ $result = $validator
 
 ## SchemaBuilder
 
-A declarative schema definition API starting from `SV::object()`. From the same definition, you can both **output JSON Schema (draft 2020-12)** and **generate a Validator instance**. Unlike defining a Validator directly, this enables integration with client-side validation libraries and OpenAPI tools.
-
-### Field Definition
-
-Pass an associative array of field names and field schemas to `SV::object()`.
+`SchemaBuilder` is the recommended way to define a schema.
+The same definition produces both a server-side `Validator` (via `toValidator()`) and a JSON Schema export for any JavaScript client (via `toJson()`).
 
 ```php
 use SchemableValidator\SV;
 
 $schema = SV::object([
-  'name'    => SV::string()->min(2)->max(50),
-  'email'   => SV::string()->email(),
-  'tel'     => SV::string()->pattern('^0\d{9,10}$')->optional(),
-  'type'    => SV::enum(['general', 'support', 'other']),
-  'age'     => SV::integer()->min(0)->max(150)->optional(),
-  'website' => SV::string()->url()->nullable()->optional(),
-  'avatar'  => SV::file(['image/jpeg', 'image/png'])->optional(),
+  'name'  => SV::string()->min(2)->max(50),
+  'email' => SV::string()->email(),
+  'type'  => SV::enum(['general', 'support', 'other']),
 ]);
-```
 
-Main field types:
+// Server-side validation
+$result = $schema->toValidator()->validate($_POST)->validateFiles($_FILES)->getResult();
 
-| Method | JSON Schema `type` | Main constraint methods |
-|:--|:--|:--|
-| `SV::string()` | `"string"` | `.min()` `.max()` `.email()` `.url()` `.pattern()` |
-| `SV::integer()` | `"integer"` | `.min()` `.max()` |
-| `SV::number()` | `"number"` | `.min()` `.max()` |
-| `SV::boolean()` | `"boolean"` | - |
-| `SV::enum(['a', 'b'])` | `"string"` + `enum` | - |
-| `SV::file(['image/jpeg'])` | - *Cannot be converted to JSON Schema* | - |
-| `SV::respect(v::...)` | - *Cannot be converted to JSON Schema* | - |
-
-Modifiers:
-
-| Modifier | Effect |
-|:--|:--|
-| `.optional()` | Excludes the field from the `required` array |
-| `.nullable()` | Extends the type to allow `null` |
-
-### JSON Schema Output
-
-```php
-echo $schema->toJson();          // JSON string
-$array = $schema->toJsonSchema(); // array
-```
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "name":  { "type": "string", "minLength": 2, "maxLength": 50 },
-    "email": { "type": "string", "format": "email" },
-    "type":  { "type": "string", "enum": ["general", "support", "other"] }
-  },
-  "required": ["name", "email", "type"]
-}
-```
-
-::: info Sharing rules with the frontend
-Use SchemaBuilder when you want to share validation rules with the frontend. By passing the JSON Schema output from `toJson()` to the frontend via a REST API, you can manage the PHP-side rule definitions as the single source of truth, preventing duplicate definitions and implementation drift.
-:::
-
-### Converting to Validator
-
-Generate a `Validator` instance with `toValidator()`. You can chain `validateFiles()` and `validateReCaptcha()` directly onto it.
-
-```php
-$result = $schema->toValidator()
-  ->validate($_POST)
-  ->validateFiles($_FILES)
-  ->getResult();
+// Export to JSON Schema for the frontend
+echo $schema->toJson();
 ```
 
 ::: tip
-For details on conditional required fields (`.when()`) and WordPress REST endpoint registration (`schv_register_schema()`), see [SchemaBuilder](/schema-builder).
+For the full field type reference, `.nullable()`, `.optional()`, conditional required (`.when()`), `x-unmapped-fields`, and WordPress REST endpoint registration, see [SchemaBuilder](./schema-builder.md).
 :::
 
 ---
@@ -291,142 +240,29 @@ Available placeholders depend on the constraint: `{field}`, `{min}`, `{max}`, `{
 
 ### Internationalization
 
-`MessageDict` lets you define error messages as a dictionary on a per-field, per-rule basis. It also supports a Japanese preset and site-wide application via WordPress filters.
-
-#### Step 1: Prepare dictionary files
-
-`MessageDict` accepts two kinds of input: **locale defaults** and **field definitions**. Keeping each as a separate PHP file makes them easier to manage.
-
-**Locale defaults** — keyed by rule ID, defines messages shared across all fields regardless of which field they apply to.
-
-```php
-// messages/ja.php — keyed by engine-neutral vocabulary (see I18n/DefaultMessages.php)
-return [
-  'string'    => 'Please enter a string',
-  'minLength' => 'Must be at least {min} characters',
-  'maxLength' => 'Must be at most {max} characters',
-  'email'     => 'Please enter a valid email address',
-  'required'  => 'This field is required',
-  'integer'   => 'Please enter an integer',
-  'number'    => 'Please enter a number',
-  'uri'       => 'Please enter a valid URL',
-  'pattern'   => 'The input format is incorrect',
-  'enum'      => 'Please choose from the available options',
-];
-```
-
-**Field definitions** — keyed by field name, overrides messages specific to each field. There are three ways to write them.
-
-```php
-// messages/fields.php
-return [
-  // Pattern 1: field-wide (same message regardless of which rule fails)
-  'email' => 'Please enter your email address correctly',
-
-  // Pattern 2: field × rule specific (individual message per rule)
-  'name' => [
-    'length' => 'Name must be between 2 and 50 characters',
-  ],
-
-  // Pattern 3: multiple rules specified individually
-  'body' => [
-    'required' => 'Please enter the message body',
-    'pattern'  => 'Message body must be at least 10 characters',
-  ],
-];
-```
-
-::: info Priority
-When multiple definitions exist for the same field and rule, they are resolved in the following order:
-
-1. Field × rule specific — `['name' => ['length' => '...']]`
-2. Field-wide — `['email' => '...']`
-3. Locale default — contents of `messages/ja.php`
-4. DefaultMessages canonical catalog (engine-neutral)
-:::
-
-#### Step 2: Loading
-
-Pass the prepared files to `MessageDict` to create an instance.
-
-```php
-use SchemableValidator\I18n\MessageDict;
-
-// use the built-in Japanese preset as-is
-$dict = MessageDict::ja();
-
-// use a custom dictionary file
-$dict = new MessageDict(
-  require __DIR__ . '/messages/fields.php', // field definitions
-  require __DIR__ . '/messages/ja.php'       // locale defaults
-);
-
-// combine the Japanese preset with field definitions
-$dict = MessageDict::ja(
-  require __DIR__ . '/messages/fields.php'
-);
-```
-
-`MessageDict::en()` returns the DefaultMessages canonical catalog (engine-neutral) as-is.
-
-#### Step 3: Passing to Validator
-
-::: code-group
-
-```php [Core]
-use SchemableValidator\Validator;
-use SchemableValidator\I18n\MessageDict;
-
-$dict = MessageDict::ja(require __DIR__ . '/messages/fields.php');
-
-$validator = new Validator($schema, [], [], $dict);
-```
-
-```php [WordPress]
-use SchemableValidator\I18n\MessageDict;
-
-$dict = MessageDict::ja(require __DIR__ . '/messages/fields.php');
-
-$validator = schv_validator($schema, [], $dict);
-```
-
-:::
-
-When passing via SchemaBuilder:
+`MessageDict` defines messages per field and per rule, and supports a built-in Japanese preset.
 
 ```php
 use SchemableValidator\SV;
 use SchemableValidator\I18n\MessageDict;
 
-$dict = MessageDict::ja(require __DIR__ . '/messages/fields.php');
-
 $result = SV::object([
   'name'  => SV::string()->min(2)->max(50),
   'email' => SV::string()->email(),
-])->withMessages($dict)
-  ->toValidator()
-  ->validate($_POST)
-  ->getResult();
+])->withMessages(MessageDict::ja([
+  'email' => 'メールアドレスが正しくありません',
+]))->toValidator()->validate($_POST)->getResult();
 ```
 
-#### Site-wide default (WordPress)
-
-Overriding the dictionary via the `schv_message_dict` filter causes it to be automatically applied whenever `schv_validator()` is called.
-
-```php
-add_filter('schv_message_dict', function (MessageDict $dict): MessageDict {
-  return $dict->merge(require __DIR__ . '/messages/fields.php');
-});
-
-// omitting $dict automatically applies the result of the schv_message_dict filter
-$validator = schv_validator($schema);
-```
+::: tip
+For the full API — locale presets, per-rule keys, placeholder interpolation (`{min}`, `{max}`), the message resolution priority table, WordPress filters, and migration from Respect rule ids — see [MessageDict](./message-dict.md).
+:::
 
 ---
 
 ## Security
 
-This section explains security-related features and best practices for forms.
+This section covers CSRF token management, CAPTCHA verification, and form security best practices.
 
 ### CSRF Token
 
@@ -446,12 +282,61 @@ Embed it as a hidden field in the form:
 <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
 ```
 
+### CAPTCHA
+
+Inject a `CaptchaDriver` via `toValidator()`, then call `validateCaptcha()`.
+Three providers are built in: `ReCaptchaV3Driver`, `HCaptchaDriver`, and `TurnstileDriver`.
+
+```php
+use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
+
+$validator = $schema->toValidator([], [
+  'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
+]);
+
+$result = $validator
+  ->validate($_POST)           // reads g-recaptcha-response / h-captcha-response / cf-turnstile-response
+  ->validateCaptcha([
+    'action' => 'contact',     // optional action check (reCAPTCHA v3 only)
+  ])
+  ->getResult();
+```
+
+The result is written under `$result['captcha']`:
+
+```json
+{ "value": 0.9, "is_valid": true, "errors": null }
+```
+
+To switch providers, replace the driver:
+
+```php
+use SchemableValidator\Validation\Captcha\HCaptchaDriver;
+use SchemableValidator\Validation\Captcha\TurnstileDriver;
+
+// hCaptcha
+'captchaDriver' => new HCaptchaDriver('YOUR_SECRET')
+
+// Cloudflare Turnstile
+'captchaDriver' => new TurnstileDriver('YOUR_SECRET')
+```
+
+In tests and local development, use `NullCaptchaDriver`, which bypasses the network entirely:
+
+```php
+use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
+
+'captchaDriver' => new NullCaptchaDriver() // always passes; pass false to simulate rejection
+```
+
+For the full driver reference including security properties, score threshold, and the legacy `validateReCaptcha()` path, see [Backend Adapters](./backend-adapters.md#injecting-a-captcha-driver).
+
 ### Best Practices
 
 | Item | Description |
 |:--|:--|
 | Use CSRF tokens | Enable `createToken()` / `checkToken()` on all POST forms |
-| Use reCAPTCHA | Combine `validateReCaptcha()` on public forms to prevent spam and automated submissions |
+| Use CAPTCHA | Inject a `CaptchaDriver` and call `validateCaptcha()` on public forms to prevent spam |
 | Escape output | Although `value` in `getResult()` has already been processed with `strip_tags` + `htmlspecialchars`, escape it again when outputting to HTML |
 
 ---
@@ -598,37 +483,3 @@ $all        = $template->getAll();
 The value of `templates` is interpreted as a WP option name and the body is retrieved with `get_option()`. Do not pass template strings directly.
 :::
 
----
-
-## Other Features
-
-### reCAPTCHA v3
-
-Send `$_POST['recaptcha_token']` from the frontend.
-
-::: code-group
-
-```php [Core]
-$validator = new Validator($schema, [
-  'recaptcha_secret'      => 'YOUR_SECRET_KEY',
-  'recaptcha_valid_score' => 0.5,
-]);
-```
-
-```php [WordPress]
-$validator = schv_validator($schema, [
-  'recaptcha_secret'      => 'YOUR_SECRET_KEY',
-  'recaptcha_valid_score' => 0.5,
-]);
-```
-
-:::
-
-```php
-$result = $validator
-  ->validate($_POST)
-  ->validateReCaptcha([
-    'action' => 'contact', // optional: also verify that the action name matches
-  ])
-  ->getResult();
-```

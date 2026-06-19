@@ -1,5 +1,8 @@
 # Installation
 
+Schemable Validator は PHP コアライブラリ、WordPress プラグイン、TypeScript クライアントの3つのパッケージで構成されています。
+必要なパッケージだけをインストールしてください。
+
 ## Requirements
 
 | | Version | 用途 |
@@ -8,15 +11,13 @@
 | WordPress | 5.9+ | WP プラグインのみ |
 | Node.js | >=22.12.0 | `@uuki/schemable-validator-client` のみ |
 
-## インストール方法
-
-### PHP library
+## PHP library
 
 ```shell
 composer require uuki/schemable-validator
 ```
 
-### プラグインパターン - WordPress
+## WordPress プラグイン
 
 リポジトリをクローンし、プラグインディレクトリに配置して依存パッケージをインストールします。
 
@@ -34,9 +35,9 @@ composer install --no-dev
 
 WordPress 管理画面のプラグイン一覧から **Schemable Validator** を有効化してください。
 
-## 主要機能
+## インストール後に使えるもの
 
-### PHP library - 主要クラス
+### コアクラス
 
 `composer require` でインストールすると、`SchemableValidator\` 名前空間以下のクラスが使えるようになります。
 
@@ -51,11 +52,13 @@ WordPress 管理画面のプラグイン一覧から **Schemable Validator** を
 | `Rules\FileExtension` | ファイルの MIME タイプを検証するカスタムルール（レガシー; Respect/Validation 依存） |
 | `NativeFileValidator` | `FileValidationDriver` 経由の依存なしファイルバリデーション（デフォルト） |
 
-> **Note:** ファイルバリデーションは現在 `NativeFileValidator` を `FileValidationDriver` 経由で使用するのがデフォルトです（外部依存なし）。`Rules\FileExtension` は Respect/Validation を必要とするレガシーアダプターです。
+::: info
+ファイルバリデーションはデフォルトで `NativeFileValidator` を `FileValidationDriver` 経由で使用します（外部依存なし）。`Rules\FileExtension` は Respect/Validation を必要とするレガシーアダプターです。
+:::
 
 詳細は [Feature Guide](/ja/feature-guide) および [SchemaBuilder](/ja/schema-builder) を参照してください。
 
-### WordPress - グローバル関数
+### WordPress ヘルパー関数
 
 プラグインを有効化すると、以下の `schv_*` 関数がグローバルに使えるようになります。
 
@@ -70,7 +73,7 @@ WordPress 管理画面のプラグイン一覧から **Schemable Validator** を
 
 詳細は [Feature Guide](/ja/feature-guide) および [Interfaces](/ja/interfaces) を参照してください。
 
-## Package structure
+## パッケージ構成
 
 ```
 packages/
@@ -118,4 +121,6 @@ packages/
     examples/                    # サンプルショートコード（ローカル開発用）
 ```
 
-> **Note:** `respect/validation` および `opis/json-schema` はオプション（`suggest`）依存です。デフォルトエンジン（`NativeAdapter`）は外部バリデーションライブラリなしで動作します。
+::: info
+`respect/validation` と `opis/json-schema` はオプション（`suggest`）依存です。デフォルトエンジン（`NativeAdapter`）は外部バリデーションライブラリなしで動作します。
+:::
