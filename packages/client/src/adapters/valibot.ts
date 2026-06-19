@@ -51,13 +51,13 @@ class UnsupportedField extends Error {
   }
 }
 
-// Bundlers replace process.env.NODE_ENV with a string literal at build time.
+declare const process: { env?: Record<string, string | undefined> } | undefined
+
 function defaultPolicy(): 'warn' | 'throw' {
-  try {
-    return process.env.NODE_ENV === 'production' ? 'throw' : 'warn'
-  } catch {
-    return 'warn'
+  if (typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production') {
+    return 'throw'
   }
+  return 'warn'
 }
 
 function propertyToValibot(field: PropertySchema): v.GenericSchema {
