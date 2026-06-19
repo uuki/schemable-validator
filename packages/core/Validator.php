@@ -294,14 +294,14 @@ final class Validator {
    * @throws \InvalidArgumentException if recaptcha_provider is not an allowed endpoint
    */
   public function validateReCaptcha(array $options = []): self {
-    // A02-2: reject unconfigured secret rather than silently failing
+    // Reject unconfigured secret rather than silently failing.
     if ($this->options['recaptcha_secret'] === '') {
       throw new \RuntimeException(
         'recaptcha_secret must be configured before calling validateReCaptcha()'
       );
     }
 
-    // A10-1: allow-list the provider URL to Google reCAPTCHA endpoints only
+    // Allow-list the provider URL to Google reCAPTCHA endpoints only.
     $provider        = $this->options['recaptcha_provider'];
     $allowedPrefixes = [
       'https://www.google.com/recaptcha/',
@@ -325,7 +325,16 @@ final class Validator {
     $options = array_merge(['action' => null], $options);
 
     $newState = $this->createState();
-    $params   = [
+
+    // Short-circuit before any network call when no token was submitted.
+    if (empty($this->state['recaptcha_token'])) {
+      $newState['is_valid'] = false;
+      $newState['errors']   = 'reCAPTCHA token is missing';
+      $this->state['result']['recaptcha'] = $newState;
+      return $this;
+    }
+
+    $params = [
       'secret'   => $this->options['recaptcha_secret'],
       'response' => $this->state['recaptcha_token'],
     ];
@@ -334,7 +343,7 @@ final class Validator {
       $result           = $curl->post($provider, $params);
       $recaptcha_result = json_decode($result['response']);
 
-      // A05-1: guard against malformed responses before accessing properties
+      // Guard against malformed responses before accessing properties.
       if (!isset($recaptcha_result->success)) {
         throw new \RuntimeException('Malformed reCAPTCHA response');
       }
@@ -346,11 +355,16 @@ final class Validator {
         $newState['is_valid'] = $recaptcha_result->score >= $this->options['recaptcha_valid_score'];
       }
 
-      if ($options['action'] && isset($recaptcha_result->action)) {
-        $newState['is_valid'] = $options['action'] === $recaptcha_result->action;
+      // When the caller specifies an expected action, require it to be present
+      // and matching.  A missing action field means the token was not generated
+      // for the correct interaction — treat as invalid.
+      if (!empty($options['action'])) {
+        if (!isset($recaptcha_result->action) || $options['action'] !== $recaptcha_result->action) {
+          $newState['is_valid'] = false;
+        }
       }
     } catch(\Exception $e) {
-      // A05-1: do not expose internal error details (endpoint URL, network info) to callers
+      // Do not expose internal error details (endpoint URL, network info) to callers.
       error_log('schemable-validator: reCAPTCHA verification failed: ' . $e->getMessage());
       $newState['errors'] = 'reCAPTCHA verification failed';
     }
@@ -382,6 +396,17 @@ final class Validator {
     }
 
     $token = (string) ($this->state['captcha_token'] ?? $this->state['recaptcha_token'] ?? '');
+
+    // Short-circuit before any network call when no token was submitted.
+    if ($token === '') {
+      $this->state['result']['captcha'] = [
+        'value'    => null,
+        'is_valid' => false,
+        'errors'   => 'CAPTCHA token is missing',
+      ];
+      return $this;
+    }
+
     $verifyResult = $this->captchaDriver->verify($token, $options);
 
     $this->state['result']['captcha'] = [
@@ -435,16 +460,25 @@ final class Validator {
       unset($_SESSION['schv_csrf_tokens'][$form]);
       return false;
     }
-    return hash_equals($stored['token'], $token);
+    // Consume the token on first successful use so it cannot be replayed.
+    $valid = hash_equals($stored['token'], $token);
+    if ($valid) {
+      unset($_SESSION['schv_csrf_tokens'][$form]);
+    }
+    return $valid;
   }
 
   private static bool $sessionStarted = false;
 
   private function startSession(): void {
     if (!self::$sessionStarted && session_status() !== PHP_SESSION_ACTIVE) {
-      // A02-3: enforce secure session cookie attributes when we start the session ourselves
+      // Enforce secure session cookie attributes when we start the session ourselves.
+      // Treat TLS-terminating reverse proxy (X-Forwarded-Proto) as HTTPS
+      // in addition to the native HTTPS server variable.
+      $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+               || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
       session_set_cookie_params([
-        'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'secure'   => $isHttps,
         'httponly' => true,
         'samesite' => 'Lax',
       ]);

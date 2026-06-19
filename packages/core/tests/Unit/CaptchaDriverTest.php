@@ -84,6 +84,55 @@ final class CaptchaDriverTest extends TestCase {
     $this->assertInstanceOf(TurnstileDriver::class, $driver);
   }
 
+  // ── empty-token short-circuit (no network call) ──────────────
+
+  public function test_recaptcha_verify_empty_token_returns_invalid(): void {
+    $driver = new ReCaptchaV3Driver('secret');
+    $r      = $driver->verify('');
+    $this->assertFalse($r['is_valid']);
+    $this->assertSame('CAPTCHA token is missing', $r['errors']);
+  }
+
+  public function test_hcaptcha_verify_empty_token_returns_invalid(): void {
+    $driver = new HCaptchaDriver('secret');
+    $r      = $driver->verify('');
+    $this->assertFalse($r['is_valid']);
+    $this->assertSame('CAPTCHA token is missing', $r['errors']);
+  }
+
+  public function test_turnstile_verify_empty_token_returns_invalid(): void {
+    $driver = new TurnstileDriver('secret');
+    $r      = $driver->verify('');
+    $this->assertFalse($r['is_valid']);
+    $this->assertSame('CAPTCHA token is missing', $r['errors']);
+  }
+
+  public function test_validateCaptcha_returns_invalid_when_no_token_in_post(): void {
+    $schema    = SV::object(['name' => SV::string()]);
+    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(true)]);
+
+    // No CAPTCHA field in the POST data — validateCaptcha must short-circuit locally.
+    $result = $validator
+      ->validate(['name' => 'Alice'])
+      ->validateCaptcha()
+      ->getResult();
+
+    $this->assertFalse($result['captcha']['is_valid']);
+    $this->assertSame('CAPTCHA token is missing', $result['captcha']['errors']);
+  }
+
+  // ── hostname verification (hCaptcha / Turnstile) ─────────────
+
+  public function test_hcaptcha_accepts_expected_hostname_param(): void {
+    $driver = new HCaptchaDriver('secret', null, 'example.com');
+    $this->assertInstanceOf(HCaptchaDriver::class, $driver);
+  }
+
+  public function test_turnstile_accepts_expected_hostname_param(): void {
+    $driver = new TurnstileDriver('secret', 'example.com');
+    $this->assertInstanceOf(TurnstileDriver::class, $driver);
+  }
+
   // ── validateCaptcha() integration ────────────────────────────
 
   public function test_validateCaptcha_passes_with_null_driver(): void {

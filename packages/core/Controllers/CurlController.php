@@ -34,13 +34,20 @@ final class CurlController {
    */
   public function get(string $url, array $headers = [])
   {
-    $this->validateUrl($url);
+    $validated = $this->validateUrl($url);
 
-    $this->setOptions([
-      CURLOPT_URL         => $url,
-      CURLOPT_HTTPGET     => true,
-      CURLOPT_HTTPHEADER  => $this->formatHeaders($headers),
-    ]);
+    $opts = [
+      CURLOPT_URL        => $url,
+      CURLOPT_HTTPGET    => true,
+      CURLOPT_HTTPHEADER => $this->formatHeaders($headers),
+    ];
+    // Pin cURL to the pre-validated IPs so the connection-time DNS lookup
+    // cannot differ from the validation-time lookup.
+    if (!empty($validated['ips'])) {
+      $opts[CURLOPT_RESOLVE] = $this->buildResolveEntries($validated['host'], $validated['port'], $validated['ips']);
+    }
+
+    $this->setOptions($opts);
     return $this->execute();
   }
 
@@ -49,25 +56,32 @@ final class CurlController {
    */
   public function post(string $url, array $data = [], array $headers = [])
   {
-    $this->validateUrl($url);
+    $validated = $this->validateUrl($url);
 
-    $this->setOptions([
-      CURLOPT_URL         => $url,
-      CURLOPT_POST        => true,
-      CURLOPT_POSTFIELDS  => http_build_query($data),
-      CURLOPT_HTTPHEADER  => $this->formatHeaders($headers),
-    ]);
+    $opts = [
+      CURLOPT_URL        => $url,
+      CURLOPT_POST       => true,
+      CURLOPT_POSTFIELDS => http_build_query($data),
+      CURLOPT_HTTPHEADER => $this->formatHeaders($headers),
+    ];
+    // Same DNS-pinning as in get().
+    if (!empty($validated['ips'])) {
+      $opts[CURLOPT_RESOLVE] = $this->buildResolveEntries($validated['host'], $validated['port'], $validated['ips']);
+    }
+
+    $this->setOptions($opts);
     return $this->execute();
   }
 
   /**
-   * Enforce https scheme and block private/reserved IP ranges.
+   * Enforce https scheme, block private/reserved IP ranges, and return the
+   * resolved IPs so callers can pin them via CURLOPT_RESOLVE.
    *
-   * Prevents SSRF by ensuring only public HTTPS endpoints are reachable.
+   * Returns array{host: string, port: int, ips: string[]}
    *
    * @throws \InvalidArgumentException
    */
-  private function validateUrl(string $url): void
+  private function validateUrl(string $url): array
   {
     if (!filter_var($url, FILTER_VALIDATE_URL)) {
       throw new \InvalidArgumentException('Invalid URL provided.');
@@ -78,21 +92,29 @@ final class CurlController {
       throw new \InvalidArgumentException('Only HTTPS URLs are allowed.');
     }
 
-    $host = (string) parse_url($url, PHP_URL_HOST);
-    if ($host === '') {
+    $urlHost = (string) parse_url($url, PHP_URL_HOST);
+    if ($urlHost === '') {
       throw new \InvalidArgumentException('URL has no host.');
     }
 
     // PHP 7.x returns IPv6 literals with brackets ([::1]); PHP 8.x strips them.
-    // Normalise to bracketless form so inet_pton() can parse it.
+    // Normalise to bracketless form so inet_pton() / gethostbyname() can parse it.
+    $host = $urlHost;
     if ($host !== '' && $host[0] === '[' && $host[-1] === ']') {
       $host = substr($host, 1, -1);
     }
+
+    $port = (int) (parse_url($url, PHP_URL_PORT) ?: 443);
+
+    $resolvedIps = [];
 
     // gethostbyname() resolves A records and returns the input unchanged for
     // non-hostname strings (e.g. IPv6 literals) — blockPrivateIp handles both.
     $resolved = gethostbyname($host);
     self::blockPrivateIp($resolved);
+    if (filter_var($resolved, FILTER_VALIDATE_IP)) {
+      $resolvedIps[] = $resolved;
+    }
 
     // IPv6: gethostbyname() only resolves A records; check AAAA separately.
     $aaaaRecords = dns_get_record($host, DNS_AAAA) ?: [];
@@ -100,8 +122,25 @@ final class CurlController {
       $ipv6 = $record['ipv6'] ?? '';
       if ($ipv6 !== '') {
         self::blockPrivateIp($ipv6);
+        $resolvedIps[] = $ipv6;
       }
     }
+
+    return ['host' => $urlHost, 'port' => $port, 'ips' => $resolvedIps];
+  }
+
+  /**
+   * Build CURLOPT_RESOLVE entries that pin $host:$port to the pre-validated IPs.
+   *
+   * Format: ["hostname:port:ip1,ip2,..."]
+   * libcurl accepts comma-separated addresses in one entry.
+   *
+   * @param  string[] $ips
+   * @return string[]
+   */
+  private function buildResolveEntries(string $host, int $port, array $ips): array
+  {
+    return ["{$host}:{$port}:" . implode(',', $ips)];
   }
 
   /**

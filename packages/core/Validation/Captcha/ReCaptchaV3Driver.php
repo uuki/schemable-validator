@@ -43,6 +43,12 @@ final class ReCaptchaV3Driver implements CaptchaDriver {
   public function verify(string $token, array $options = []): array {
     $state = ['is_valid' => false, 'score' => null, 'errors' => null];
 
+    // Reject locally rather than forwarding an empty token to the provider.
+    if ($token === '') {
+      $state['errors'] = 'CAPTCHA token is missing';
+      return $state;
+    }
+
     try {
       $curl   = new CurlController();
       $result = $curl->post($this->endpoint, [
@@ -63,8 +69,11 @@ final class ReCaptchaV3Driver implements CaptchaDriver {
         $state['is_valid'] = $response->score >= $this->minScore;
       }
 
-      if (!empty($options['action']) && isset($response->action)) {
-        if ($options['action'] !== $response->action) {
+      // When the caller specifies an expected action, require it to be present
+      // and matching in the response.  A missing action field means the token
+      // was not generated for the correct interaction — treat as invalid.
+      if (!empty($options['action'])) {
+        if (!isset($response->action) || $options['action'] !== $response->action) {
           $state['is_valid'] = false;
         }
       }

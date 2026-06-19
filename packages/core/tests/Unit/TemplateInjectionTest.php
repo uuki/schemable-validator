@@ -30,7 +30,7 @@ class TemplateInjectionTest extends TestCase
     ]);
   }
 
-  // ── CRLF stripping (A03-3) ────────────────────────────────────────────────
+  // ── CRLF stripping ───────────────────────────────────────────────────────
 
   /**
    * @runInSeparateProcess

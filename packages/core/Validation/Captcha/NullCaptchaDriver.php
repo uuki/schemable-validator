@@ -14,6 +14,8 @@ final class NullCaptchaDriver implements CaptchaDriver {
 
   public function __construct(bool $passes = true) {
     $this->passes = $passes;
+    // Warn operators if this driver is active outside of a test/dev context.
+    error_log('schemable-validator: NullCaptchaDriver is intended for testing and local development only');
   }
 
   public function verify(string $token, array $options = []): array {

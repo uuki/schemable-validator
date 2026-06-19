@@ -70,7 +70,7 @@ final class Template {
       $field = $this->data[$value] ?? null;
 
       if (isset($field)) {
-        // A03-3: strip CR/LF to prevent email header injection
+        // Strip CR/LF to prevent email header injection.
         $safe = str_replace(["\r", "\n"], '', (string) $field['value']);
         $body = str_replace('{'.$key.'}', $safe, $body);
       }

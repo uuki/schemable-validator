@@ -174,6 +174,18 @@ class ValidatorTest extends TestCase
     $this->assertArrayNotHasKey('expire_test', $_SESSION['schv_csrf_tokens']);
   }
 
+  /**
+   * @runInSeparateProcess
+   */
+  public function test_checkToken_is_single_use(): void {
+    $v     = new Validator([]);
+    $token = $v->createToken('single_use_test');
+
+    $this->assertTrue($v->checkToken($token, 'single_use_test'));
+    // Second call with the same token must fail: it was consumed on first use.
+    $this->assertFalse($v->checkToken($token, 'single_use_test'));
+  }
+
   // ── chaining ─────────────────────────────────────────────
 
   public function test_method_chaining_validate_and_getResult(): void

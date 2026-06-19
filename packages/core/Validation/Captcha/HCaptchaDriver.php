@@ -16,22 +16,33 @@ final class HCaptchaDriver implements CaptchaDriver {
 
   private string $secret;
   private ?string $siteKey;
+  private ?string $expectedHostname;
 
   /**
-   * @param string      $secret  hCaptcha secret key.
-   * @param string|null $siteKey Optional site key — when provided, the response is
-   *                             tied to this site key by hCaptcha's backend.
+   * @param string      $secret           hCaptcha secret key.
+   * @param string|null $siteKey          Optional site key — when provided, the response is
+   *                                      tied to this site key by hCaptcha's backend.
+   * @param string|null $expectedHostname When provided, the hostname field in the verification
+   *                                      response must match this value.  Prevents token replay
+   *                                      from a phishing clone of the site.
    */
-  public function __construct(string $secret, ?string $siteKey = null) {
+  public function __construct(string $secret, ?string $siteKey = null, ?string $expectedHostname = null) {
     if ($secret === '') {
       throw new \InvalidArgumentException('hCaptcha secret must not be empty');
     }
-    $this->secret  = $secret;
-    $this->siteKey = $siteKey;
+    $this->secret           = $secret;
+    $this->siteKey          = $siteKey;
+    $this->expectedHostname = $expectedHostname;
   }
 
   public function verify(string $token, array $options = []): array {
     $state = ['is_valid' => false, 'score' => null, 'errors' => null];
+
+    // Reject locally rather than forwarding an empty token to the provider.
+    if ($token === '') {
+      $state['errors'] = 'CAPTCHA token is missing';
+      return $state;
+    }
 
     try {
       $params = [
@@ -55,6 +66,14 @@ final class HCaptchaDriver implements CaptchaDriver {
       if (!$state['is_valid'] && isset($response->{'error-codes'})) {
         // Log raw error codes for operators; do not expose to callers.
         error_log('schemable-validator: hCaptcha errors: ' . implode(', ', (array) $response->{'error-codes'}));
+      }
+
+      // Verify hostname to prevent token replay from a phishing clone.
+      if ($state['is_valid'] && $this->expectedHostname !== null) {
+        if (!isset($response->hostname) || $response->hostname !== $this->expectedHostname) {
+          $state['is_valid'] = false;
+          error_log('schemable-validator: hCaptcha hostname mismatch');
+        }
       }
     } catch (\Exception $e) {
       error_log('schemable-validator: hCaptcha verification failed: ' . $e->getMessage());
