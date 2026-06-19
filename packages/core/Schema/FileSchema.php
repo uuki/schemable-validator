@@ -17,6 +17,11 @@ final class FileSchema extends AbstractFieldSchema implements UnmappableField {
     return false;
   }
 
+  /** @return string[] Allowed MIME types (empty = any). Consumed by FileValidationDriver. */
+  public function getAccept(): array {
+    return $this->accept;
+  }
+
   public function toRespect(): v {
     $chain = v::create();
     $chain->addRule(new FileExtension($this->accept));

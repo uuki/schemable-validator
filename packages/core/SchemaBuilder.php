@@ -7,8 +7,10 @@ use SchemableValidator\Contracts\SchemaProviderInterface;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\FieldRef;
+use SchemableValidator\Schema\FileSchema;
 use SchemableValidator\Schema\WhenExpr;
 use SchemableValidator\Validation\BackendAdapter;
+use SchemableValidator\Validation\FileValidationDriver;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 
@@ -85,7 +87,7 @@ final class SchemaBuilder implements SchemaProviderInterface {
   }
 
   /** Build a Validator from the schema, passing through optional Validator options. */
-  public function toValidator(array $options = [], ?BackendAdapter $adapter = null): Validator {
+  public function toValidator(array $options = [], ?BackendAdapter $adapter = null, ?FileValidationDriver $fileDriver = null): Validator {
     // Mappable fields are validated through the BackendAdapter via the JSON
     // Schema IR (engine-swappable). UnmappableField escape hatches (file/raw)
     // have no JSON Schema form, so they keep running on Respect `v` objects.
@@ -93,7 +95,13 @@ final class SchemaBuilder implements SchemaProviderInterface {
     $unmappable     = [];
     $transforms     = [];
     $inlineMessages = [];
+    $fileConfigs    = [];
     foreach ($this->fields as $name => $field) {
+      // File fields → dependency-free FileValidationDriver (handled by validateFiles()).
+      if ($field instanceof FileSchema) {
+        $fileConfigs[$name] = ['accept' => $field->getAccept()];
+        continue;
+      }
       if (!$field->isMappable()) {
         $respect          = RespectAdapter::compileField($field);
         $unmappable[$name] = $field->isRequired() ? $respect : v::optional($respect);
@@ -109,7 +117,7 @@ final class SchemaBuilder implements SchemaProviderInterface {
       }
     }
     $conditionals = $this->conditionals;
-    return new Validator($unmappable, $options, $conditionals, $this->messageDict, $adapter, $transforms, $inlineMessages, $jsonSchema);
+    return new Validator($unmappable, $options, $conditionals, $this->messageDict, $adapter, $transforms, $inlineMessages, $jsonSchema, $fileConfigs, $fileDriver);
   }
 
   /**

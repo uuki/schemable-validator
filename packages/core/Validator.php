@@ -18,7 +18,9 @@ use SchemableValidator\Controllers\CurlController;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
+use SchemableValidator\Validation\FileValidationDriver;
 use SchemableValidator\Validation\JsonLogicEval;
+use SchemableValidator\Validation\NativeFileValidator;
 use SchemableValidator\Validation\Transform;
 use SchemableValidator\Validation\RespectExecutableValidator;
 
@@ -66,16 +68,28 @@ final class Validator {
   private BackendAdapter $adapter;
 
   /**
+   * File-field configs (field => ['accept' => string[]]) for SV::file() fields,
+   * dispatched to $fileDriver by validateFiles() — a dependency-free path that
+   * replaces the old Respect FileExtension rule.
+   * @var array<string, array<string, mixed>>
+   */
+  private array $fileConfigs;
+
+  private FileValidationDriver $fileDriver;
+
+  /**
    * Validator constructor.
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null, array $fileConfigs = [], ?FileValidationDriver $fileDriver = null) {
     $this->schema = $schema;
     $this->jsonSchema = $jsonSchema;
     $this->conditionals = $conditionals;
     $this->transforms = $transforms;
     $this->inlineMessages = $inlineMessages;
+    $this->fileConfigs = $fileConfigs;
+    $this->fileDriver = $fileDriver ?? new NativeFileValidator();
     $this->dict = $dict;
     $this->adapter = $adapter ?? new RespectAdapter();
     $this->options = array_merge([
@@ -218,14 +232,21 @@ final class Validator {
     }
 
     foreach ($normalized_data as $name => $files) {
-      if (!isset($this->schema[$name])) {
+      // SV::file() fields → dependency-free FileValidationDriver.
+      if (isset($this->fileConfigs[$name])) {
+        $this->state['result'][$name] = [];
+        foreach ($files as $file_data) {
+          $this->state['result'][$name][] = $this->fileDriver->validate($file_data, $this->fileConfigs[$name]);
+        }
         continue;
       }
-      $validator = $this->schema[$name];
-      $this->state['result'][$name] = [];
-
-      foreach ($files as $file_data) {
-        $this->state['result'][$name][] = $this->assert($file_data, $validator, $name);
+      // Legacy: a raw Respect validator passed directly as the field's schema.
+      if (isset($this->schema[$name])) {
+        $validator = $this->schema[$name];
+        $this->state['result'][$name] = [];
+        foreach ($files as $file_data) {
+          $this->state['result'][$name][] = $this->assert($file_data, $validator, $name);
+        }
       }
     }
 
