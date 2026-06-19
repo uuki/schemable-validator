@@ -1,3 +1,10 @@
+## [0.12.3](https://github.com/uuki/schemable-validator/compare/v0.12.2...v0.12.3) (2026-06-19)
+
+
+### Bug Fixes
+
+* **client:** resolve TypeScript 6.0 breaking changes ([acd2fdd](https://github.com/uuki/schemable-validator/commit/acd2fdd55f0b6395fee6a64972aa519bae888d47))
+
 ## [0.12.2](https://github.com/uuki/schemable-validator/compare/v0.12.1...v0.12.2) (2026-06-14)
 
 
