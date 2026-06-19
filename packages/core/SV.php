@@ -6,6 +6,7 @@ use Respect\Validation\Validator as v;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\ArraySchema;
 use SchemableValidator\Schema\BooleanSchema;
+use SchemableValidator\Schema\CustomFieldSchema;
 use SchemableValidator\Schema\EnumSchema;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\FileSchema;
@@ -47,6 +48,14 @@ final class SV {
   /** Array field: validates each element with the given item schema. */
   public static function array(AbstractFieldSchema $items): ArraySchema {
     return new ArraySchema($items);
+  }
+
+  /**
+   * Dependency-free escape hatch: validate with a custom predicate that has no
+   * JSON Schema form. $predicate is `callable(mixed $value): bool`.
+   */
+  public static function custom(callable $predicate, string $message = 'is invalid'): CustomFieldSchema {
+    return new CustomFieldSchema($predicate, $message);
   }
 
   /** Escape hatch: wrap an arbitrary Respect/Validation rule. */

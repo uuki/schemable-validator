@@ -48,6 +48,13 @@ final class Validator {
    */
   private ?array $jsonSchema;
 
+  /**
+   * (B) escape-hatch fields (SV::custom / SV::respect), executed via
+   * CustomField::evaluate() — engine-agnostic, no IR representation.
+   * @var array<string, \SchemableValidator\Validation\CustomField>
+   */
+  private array $customFields;
+
   /** @var array<array{condition: array, require: string[]}> */
   private array $conditionals;
 
@@ -82,9 +89,10 @@ final class Validator {
    *
    * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null, array $fileConfigs = [], ?FileValidationDriver $fileDriver = null) {
+  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null, array $fileConfigs = [], ?FileValidationDriver $fileDriver = null, array $customFields = []) {
     $this->schema = $schema;
     $this->jsonSchema = $jsonSchema;
+    $this->customFields = $customFields;
     $this->conditionals = $conditionals;
     $this->transforms = $transforms;
     $this->inlineMessages = $inlineMessages;
@@ -169,11 +177,9 @@ final class Validator {
       foreach ($this->adapter->compile($this->jsonSchema, $this->dict)->validate($data) as $name => $fieldState) {
         $this->state['result'][$name] = $fieldState;
       }
-      if (!empty($this->schema)) {
-        $escapeHatch = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
-        foreach ($escapeHatch->validate($data) as $name => $fieldState) {
-          $this->state['result'][$name] = $fieldState;
-        }
+      // (B) escape hatches (SV::custom / SV::respect) — engine-agnostic evaluate().
+      foreach ($this->customFields as $name => $customField) {
+        $this->state['result'][$name] = $customField->evaluate($name, $data[$name] ?? null, $this->dict);
       }
     } else {
       $executable = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
