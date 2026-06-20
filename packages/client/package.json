@@ -1,6 +1,6 @@
 {
   "name": "@uuki/schemable-validator-client",
-  "version": "0.12.3",
+  "version": "1.0.0",
   "description": "Client-side validation library for schemable-validator JSON Schema output. No transport, no framework.",
   "type": "module",
   "exports": {
