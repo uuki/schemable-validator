@@ -6,6 +6,7 @@
 import { validateObject, isAllValid, extractErrors } from '@uuki/schemable-validator-client'
 import type { ObjectSchema } from '@uuki/schemable-validator-client'
 
+// Example schema
 const schema: ObjectSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
@@ -22,6 +23,7 @@ const valid = validateObject(
   { name: 'Alice', email: 'alice@example.com', body: 'お問い合わせ内容です。' },
   schema,
 )
+
 console.log(isAllValid(valid)) // true
 
 // --- Invalid input ---
@@ -29,8 +31,10 @@ const invalid = validateObject(
   { name: '', email: 'not-an-email', body: '' },
   schema,
 )
+
 console.log(isAllValid(invalid))      // false
 console.log(extractErrors(invalid))
+
 // {
 //   name:  ['is required'],
 //   email: ['must be a valid email'],
