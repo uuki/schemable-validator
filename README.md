@@ -1,7 +1,7 @@
 # Schemable Validator
 
-[![Packagist](https://img.shields.io/packagist/v/uuki/schemable-validator-core)](https://packagist.org/packages/uuki/schemable-validator-core)
-[![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-8892BF?logo=php&logoColor=white)](https://packagist.org/packages/uuki/schemable-validator-core)
+[![Packagist](https://img.shields.io/packagist/v/uuki/schemable-validator)](https://packagist.org/packages/uuki/schemable-validator)
+[![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-8892BF?logo=php&logoColor=white)](https://packagist.org/packages/uuki/schemable-validator)
 [![WordPress](https://img.shields.io/badge/WordPress-%3E%3D5.9-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
 
 A dependency-free PHP form validation library.
@@ -26,7 +26,7 @@ Define constraints once with a fluent API, validate server-side with zero extern
 
 | Package | Description |
 |:--|:--|
-| [`uuki/schemable-validator-core`](https://packagist.org/packages/uuki/schemable-validator-core) | PHP core library (framework-agnostic, zero dependencies) |
+| [`uuki/schemable-validator`](https://packagist.org/packages/uuki/schemable-validator) | PHP core library (framework-agnostic, zero dependencies) |
 | `wp-schemable-validator` | WordPress plugin — REST endpoint, helpers, Schema Editor admin UI |
 | [`@uuki/schemable-validator-client`](https://www.npmjs.com/package/@uuki/schemable-validator-client) | TypeScript client — validates against JSON Schema output |
 
@@ -112,7 +112,7 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 
 ```shell
 # PHP core
-composer require uuki/schemable-validator-core
+composer require uuki/schemable-validator
 
 # WordPress plugin
 cd packages/wp-schemable-validator && composer install --no-dev
