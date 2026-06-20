@@ -50,7 +50,7 @@ final class Plugin
       'manage_options',
       'schv-settings',
       [$this, 'renderPage'],
-      'dashicons-shield',
+      'dashicons-editor-spellcheck',
       81
     );
 
