@@ -26,6 +26,8 @@ final class Plugin
     $this->registerHelpers();
     add_action('admin_init', [$this, 'registerSettings']);
     add_action('admin_menu', [$this, 'createMenu']);
+
+    SchemaEditor::register();
   }
 
   private function registerHelpers(): void

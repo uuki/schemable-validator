@@ -92,11 +92,11 @@
         },
         {
             "name": "uuki/schemable-validator-core",
-            "version": "dev-feature/refactoring-v0.2x.0",
+            "version": "0.12.2",
             "dist": {
                 "type": "path",
                 "url": "../core",
-                "reference": "801ec2ccabc92f485b467c923cee719bd04c5c4c"
+                "reference": "a0a1882aa4b8a7dcdff09cd2e4f2c00f6254af76"
             },
             "require": {
                 "php": ">=7.4",

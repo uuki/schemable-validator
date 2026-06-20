@@ -1,6 +1,6 @@
 # Installation
 
-Schemable Validator ships as three independent packages — a PHP core library, a WordPress plugin, and a TypeScript client.
+Schemable Validator ships as three independent packages: a PHP core library, a WordPress plugin, and a TypeScript client.
 Install only the packages you need.
 
 ## Requirements
@@ -14,7 +14,7 @@ Install only the packages you need.
 ## PHP library
 
 ```shell
-composer require uuki/schemable-validator
+composer require uuki/schemable-validator-core
 ```
 
 ## WordPress plugin
@@ -41,19 +41,21 @@ Activate **Schemable Validator** from the plugin list in the WordPress admin das
 
 After installing via `composer require`, the classes under the `SchemableValidator\` namespace become available.
 
-| Class | Description |
-|:--|:--|
-| `Validator` | Validates input values against a schema |
-| `SV` | Facade for `SchemaBuilder`. Build schemas with `SV::object()`, `SV::string()`, etc. |
-| `SchemaBuilder` | Assembles field schemas and converts them to `Validator` format or JSON Schema |
-| `Template` | Injects validated data into template strings |
-| `FormController` | Persists validated data across multi-page forms using sessions |
-| `MessageDict` | Defines error messages per field × rule (i18n) |
-| `Rules\FileExtension` | Custom rule that validates a file's MIME type (legacy; Respect/Validation dependency) |
-| `NativeFileValidator` | Dependency-free file validation via `FileValidationDriver` (default) |
+| Class | Namespace | Description |
+|:--|:--|:--|
+| `Validator` | `Orchestration` | Validates input values against a schema |
+| `SchemaBuilder` | `Orchestration` | Assembles field schemas and converts them to `Validator` format or JSON Schema |
+| `Template` | `Orchestration` | Injects validated data into template strings |
+| `SV` | *(root)* | Facade for `SchemaBuilder`. Build schemas with `SV::object()`, `SV::string()`, etc. |
+| `CsrfGuard` | `Security` | CSRF token generation and verification |
+| `FormController` | `Infrastructure` | Persists validated data across multi-page forms using sessions |
+| `MessageDict` | `I18n` | Defines error messages per field and rule (i18n) |
+| `NativeFileValidator` | `Adapters\Native` | Dependency-free file MIME validation (default) |
+| `NativeImageDriver` | `Adapters\Native` | Image dimension and size constraint checks |
 
 ::: info
-File validation uses `NativeFileValidator` via `FileValidationDriver` by default (no external dependencies). `Rules\FileExtension` is a legacy adapter that requires Respect/Validation.
+The default engine (`NativeAdapter`) works without any external validation library.
+`respect/validation` and `opis/json-schema` are optional (`suggest`) dependencies.
 :::
 
 See [Feature Guide](/feature-guide) and [SchemaBuilder](/schema-builder) for details.
@@ -64,7 +66,8 @@ Once the plugin is activated, the following `schv_*` functions become available 
 
 | Function | Return | Description |
 |:--|:--|:--|
-| `schv_validator($schema, $options, $dict)` | `Validator` | Creates a Validator instance |
+| `schv_validator($schema, $config)` | `Validator` | Creates a Validator instance with optional config (adapter, drivers, dict) |
+| `schv_csrf()` | `CsrfGuard` | Creates a CSRF token manager |
 | `schv_message_dict()` | `MessageDict` | Returns the site-wide dictionary via the `schv_message_dict` filter |
 | `schv_form()` | `FormController` | Manages session state for multi-page forms |
 | `schv_template($options)` | `Template` | Injects data into a WP option template |
@@ -77,50 +80,78 @@ See [Feature Guide](/feature-guide) and [Interfaces](/interfaces) for details.
 
 ```
 packages/
-  core/                          # Core library (framework-agnostic)
-    Validator.php
-    Template.php
-    Controllers/FormController.php
-    Interfaces/
-      AbstractInterface.php
-      WordPress.php
-    Rules/FileExtension.php      # Legacy (Respect dependency)
-    Validation/
-      BackendAdapter.php         # Adapter interface
-      ExecutableValidator.php
-      NativeExecutableValidator.php
-      NativeFileValidator.php    # Dependency-free file validation
-      FileValidationDriver.php
-      CustomField.php
-      Formats.php
-      Transform.php
-      Coercion.php
-      CalendarDate.php
-      JsonLogicEval.php
-      Adapters/
+  core/                              # Core library (framework-agnostic)
+    SV.php                           # Facade
+    constants.php
+
+    Orchestration/
+      Validator.php                  # Validation orchestrator
+      SchemaBuilder.php              # Schema definition → Validator / JSON Schema
+      Template.php                   # Template string interpolation
+
+    Schema/                          # Schema definition layer
+      AbstractFieldSchema.php
+      StringSchema.php
+      IntegerSchema.php, NumberSchema.php
+      BooleanSchema.php, EnumSchema.php
+      ArraySchema.php, FileSchema.php
+      CustomFieldSchema.php
+      RuleMapper.php
+
+    Validation/                      # Interfaces + pure logic (no external deps)
+      BackendAdapter.php             # Adapter interface
+      ExecutableValidator.php        # Per-field executor interface
+      CaptchaDriver.php             # CAPTCHA verification interface
+      FileValidationDriver.php      # File validation interface
+      ImageDriver.php               # Image constraint interface
+      CustomField.php               # Escape-hatch field interface
+      Coercion.php, Formats.php     # Coercion Contract & format definitions
+      CalendarDate.php, JsonLogicEval.php
+      Transform.php, MessageResolver.php
+
+    Adapters/                        # Swappable implementations
+      Native/                        # Default (zero external deps)
+        NativeAdapter.php
+        NativeExecutableValidator.php
+        NativeFileValidator.php
+        NativeImageDriver.php
+      Respect/                       # Optional (respect/validation)
         RespectAdapter.php
+        RespectExecutableValidator.php
+        RespectRules.php
+        Rules/                       # Respect AbstractRule extensions
+      Opis/                          # Optional (opis/json-schema)
         OpisAdapter.php
-        NativeAdapter.php        # Default (dependency-free)
+        OpisExecutableValidator.php
+      Captcha/                       # CAPTCHA provider drivers
+        AbstractCaptchaDriver.php
+        ReCaptchaV3Driver.php
+        HCaptchaDriver.php
+        TurnstileDriver.php
+        NullCaptchaDriver.php
+
+    Infrastructure/
+      CurlController.php             # SSRF-guarded HTTPS client
+      FormController.php             # Session-based form state
+
     I18n/
       MessageDict.php
       DefaultMessages.php
-      Locales/                   # Locale message files
-    Drivers/Respect/
-      RespectRules.php
-    Schema/
-      CustomFieldSchema.php
-      meta-schema.json
-    Helpers/Security.php
-    Helpers/Environment.php
-  wp-schemable-validator/        # WordPress plugin
-    index.php
-    lib/core/                    # rsync copy of core (via composer)
+      Locales/                       # Locale message files
+
+    Security/
+      CsrfGuard.php                  # CSRF token management
+
+  wp-schemable-validator/            # WordPress plugin
+    index.php                        # Plugin bootstrap
+    composer.json                    # Requires core via composer path repo
     src/Interfaces/WordPress/
-      Plugin.php                 # Admin screen & settings registration
-      helpers.php                # schv_* global functions
-    examples/                    # Sample shortcodes (for local development)
+      Plugin.php                     # Admin screen & settings
+      helpers.php                    # schv_* global functions
+    examples/                        # Sample shortcodes (local dev)
 ```
 
 ::: info
-`respect/validation` and `opis/json-schema` are optional (`suggest`) dependencies. The default engine (`NativeAdapter`) works without any external validation library.
+`respect/validation` and `opis/json-schema` are optional (`suggest`) dependencies.
+The default engine (`NativeAdapter`) works without any external validation library.
 :::

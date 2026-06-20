@@ -33,6 +33,12 @@ if (!function_exists('schv_form')) {
   }
 }
 
+if (!function_exists('schv_stored_schema')) {
+  function schv_stored_schema(string $slug): \SchemableValidator\Interfaces\WordPress\StoredSchemaProvider {
+    return new \SchemableValidator\Interfaces\WordPress\StoredSchemaProvider($slug);
+  }
+}
+
 if (!function_exists('schv_register_schema')) {
   function schv_register_schema(string $route, \SchemableValidator\Contracts\SchemaProviderInterface $provider): void {
     \SchemableValidator\Interfaces\WordPress\SchemaEndpoint::register($route, $provider);

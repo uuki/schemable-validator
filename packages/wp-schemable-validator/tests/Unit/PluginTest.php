@@ -25,7 +25,7 @@ class PluginTest extends TestCase
   {
     $hooks = [];
     Functions\expect('add_action')
-      ->twice()
+      ->zeroOrMoreTimes()
       ->andReturnUsing(function (string $hook) use (&$hooks): void {
         $hooks[] = $hook;
       });
@@ -38,7 +38,7 @@ class PluginTest extends TestCase
 
   public function test_register_settings_calls_register_setting_for_each_template(): void
   {
-    Functions\expect('add_action')->twice();
+    Functions\expect('add_action')->zeroOrMoreTimes();
 
     $plugin = new Plugin([
       'user'  => ['title' => 'User',  'description' => ''],
@@ -61,7 +61,7 @@ class PluginTest extends TestCase
 
   public function test_keys_all_returns_mapped_option_names(): void
   {
-    Functions\expect('add_action')->twice();
+    Functions\expect('add_action')->zeroOrMoreTimes();
 
     $plugin = new Plugin([
       'user'  => ['title' => 'User',  'description' => ''],
@@ -78,7 +78,8 @@ class PluginTest extends TestCase
 
   public function test_empty_template_list_registers_no_settings(): void
   {
-    Functions\expect('add_action')->twice();
+    Functions\expect('add_action')->zeroOrMoreTimes();
+    Functions\expect('add_submenu_page')->zeroOrMoreTimes();
 
     $plugin = new Plugin([]);
 

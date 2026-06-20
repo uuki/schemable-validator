@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sync-core": "rsync -a --delete ../packages/core/ ../packages/wp-schemable-validator/lib/core/",
-    "predev": "pnpm run sync-core && composer install --no-dev --working-dir=../packages/wp-schemable-validator",
+    "predeps": "COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev --working-dir=../packages/wp-schemable-validator",
+    "predev": "pnpm run predeps",
     "dev": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json",
-    "pretest:start": "pnpm run sync-core && composer install --no-dev --working-dir=../packages/wp-schemable-validator",
+    "pretest:start": "pnpm run predeps",
     "test:start": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json --reset --skip-browser"
   },
   "engines": {
