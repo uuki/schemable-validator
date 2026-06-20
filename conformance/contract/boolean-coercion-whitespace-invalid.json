@@ -1,0 +1,16 @@
+{
+  "name": "boolean type rejects whitespace-padded literal",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "b": { "type": "boolean" }
+    },
+    "required": ["b"]
+  },
+  "input": { "b": " true " },
+  "expected": {
+    "b": { "is_valid": false }
+  }
+}

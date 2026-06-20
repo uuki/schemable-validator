@@ -1,0 +1,8 @@
+{
+  "name": "default message: boolean (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "boolean" } }, "required": ["f"] },
+  "input": { "f": "maybe" },
+  "expected": { "f": { "is_valid": false, "errors": ["must be a boolean"] } }
+}

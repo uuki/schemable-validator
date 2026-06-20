@@ -1,0 +1,16 @@
+{
+  "name": "integer type accepts whitespace-padded numeric string",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "n": { "type": "integer" }
+    },
+    "required": ["n"]
+  },
+  "input": { "n": " 42 " },
+  "expected": {
+    "n": { "is_valid": true }
+  }
+}

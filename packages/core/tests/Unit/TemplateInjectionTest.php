@@ -3,8 +3,8 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Controllers\FormController;
-use SchemableValidator\Template;
+use SchemableValidator\Infrastructure\FormController;
+use SchemableValidator\Orchestration\Template;
 
 /**
  * Verifies that Template::get() strips characters that could be exploited for
@@ -30,7 +30,7 @@ class TemplateInjectionTest extends TestCase
     ]);
   }
 
-  // ── CRLF stripping (A03-3) ────────────────────────────────────────────────
+  // ── CRLF stripping ───────────────────────────────────────────────────────
 
   /**
    * @runInSeparateProcess

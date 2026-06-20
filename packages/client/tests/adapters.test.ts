@@ -512,7 +512,7 @@ describe('zodSv: .when()', () => {
       { type: { type: 'string', enum: ['company', 'individual'] }, company_name: { type: 'string' } },
       ['type'],
     ),
-    'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }],
+    'x-when': [{ condition: { '===': [{ var: 'type' }, 'company'] }, require: ['company_name'] }],
   }
 
   it('enforces conditional requirement when condition matches', () => {
@@ -594,7 +594,7 @@ describe('zodSv: .when() call order independence', () => {
       { type: { type: 'string', enum: ['corp'] }, corp_id: { type: 'string' } },
       ['type'],
     ),
-    'x-when': [{ field: 'type', op: '===', equals: 'corp', require: ['corp_id'] }],
+    'x-when': [{ condition: { '===': [{ var: 'type' }, 'corp'] }, require: ['corp_id'] }],
   }
 
   it('refine before when produces same result as when before refine', () => {
@@ -682,7 +682,7 @@ describe('valibotSv: .when()', () => {
       { type: { type: 'string', enum: ['company', 'individual'] }, company_name: { type: 'string' } },
       ['type'],
     ),
-    'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }],
+    'x-when': [{ condition: { '===': [{ var: 'type' }, 'company'] }, require: ['company_name'] }],
   }
 
   it('enforces conditional requirement when condition matches', () => {
@@ -759,5 +759,71 @@ describe('valibotCreateSv: factory config', () => {
     const json    = schema({ host: { type: 'string', format: 'hostname' } }, ['host'])
     factory(json).build()
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[schemable]'), expect.anything())
+  })
+})
+
+// ── x-custom-fields check warning ────────────────────────────────────────────
+
+describe('zodSv: x-custom-fields check warning', () => {
+  const customJson: ObjectSchema = {
+    ...schema({ email: { type: 'string', format: 'email' } }, ['email']),
+    'x-custom-fields': ['email_unique'],
+  }
+
+  it('warns when check:true and x-custom-fields declared but no refiners', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    zodCreateSv({ check: true })(customJson).build()
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('x-custom-fields'),
+      expect.arrayContaining(['email_unique']),
+    )
+    warn.mockRestore()
+  })
+
+  it('does not warn when refiners are registered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    zodCreateSv({ check: true })(customJson).refine(() => {}).build()
+    const customWarn = warn.mock.calls.find(c => String(c[0]).includes('x-custom-fields'))
+    expect(customWarn).toBeUndefined()
+    warn.mockRestore()
+  })
+
+  it('does not warn when check is false', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    zodSv(customJson).build()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})
+
+describe('valibotSv: x-custom-fields check warning', () => {
+  const customJson: ObjectSchema = {
+    ...schema({ email: { type: 'string', format: 'email' } }, ['email']),
+    'x-custom-fields': ['email_unique'],
+  }
+
+  it('warns when check:true and x-custom-fields declared but no refiners', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    valibotCreateSv({ check: true })(customJson).build()
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('x-custom-fields'),
+      expect.arrayContaining(['email_unique']),
+    )
+    warn.mockRestore()
+  })
+
+  it('does not warn when refiners are registered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    valibotCreateSv({ check: true })(customJson).refine(() => {}).build()
+    const customWarn = warn.mock.calls.find(c => String(c[0]).includes('x-custom-fields'))
+    expect(customWarn).toBeUndefined()
+    warn.mockRestore()
+  })
+
+  it('does not warn when check is false', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    valibotSv(customJson).build()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 })

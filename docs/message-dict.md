@@ -1,6 +1,16 @@
-# MessageDict - Multilingual Error Messages
+# MessageDict
 
-`MessageDict` is a value object that lets you define validation error messages as a dictionary, keyed by field and rule.
+`MessageDict` defines validation error messages as a dictionary keyed by field name and **neutral rule id**.
+Pass it to any `Validator` or `SchemaBuilder` instance to localise error text or override individual field messages.
+
+> **Breaking change (rule-id rekeying).**
+
+> **Breaking change (rule-id rekeying).** Message keys are now an engine-neutral
+> vocabulary (`minLength`, `maxLength`, `minimum`, `maximum`, `email`, `uri`,
+> `pattern`, `enum`, `string`/`integer`/`number`/`boolean`, …) instead of
+> Respect's internal ids (`stringType`, `length`, `intType`, `numeric`, `in`, …).
+> See [Migration](#migration-from-respect-rule-ids) below for the full mapping.
+> This keeps messages identical across the Respect, Opis and native backends.
 
 ---
 
@@ -12,7 +22,8 @@ use SchemableValidator\I18n\MessageDict;
 // Japanese preset (applies default messages in bulk)
 $dict = MessageDict::ja();
 
-// English (pass-through to Respect defaults)
+// English: defaults are supplied by the canonical catalog (DefaultMessages),
+// so en() needs no entries of its own.
 $dict = MessageDict::en();
 ```
 
@@ -23,11 +34,25 @@ $dict = MessageDict::ja([
   // Override the entire field (same message regardless of rule)
   'email' => 'The email address is invalid',
 
-  // Override per rule
+  // Override per rule (neutral rule id keys)
   'name' => [
-    'length' => 'Name must be between 2 and 50 characters',
+    'minLength' => 'Name must be at least 2 characters',
+    'maxLength' => 'Name must be no more than 50 characters',
   ],
 ]);
+```
+
+### Placeholder Interpolation
+
+Templates may contain `{var}` (and the ICU-style `{var, type}`, whose type is
+ignored) placeholders, filled from the failing rule's values — `{min}`/`{max}`
+for length/range, `{values}` for `enum`. The same substitution runs on the FE.
+
+```php
+$dict = MessageDict::ja([
+  'name' => ['minLength' => 'Must be at least {min} characters'],
+]);
+// → "Must be at least 2 characters"
 ```
 
 ---
@@ -37,7 +62,7 @@ $dict = MessageDict::ja([
 ### Direct Constructor
 
 ```php
-use SchemableValidator\Validator;
+use SchemableValidator\Orchestration\Validator;
 use SchemableValidator\I18n\MessageDict;
 
 $validator = new Validator($schema, [], [], MessageDict::ja());
@@ -97,14 +122,22 @@ $validator = schv_validator($schema);
 
 ## Message Resolution Priority
 
-`resolve(field, ruleId, fallback)` resolves messages in the following order.
+When a field fails a rule, the backend resolves the message in this order
+(highest first). `MessageDict` (1–3) is always consulted first via
+`resolve(field, neutralRuleId, fallback, vars)`; the schema's inline
+`errorMessage` and the canonical catalog are passed in as the fallback.
 
-| Priority | Condition | Message Used |
+| Priority | Source | Keyed by |
 |:--|:--|:--|
-| 1 | `$definitions[$field][$ruleId]` exists | Field + rule specific |
-| 2 | `$definitions[$field]` is a string | Field-level shorthand |
-| 3 | `$defaults[$ruleId]` exists | Locale preset |
-| 4 | None of the above match | Respect default (English) |
+| 1 | `MessageDict` field + rule (`$definitions[$field][$rule]`) | neutral rule id |
+| 2 | `MessageDict` field-wide string (`$definitions[$field]`) | — |
+| 3 | `MessageDict` locale preset (`$defaults[$rule]`, e.g. `ja()`) | neutral rule id |
+| 4 | Schema inline `errorMessage[keyword]` | JSON Schema keyword |
+| 5 | Canonical catalog (`DefaultMessages`) | neutral rule id |
+| 6 | Engine message (Respect/Opis) — only for rules with no neutral mapping | — |
+
+> A configured `MessageDict` (incl. a locale preset) therefore outranks a
+> schema-level inline `errorMessage`: the operator's dictionary is the final say.
 
 ---
 
@@ -146,18 +179,49 @@ When a field's type changes (string to array, or array to string), the `merge()`
 
 ## Japanese Preset Reference
 
-Default messages applied by `MessageDict::ja()`.
+Default messages applied by `MessageDict::ja()`, keyed by the neutral vocabulary.
 
-| Rule ID | Default Message |
+| Neutral rule id | Default Message (ja) |
 |:--|:--|
-| `stringType` | Please enter a string |
-| `length` | Length is out of range |
-| `email` | Please enter a valid email address |
-| `notEmpty` | This field is required |
-| `notOptional` | This field is required |
-| `integer` / `intType` | Please enter an integer |
-| `numeric` | Please enter a number |
-| `url` | Please enter a valid URL |
-| `regex` | The input format is invalid |
-| `in` / `anyOf` | Please select from the available options |
-| `required` | This field is required (for conditional required) |
+| `string` | 文字列で入力してください |
+| `integer` | 整数で入力してください |
+| `number` | 数値で入力してください |
+| `boolean` | 真偽値で入力してください |
+| `minLength` | 最低{min}文字で入力してください |
+| `maxLength` | 最大{max}文字まで入力できます |
+| `minimum` | {min}以上で入力してください |
+| `maximum` | {max}以下で入力してください |
+| `email` | 有効なメールアドレスを入力してください |
+| `uri` | 有効なURLを入力してください |
+| `date` / `date-time` / `time` | 有効な日付/日時/時刻を入力してください |
+| `uuid` | 有効なUUIDを入力してください |
+| `ipv4` / `ipv6` | 有効なIPv4/IPv6アドレスを入力してください |
+| `hostname` | 有効なホスト名を入力してください |
+| `pattern` | 入力形式が正しくありません |
+| `enum` | 選択肢から選んでください |
+| `required` | 必須項目です（条件付き必須時） |
+
+---
+
+## Migration from Respect rule ids
+
+Keys changed from Respect's internal rule ids to the neutral vocabulary. Update
+any custom `MessageDict` definitions and `schv_message_dict` filters:
+
+| Old key (Respect id) | New key (neutral) |
+|:--|:--|
+| `stringType` | `string` |
+| `intType` / `integer` | `integer` |
+| `numeric` | `number` |
+| (n/a) | `boolean` |
+| `length` | `minLength` and/or `maxLength` (split by which bound failed) |
+| (n/a) | `minimum` / `maximum` |
+| `email` | `email` (unchanged) |
+| `url` | `uri` |
+| `regex` | `pattern` |
+| `in` / `anyOf` | `enum` |
+| `notEmpty` / `notOptional` | `required` |
+
+`email` is the only key that stays the same. The biggest change is `length`,
+which now splits into `minLength`/`maxLength` so the two bounds carry distinct
+messages and `{min}`/`{max}` placeholders.

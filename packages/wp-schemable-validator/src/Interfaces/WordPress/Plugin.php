@@ -8,24 +8,29 @@ final class Plugin
   private array $settings;
 
   /**
-   * @param array<string, array<string, string>> $templates
+   * @param array<string, array<string, string>>|null $templates
    */
-  public function __construct(array $templates = [
-    'user' => [
-      'title'       => 'Reply format（User）',
-      'description' => 'Use {name}, {email}, {body} as placeholders.',
-    ],
-    'admin' => [
-      'title'       => 'Reply format（Admin）',
-      'description' => 'Use {name}, {email}, {body} as placeholders.',
-    ],
-  ])
+  public function __construct(?array $templates = null)
   {
+    if ($templates === null) {
+      $templates = [
+        'user' => [
+          'title'       => __('Reply format (User)', 'schemable-validator'),
+          'description' => __('Use {name}, {email}, {body} as placeholders.', 'schemable-validator'),
+        ],
+        'admin' => [
+          'title'       => __('Reply format (Admin)', 'schemable-validator'),
+          'description' => __('Use {name}, {email}, {body} as placeholders.', 'schemable-validator'),
+        ],
+      ];
+    }
     $this->settings = $templates;
 
     $this->registerHelpers();
     add_action('admin_init', [$this, 'registerSettings']);
     add_action('admin_menu', [$this, 'createMenu']);
+
+    SchemaEditor::register();
   }
 
   private function registerHelpers(): void
@@ -42,9 +47,20 @@ final class Plugin
 
   public function createMenu(): void
   {
-    add_options_page(
-      'Schemable Validator Settings',
-      'Schemable Validator',
+    add_menu_page(
+      __('Schemable Validator', 'schemable-validator'),
+      __('Schemable Validator', 'schemable-validator'),
+      'manage_options',
+      'schv-settings',
+      [$this, 'renderPage'],
+      'dashicons-editor-spellcheck',
+      81
+    );
+
+    add_submenu_page(
+      'schv-settings',
+      __('Settings', 'schemable-validator'),
+      __('Settings', 'schemable-validator'),
       'manage_options',
       'schv-settings',
       [$this, 'renderPage']
@@ -55,7 +71,7 @@ final class Plugin
   {
     ?>
     <div class="wrap">
-      <h1>Schemable Validator Settings</h1>
+      <h1><?php echo esc_html__('Schemable Validator Settings', 'schemable-validator'); ?></h1>
       <form method="post" action="options.php">
         <?php settings_fields('schv_options_group'); ?>
         <table class="form-table">
@@ -69,7 +85,7 @@ final class Plugin
             </tr>
           <?php endforeach; ?>
         </table>
-        <?php submit_button(); ?>
+        <?php submit_button(__('Save Changes', 'schemable-validator')); ?>
       </form>
     </div>
     <?php

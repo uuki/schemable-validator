@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { ObjectSchema, PropertySchema, WhenCondition } from '../schema.js'
+import type { ObjectSchema, PropertySchema, WhenEntry } from '../schema.js'
 import { applyWhenConditions, SchemaBuilderBase, type SvConfigBase } from './builder.js'
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ function propertyToZod(field: PropertySchema): z.ZodTypeAny {
 }
 
 /** Wrap the shared when-condition iterator with Zod's error API. */
-function buildWhenRefiner(conditions: readonly WhenCondition[]): ZodRefiner {
+function buildWhenRefiner(conditions: readonly WhenEntry[]): ZodRefiner {
   return (data, ctx) => {
     applyWhenConditions(conditions, data, (key) => {
       ctx.addIssue({ code: 'custom', path: [key], message: 'Required' })
@@ -142,6 +142,10 @@ class ZodSchemaBuilder extends SchemaBuilderBase<OnUnknown, z.ZodTypeAny, ZodRef
       const { unsupported } = checkZodSchema(this.json)
       if (unsupported.length) {
         console.warn('[schemable] sv.build(): unsupported fields detected:', unsupported)
+      }
+      const customFields = this.json['x-custom-fields'] ?? []
+      if (customFields.length > 0 && this.syncRefiners.length === 0 && this.asyncRefiners.length === 0) {
+        console.warn('[schemable] sv.build(): x-custom-fields declared but no .refine()/.refineAsync() registered:', customFields)
       }
     }
 

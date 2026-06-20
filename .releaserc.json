@@ -12,6 +12,7 @@
     ["@semantic-release/git", {
       "assets": [
         "CHANGELOG.md",
+        "packages/core/composer.json",
         "packages/wp-schemable-validator/index.php",
         "packages/client/package.json"
       ],

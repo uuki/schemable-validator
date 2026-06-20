@@ -1,0 +1,235 @@
+# Japanese translations for Schemable Validator plugin.
+# Copyright (C) 2024 Schemable Validator
+# This file is distributed under the same license as the Schemable Validator plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Schemable Validator 0.12.2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-20 00:00+0000\n"
+"PO-Revision-Date: 2026-06-20 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Claude Code\n"
+"X-Domain: schemable-validator\n"
+
+#. Plugin Name of the plugin
+#: index.php
+msgid "Schemable Validator"
+msgstr "Schemable Validator"
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Reply format (User)"
+msgstr "返信フォーマット（ユーザー）"
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Reply format (Admin)"
+msgstr "返信フォーマット（管理者）"
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Use {name}, {email}, {body} as placeholders."
+msgstr "{name}、{email}、{body} をプレースホルダーとして使用できます。"
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Settings"
+msgstr "設定"
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Schemable Validator Settings"
+msgstr "Schemable Validator 設定"
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Save Changes"
+msgstr "変更を保存"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "String"
+msgstr "文字列"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Integer"
+msgstr "整数"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Number"
+msgstr "数値"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Boolean"
+msgstr "真偽値"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Enum"
+msgstr "列挙"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "(none)"
+msgstr "（なし）"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Date (YYYY-MM-DD)"
+msgstr "日付 (YYYY-MM-DD)"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "DateTime (ISO 8601)"
+msgstr "日時 (ISO 8601)"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Time (HH:MM:SS)"
+msgstr "時刻 (HH:MM:SS)"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema Editor"
+msgstr "スキーマエディタ"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Unauthorized"
+msgstr "権限がありません"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema slug is required"
+msgstr "スキーマスラッグは必須です"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema saved."
+msgstr "スキーマを保存しました。"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema deleted."
+msgstr "スキーマを削除しました。"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Saved schemas"
+msgstr "保存済みスキーマ"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Slug"
+msgstr "スラッグ"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Fields"
+msgstr "フィールド"
+
+#. translators: %d: number of fields in a schema
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "%d field"
+msgid_plural "%d fields"
+msgstr[0] "%d フィールド"
+
+#. translators: %s: schema slug
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Delete schema '%s'?"
+msgstr "スキーマ「%s」を削除しますか？"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Delete"
+msgstr "削除"
+
+#. translators: %s: schema slug being edited
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Edit: %s"
+msgstr "編集: %s"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "New schema"
+msgstr "新規スキーマ"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema slug"
+msgstr "スキーマスラッグ"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Lowercase letters, numbers, hyphens only."
+msgstr "英小文字、数字、ハイフンのみ使用可"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "No fields defined. Click \"Add field\" to start."
+msgstr "フィールドが未定義です。「フィールドを追加」をクリックして開始してください。"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Add field"
+msgstr "フィールドを追加"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Save schema"
+msgstr "スキーマを保存"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Usage"
+msgstr "使い方"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Stored JSON Schema"
+msgstr "保存済み JSON Schema"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Field name"
+msgstr "フィールド名"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Required"
+msgstr "必須"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Remove"
+msgstr "削除"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Min length"
+msgstr "最小文字数"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Max length"
+msgstr "最大文字数"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Format"
+msgstr "フォーマット"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Pattern"
+msgstr "パターン"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Minimum"
+msgstr "最小値"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Maximum"
+msgstr "最大値"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Field type"
+msgstr "フィールドタイプ"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "This field is required"
+msgstr "このフィールドは必須です"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Accepts true or false. No additional constraints."
+msgstr "true または false を受け付けます。追加の制約はありません。"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Allowed values"
+msgstr "許可する値"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Value"
+msgstr "値"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Add value"
+msgstr "値を追加"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Remove field"
+msgstr "フィールドを削除"
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "(new field)"
+msgstr "（新規フィールド）"

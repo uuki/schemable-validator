@@ -2,9 +2,7 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
-final class ArraySchema extends AbstractFieldSchema {
+final class ArraySchema extends AbstractFieldSchema implements MappableField {
   /** @var AbstractFieldSchema */
   private $items;
 
@@ -30,16 +28,16 @@ final class ArraySchema extends AbstractFieldSchema {
     return $this;
   }
 
-  public function toRespect(): v {
-    $chain = v::create();
-    $chain->addRule(v::each($this->items->toRespect()));
+  public function toDescriptors(): array {
+    $itemDescriptors = $this->items instanceof MappableField ? $this->items->toDescriptors() : [];
+    $descriptors     = [['rule' => 'each', 'args' => [$itemDescriptors]]];
     if ($this->minItems !== null) {
-      $chain->addRule(v::length($this->minItems, null));
+      $descriptors[] = ['rule' => 'length', 'args' => [$this->minItems, null]];
     }
     if ($this->maxItems !== null) {
-      $chain->addRule(v::length(null, $this->maxItems));
+      $descriptors[] = ['rule' => 'length', 'args' => [null, $this->maxItems]];
     }
-    return $chain;
+    return $descriptors;
   }
 
   public function toJsonSchema(): array {
@@ -53,6 +51,6 @@ final class ArraySchema extends AbstractFieldSchema {
     if ($this->maxItems !== null) {
       $schema['maxItems'] = $this->maxItems;
     }
-    return $this->applyNullable($schema);
+    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable($schema)));
   }
 }

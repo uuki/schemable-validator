@@ -55,7 +55,8 @@ $template = schv_template([
 
 | 関数 | 戻り値 | 説明 |
 |:--|:--|:--|
-| `schv_validator(array $schema, array $options = [])` | `Validator` | Validator インスタンスを生成 |
+| `schv_validator(array $schema, array $options = [], ?MessageDict $dict = null)` | `Validator` | Validator インスタンスを生成 |
+| `schv_message_dict()` | `MessageDict` | `schv_message_dict` フィルター経由でサイト全体の辞書を返す |
 | `schv_template(array $options = [])` | `Template` | Template インスタンスを生成 |
 | `schv_form()` | `FormController` | FormController インスタンスを生成 |
 

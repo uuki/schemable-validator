@@ -1,0 +1,68 @@
+{
+  "$id": "https://schemable-validator.dev/schema/2026-06/schemable.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Schemable Validator meta-schema",
+  "description": "Extends JSON Schema draft 2020-12 with the schemable-validator owned extensions (x-transform, x-when, x-custom-fields, x-unmapped-fields, errorMessage). Use this as $schema so IDEs and tools recognize the extension keywords without unknown-property warnings.",
+
+  "allOf": [
+    { "$ref": "https://json-schema.org/draft/2020-12/schema" }
+  ],
+
+  "$defs": {
+    "jsonLogicCondition": {
+      "description": "A JSONLogic condition object. Supported operators: ===, !==, >=, <=, >, <, and, or. Values: scalars or {\"var\": \"fieldName\"} references.",
+      "type": "object"
+    },
+    "whenEntry": {
+      "type": "object",
+      "properties": {
+        "condition": { "$ref": "#/$defs/jsonLogicCondition" },
+        "require": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields that become required when the condition matches."
+        }
+      },
+      "required": ["condition", "require"],
+      "additionalProperties": false
+    },
+    "transformCatalog": {
+      "description": "Closed catalog of ASCII-safe value transforms applied before validation.",
+      "enum": ["trim", "toLowerCase", "toUpperCase"]
+    },
+    "errorMessageMap": {
+      "description": "Inline error messages keyed by JSON Schema keyword (AJV ajv-errors convention). Values may contain {var} / {var, type} ICU-subset placeholders.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "schemablePropertyExtensions": {
+      "description": "Extensions available on each property inside 'properties'.",
+      "properties": {
+        "x-transform": {
+          "description": "Value transforms applied before validation in declared order.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/transformCatalog" }
+        },
+        "errorMessage": { "$ref": "#/$defs/errorMessageMap" }
+      }
+    }
+  },
+
+  "properties": {
+    "x-when": {
+      "description": "Conditional requirements evaluated via JSONLogic after per-field validation.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/whenEntry" }
+    },
+    "x-custom-fields": {
+      "description": "Server-side custom validation fields with no JSON Schema form. FE warns when .refine() is not registered.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "x-unmapped-fields": {
+      "description": "Fields validated server-side only (FileSchema, escape hatches). FE passes through.",
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

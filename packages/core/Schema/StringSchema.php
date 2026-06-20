@@ -2,9 +2,7 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
-final class StringSchema extends AbstractFieldSchema {
+final class StringSchema extends AbstractFieldSchema implements MappableField {
   /** @var int|null */
   private $min = null;
 
@@ -92,16 +90,15 @@ final class StringSchema extends AbstractFieldSchema {
     return $this;
   }
 
-  public function toRespect(): v {
-    $chain = v::create();
-    $chain->addRule(RuleMapper::resolve('string', [])->respect);
+  public function toDescriptors(): array {
+    $descriptors = [['rule' => 'string', 'args' => []]];
     if ($this->min !== null || $this->max !== null) {
-      $chain->addRule(RuleMapper::resolve('length', [$this->min, $this->max])->respect);
+      $descriptors[] = ['rule' => 'length', 'args' => [$this->min, $this->max]];
     }
     foreach ($this->extras as $extra) {
-      $chain->addRule(RuleMapper::resolve($extra['rule'], $extra['args'])->respect);
+      $descriptors[] = $extra;
     }
-    return $chain;
+    return $descriptors;
   }
 
   public function toJsonSchema(): array {
@@ -118,6 +115,6 @@ final class StringSchema extends AbstractFieldSchema {
         $schema = array_merge($schema, $mapping->jsonSchema);
       }
     }
-    return $this->applyNullable($schema);
+    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable($schema)));
   }
 }

@@ -3,10 +3,8 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Respect\Validation\Validator as v;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\SV;
-use SchemableValidator\Validator;
 
 class MessageDictTest extends TestCase
 {
@@ -146,21 +144,18 @@ class MessageDictTest extends TestCase
   public function test_validator_uses_dict_for_error_messages(): void
   {
     $dict = MessageDict::ja();
-    $validator = new Validator(
-      ['email' => v::email()],
-      [],
-      [],
-      $dict
-    );
+    $validator = SV::object(['email' => SV::string()->email()])
+      ->withMessages($dict)
+      ->toValidator();
     $result = $validator->validate(['email' => 'invalid'])->getResult();
 
     $this->assertFalse($result['email']['is_valid']);
     $this->assertSame('有効なメールアドレスを入力してください', $result['email']['errors']);
   }
 
-  public function test_validator_without_dict_uses_respect_default(): void
+  public function test_validator_without_dict_uses_default_message(): void
   {
-    $validator = new Validator(['email' => v::email()]);
+    $validator = SV::object(['email' => SV::string()->email()])->toValidator();
     $result = $validator->validate(['email' => 'invalid'])->getResult();
 
     $this->assertFalse($result['email']['is_valid']);
@@ -171,7 +166,9 @@ class MessageDictTest extends TestCase
   public function test_validator_dict_field_specific_override(): void
   {
     $dict = MessageDict::ja(['email' => 'メールを正しく入力してください']);
-    $validator = new Validator(['email' => v::email()], [], [], $dict);
+    $validator = SV::object(['email' => SV::string()->email()])
+      ->withMessages($dict)
+      ->toValidator();
     $result = $validator->validate(['email' => 'bad'])->getResult();
 
     $this->assertSame('メールを正しく入力してください', $result['email']['errors']);
@@ -195,8 +192,8 @@ class MessageDictTest extends TestCase
 
   public function test_errors_format_has_no_bullet_prefix_without_dict(): void
   {
-    // Without dict, errors must NOT start with "- " (Respect's getFullMessage format)
-    $validator = new Validator(['email' => v::email()]);
+    // Without dict, errors must NOT start with "- "
+    $validator = SV::object(['email' => SV::string()->email()])->toValidator();
     $result = $validator->validate(['email' => 'bad'])->getResult();
 
     $this->assertStringNotContainsString('- ', substr($result['email']['errors'], 0, 2));
@@ -205,13 +202,163 @@ class MessageDictTest extends TestCase
   public function test_errors_format_consistent_between_dict_and_no_dict(): void
   {
     // Both paths must produce the same message for the same failure when dict has no match
-    $withoutDict = new Validator(['email' => v::email()]);
-    $withDict    = new Validator(['email' => v::email()], [], [], new MessageDict());
+    $withoutDict = SV::object(['email' => SV::string()->email()])->toValidator();
+    $withDict    = SV::object(['email' => SV::string()->email()])
+      ->withMessages(new MessageDict())
+      ->toValidator();
 
     $r1 = $withoutDict->validate(['email' => 'bad'])->getResult();
     $r2 = $withDict->validate(['email' => 'bad'])->getResult();
 
     $this->assertSame($r1['email']['errors'], $r2['email']['errors']);
+  }
+
+  // ── resolve() variable substitution (Step 5) ────────────────
+
+  public function test_resolve_substitutes_simple_var(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '最低{min}文字必要です']]);
+    $this->assertSame('最低3文字必要です', $dict->resolve('name', 'minLength', 'fallback', ['min' => 3]));
+  }
+
+  public function test_resolve_substitutes_icu_type_annotation(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '{min, number}文字以上']]);
+    $this->assertSame('3文字以上', $dict->resolve('name', 'minLength', 'fallback', ['min' => 3]));
+  }
+
+  public function test_resolve_unknown_var_stays_as_placeholder(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '{foo}文字以上']]);
+    $this->assertSame('{foo}文字以上', $dict->resolve('name', 'minLength', 'fallback', ['min' => 3]));
+  }
+
+  public function test_resolve_no_vars_returns_template_unchanged(): void {
+    $dict = new MessageDict(['name' => ['minLength' => '最低{min}文字']]);
+    $this->assertSame('最低{min}文字', $dict->resolve('name', 'minLength', 'fallback'));
+  }
+
+  public function test_resolve_substitutes_vars_in_defaults(): void {
+    $dict = new MessageDict([], ['minLength' => '最低{min}文字が必要']);
+    $this->assertSame('最低5文字が必要', $dict->resolve('name', 'minLength', 'fallback', ['min' => 5]));
+  }
+
+  public function test_resolve_substitutes_vars_in_field_wide_message(): void {
+    $dict = new MessageDict(['name' => 'エラー: {min}以上']);
+    $this->assertSame('エラー: 10以上', $dict->resolve('name', 'any', 'fallback', ['min' => 10]));
+  }
+
+  public function test_resolve_multiple_vars(): void {
+    $dict = new MessageDict([], ['length' => '{min}〜{max}文字で入力してください']);
+    $this->assertSame('3〜20文字で入力してください', $dict->resolve('name', 'length', 'fallback', ['min' => 3, 'max' => 20]));
+  }
+
+  // ── BE inline errorMessage resolution (Step 1-a / Step 5 parity) ──
+
+  public function test_be_honors_inline_errorMessage_format_override(): void {
+    $sb = SV::object([
+      'email' => SV::string()->email()->errorMessages(['format' => '有効なメールアドレスを入力してください']),
+    ]);
+    $result = $sb->toValidator()->validate(['email' => 'not-an-email'])->getResult();
+
+    $this->assertFalse($result['email']['is_valid']);
+    $this->assertSame('有効なメールアドレスを入力してください', $result['email']['errors']);
+  }
+
+  public function test_be_interpolates_inline_minLength_template(): void {
+    $sb = SV::object([
+      'name' => SV::string()->min(3)->errorMessages(['minLength' => '最低{min}文字必要です']),
+    ]);
+    $result = $sb->toValidator()->validate(['name' => 'ab'])->getResult();
+
+    $this->assertFalse($result['name']['is_valid']);
+    $this->assertSame('最低3文字必要です', $result['name']['errors']);
+  }
+
+  public function test_be_interpolates_inline_maximum_template(): void {
+    $sb = SV::object([
+      'age' => SV::integer()->max(100)->errorMessages(['maximum' => '{max}以下で入力してください']),
+    ]);
+    $result = $sb->toValidator()->validate(['age' => '200'])->getResult();
+
+    $this->assertFalse($result['age']['is_valid']);
+    $this->assertSame('100以下で入力してください', $result['age']['errors']);
+  }
+
+  public function test_dict_takes_priority_over_inline_errorMessage(): void {
+    // Resolution order: MessageDict (by neutral ruleId) > inline errorMessage (by keyword) > canonical default.
+    $sb = SV::object([
+      'email' => SV::string()->email()->errorMessages(['format' => 'インライン']),
+    ])->withMessages(MessageDict::ja(['email' => ['email' => '辞書が勝つ']]));
+
+    $result = $sb->toValidator()->validate(['email' => 'bad'])->getResult();
+
+    $this->assertSame('辞書が勝つ', $result['email']['errors']);
+  }
+
+  public function test_be_inline_errorMessage_via_fromJsonSchema(): void {
+    $validator = \SchemableValidator\Orchestration\Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'name' => ['type' => 'string', 'minLength' => 3, 'errorMessage' => ['minLength' => '最低{min}文字']],
+      ],
+      'required'   => ['name'],
+    ]);
+    $result = $validator->validate(['name' => 'ab'])->getResult();
+
+    $this->assertFalse($result['name']['is_valid']);
+    $this->assertSame('最低3文字', $result['name']['errors']);
+  }
+
+  public function test_be_multi_rule_failure_order_matches_fe_contract(): void {
+    // Rule-ordering contract: format → pattern → enum, mirroring
+    // constraintsFromSchema() in packages/client/src/constraint.ts.
+    $validator = \SchemableValidator\Orchestration\Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'code' => [
+          'type'         => 'string',
+          'format'       => 'email',
+          'pattern'      => '^[0-9]+$',
+          'errorMessage' => ['format' => 'F', 'pattern' => 'P'],
+        ],
+      ],
+      'required'   => ['code'],
+    ]);
+    $result = $validator->validate(['code' => 'zz'])->getResult();
+
+    $this->assertFalse($result['code']['is_valid']);
+    $this->assertSame("F\nP", $result['code']['errors']);
+  }
+
+  public function test_be_default_uses_neutral_catalog_not_respect_text(): void {
+    // No dict, no inline: BE emits the engine-neutral canonical message
+    // (DefaultMessages), NOT Respect's value-prefixed text. Byte-identical to FE.
+    $sb = SV::object(['email' => SV::string()->email()]);
+    $result = $sb->toValidator()->validate(['email' => 'bad'])->getResult();
+
+    $this->assertFalse($result['email']['is_valid']);
+    $this->assertSame('must be a valid email', $result['email']['errors']);
+  }
+
+  public function test_be_default_interpolates_catalog_plural(): void {
+    // Canonical minLength template carries a {plural} var resolved per value.
+    $sb1 = SV::object(['a' => SV::string()->min(3)]);
+    $this->assertSame(
+      'must be at least 3 characters long',
+      $sb1->toValidator()->validate(['a' => 'ab'])->getResult()['a']['errors']
+    );
+
+    $sb2 = SV::object(['a' => SV::string()->max(1)]);
+    $this->assertSame(
+      'must be no more than 1 character long',
+      $sb2->toValidator()->validate(['a' => 'ab'])->getResult()['a']['errors']
+    );
+  }
+
+  public function test_be_default_enum_lists_values(): void {
+    $sb = SV::object(['a' => SV::enum(['x', 'y', 'z'])]);
+    $this->assertSame(
+      'must be one of: x, y, z',
+      $sb->toValidator()->validate(['a' => 'q'])->getResult()['a']['errors']
+    );
   }
 
   // ── SchemaBuilder::withMessages() ──────────────────────────

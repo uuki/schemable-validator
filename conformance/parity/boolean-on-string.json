@@ -1,0 +1,16 @@
+{
+  "name": "boolean field accepts 'on'",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "subscribe": { "type": "boolean" }
+    },
+    "required": ["subscribe"]
+  },
+  "input": { "subscribe": "on" },
+  "expected": {
+    "subscribe": { "is_valid": true }
+  }
+}

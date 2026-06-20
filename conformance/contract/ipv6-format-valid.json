@@ -1,0 +1,16 @@
+{
+  "name": "ipv6 format accepts a well-formed IPv6 address",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "ip": { "type": "string", "format": "ipv6" }
+    },
+    "required": ["ip"]
+  },
+  "input": { "ip": "2001:db8::1" },
+  "expected": {
+    "ip": { "is_valid": true }
+  }
+}

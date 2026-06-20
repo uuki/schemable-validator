@@ -1,0 +1,207 @@
+# Copyright (C) 2024 Schemable Validator
+# This file is distributed under the same license as the Schemable Validator plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Schemable Validator 0.12.2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-20 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Claude Code\n"
+"X-Domain: schemable-validator\n"
+
+#. Plugin Name of the plugin
+#: index.php
+msgid "Schemable Validator"
+msgstr ""
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Reply format (User)"
+msgstr ""
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Reply format (Admin)"
+msgstr ""
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Use {name}, {email}, {body} as placeholders."
+msgstr ""
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Settings"
+msgstr ""
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Schemable Validator Settings"
+msgstr ""
+
+#: src/Interfaces/WordPress/Plugin.php
+msgid "Save Changes"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "String"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Integer"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Number"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Boolean"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Enum"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "(none)"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Date (YYYY-MM-DD)"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "DateTime (ISO 8601)"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Time (HH:MM:SS)"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema Editor"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Unauthorized"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema slug is required"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema saved."
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema deleted."
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Saved schemas"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Slug"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Fields"
+msgstr ""
+
+#. translators: %d: number of fields in a schema
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "%d field"
+msgid_plural "%d fields"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: schema slug
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Delete schema '%s'?"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Delete"
+msgstr ""
+
+#. translators: %s: schema slug being edited
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Edit: %s"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "New schema"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Schema slug"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Lowercase letters, numbers, hyphens only."
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "No fields defined. Click \"Add field\" to start."
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Add field"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Save schema"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Usage"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Stored JSON Schema"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Field name"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Required"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Remove"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Min length"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Max length"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Format"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Pattern"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Minimum"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Maximum"
+msgstr ""
+
+#: src/Interfaces/WordPress/SchemaEditor.php
+msgid "Values (one per line)"
+msgstr ""

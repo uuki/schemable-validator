@@ -6,7 +6,7 @@
 session_start();
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-use SchemableValidator\Template;
+use SchemableValidator\Orchestration\Template;
 
 // Simulate validated session data (normally saved by FormController::save())
 $_SESSION['sv_session_validated_data'] = [

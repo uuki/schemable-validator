@@ -187,13 +187,45 @@ describe('validateObject: x-unmapped-fields', () => {
   })
 })
 
+// ── validateObject: x-transform ──────────────────────────────────────────────
+
+describe('validateObject: x-transform trim', () => {
+  const s = schema({ name: { type: 'string', 'x-transform': ['trim'] } }, ['name'])
+
+  it('trims whitespace from value before validation', () => {
+    expect(validateObject({ name: '  Alice  ' }, s).name.is_valid).toBe(true)
+  })
+  it('returns trimmed value in result', () => {
+    expect(validateObject({ name: '  Alice  ' }, s).name.value).toBe('Alice')
+  })
+  it('trim producing empty string fails required check', () => {
+    expect(validateObject({ name: '   ' }, s).name.is_valid).toBe(false)
+  })
+})
+
+describe('validateObject: x-transform toLowerCase', () => {
+  const s = schema({ code: { type: 'string', 'x-transform': ['toLowerCase'] } }, ['code'])
+
+  it('lowercases ASCII before returning value', () => {
+    expect(validateObject({ code: 'HELLO' }, s).code.value).toBe('hello')
+  })
+})
+
+describe('validateObject: x-transform pipeline (trim + toLowerCase)', () => {
+  const s = schema({ tag: { type: 'string', 'x-transform': ['trim', 'toLowerCase'] } }, ['tag'])
+
+  it('applies transforms in order', () => {
+    expect(validateObject({ tag: '  HELLO  ' }, s).tag.value).toBe('hello')
+  })
+})
+
 // ── validateObject: x-when (equal / notEqual / field ref) ────────────────────
 
 describe('validateObject: x-when === literal', () => {
   const s = schema(
     { type: { type: 'string' }, company_name: { type: 'string' } },
     ['type'],
-    { 'x-when': [{ field: 'type', op: '===', equals: 'company', require: ['company_name'] }] },
+    { 'x-when': [{ condition: { '===': [{ var: 'type' }, 'company'] }, require: ['company_name'] }] },
   )
 
   it('marks field invalid when condition matches', () => {
@@ -214,7 +246,7 @@ describe('validateObject: x-when !== literal', () => {
   const s = schema(
     { role: { type: 'string' }, note: { type: 'string' } },
     ['role'],
-    { 'x-when': [{ field: 'role', op: '!==', equals: 'admin', require: ['note'] }] },
+    { 'x-when': [{ condition: { '!==': [{ var: 'role' }, 'admin'] }, require: ['note'] }] },
   )
 
   it('marks field invalid when role !== admin', () => {
@@ -231,7 +263,7 @@ describe('validateObject: x-when equalsField (field ref)', () => {
   const s = schema(
     { password: { type: 'string' }, confirm: { type: 'string' }, hint: { type: 'string' } },
     ['password', 'confirm'],
-    { 'x-when': [{ field: 'password', op: '===', equalsField: 'confirm', require: ['hint'] }] },
+    { 'x-when': [{ condition: { '===': [{ var: 'password' }, { var: 'confirm' }] }, require: ['hint'] }] },
   )
 
   it('triggers when two fields are equal', () => {
@@ -248,7 +280,7 @@ describe('validateObject: x-when !== equalsField', () => {
   const s = schema(
     { new_pass: { type: 'string' }, old_pass: { type: 'string' }, msg: { type: 'string' } },
     ['new_pass'],
-    { 'x-when': [{ field: 'new_pass', op: '!==', equalsField: 'old_pass', require: ['msg'] }] },
+    { 'x-when': [{ condition: { '!==': [{ var: 'new_pass' }, { var: 'old_pass' }] }, require: ['msg'] }] },
   )
 
   it('triggers when fields differ (new !== old)', () => {
@@ -267,7 +299,7 @@ describe('validateObject: x-when takes precedence over if/then', () => {
     { type: { type: 'string' }, a: { type: 'string' }, b: { type: 'string' } },
     ['type'],
     {
-      'x-when': [{ field: 'type', op: '===', equals: 'x', require: ['a'] }],
+      'x-when': [{ condition: { '===': [{ var: 'type' }, 'x'] }, require: ['a'] }],
       if:   { properties: { type: { const: 'y' } } },
       then: { required: ['b'] },
     },
@@ -288,7 +320,7 @@ describe('validateObject: x-when >= (greaterThanOrEqual)', () => {
   const s = schema(
     { age: { type: 'integer' }, consent: { type: 'string' } },
     ['age'],
-    { 'x-when': [{ field: 'age', op: '>=', equals: 18, require: ['consent'] }] },
+    { 'x-when': [{ condition: { '>=': [{ var: 'age' }, 18] }, require: ['consent'] }] },
   )
   it('triggers at boundary (18 >= 18)', () => {
     expect(validateObject({ age: '18', consent: '' }, s).consent.is_valid).toBe(false)
@@ -302,7 +334,7 @@ describe('validateObject: x-when <= (lessThanOrEqual)', () => {
   const s = schema(
     { score: { type: 'integer' }, retry: { type: 'string' } },
     ['score'],
-    { 'x-when': [{ field: 'score', op: '<=', equals: 50, require: ['retry'] }] },
+    { 'x-when': [{ condition: { '<=': [{ var: 'score' }, 50] }, require: ['retry'] }] },
   )
   it('triggers at boundary (50 <= 50)', () => {
     expect(validateObject({ score: '50', retry: '' }, s).retry.is_valid).toBe(false)
@@ -316,7 +348,7 @@ describe('validateObject: x-when > (greaterThan)', () => {
   const s = schema(
     { level: { type: 'integer' }, bonus: { type: 'string' } },
     ['level'],
-    { 'x-when': [{ field: 'level', op: '>', equals: 10, require: ['bonus'] }] },
+    { 'x-when': [{ condition: { '>': [{ var: 'level' }, 10] }, require: ['bonus'] }] },
   )
   it('triggers above boundary (11 > 10)', () => {
     expect(validateObject({ level: '11', bonus: '' }, s).bonus.is_valid).toBe(false)
@@ -330,7 +362,7 @@ describe('validateObject: x-when < (lessThan)', () => {
   const s = schema(
     { qty: { type: 'integer' }, warn: { type: 'string' } },
     ['qty'],
-    { 'x-when': [{ field: 'qty', op: '<', equals: 1, require: ['warn'] }] },
+    { 'x-when': [{ condition: { '<': [{ var: 'qty' }, 1] }, require: ['warn'] }] },
   )
   it('triggers below boundary (0 < 1)', () => {
     expect(validateObject({ qty: '0', warn: '' }, s).warn.is_valid).toBe(false)
@@ -344,7 +376,7 @@ describe('validateObject: x-when numeric equalsField', () => {
   const s = schema(
     { price: { type: 'integer' }, min_price: { type: 'integer' }, note: { type: 'string' } },
     ['price', 'min_price'],
-    { 'x-when': [{ field: 'price', op: '>=', equalsField: 'min_price', require: ['note'] }] },
+    { 'x-when': [{ condition: { '>=': [{ var: 'price' }, { var: 'min_price' }] }, require: ['note'] }] },
   )
   it('triggers when price >= min_price', () => {
     expect(validateObject({ price: '100', min_price: '50', note: '' }, s).note.is_valid).toBe(false)

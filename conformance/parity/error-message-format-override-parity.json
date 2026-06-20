@@ -1,0 +1,23 @@
+{
+  "name": "errorMessage override: inline format message lands in errors on both stacks (BE/FE parity)",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "errorMessage": { "format": "有効なメールアドレスを入力してください" }
+      }
+    },
+    "required": ["email"]
+  },
+  "input": { "email": "not-an-email" },
+  "expected": {
+    "email": {
+      "is_valid": false,
+      "errors": ["有効なメールアドレスを入力してください"]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "default message: maxLength singular (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "string", "maxLength": 1 } }, "required": ["f"] },
+  "input": { "f": "ab" },
+  "expected": { "f": { "is_valid": false, "errors": ["must be no more than 1 character long"] } }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "default message: uuid (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "string", "format": "uuid" } }, "required": ["f"] },
+  "input": { "f": "nope" },
+  "expected": { "f": { "is_valid": false, "errors": ["must be a valid uuid"] } }
+}

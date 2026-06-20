@@ -7,20 +7,35 @@ if (!function_exists('schv_message_dict')) {
 }
 
 if (!function_exists('schv_validator')) {
-  function schv_validator(array $schema, array $options = [], ?\SchemableValidator\I18n\MessageDict $dict = null): \SchemableValidator\Validator {
-    return new \SchemableValidator\Validator($schema, $options, [], $dict ?? schv_message_dict());
+  function schv_validator(array $schema, array $config = []): \SchemableValidator\Orchestration\Validator {
+    if (!isset($config['dict'])) {
+      $config['dict'] = schv_message_dict();
+    }
+    return new \SchemableValidator\Orchestration\Validator($schema, $config);
+  }
+}
+
+if (!function_exists('schv_csrf')) {
+  function schv_csrf(): \SchemableValidator\Security\CsrfGuard {
+    return new \SchemableValidator\Security\CsrfGuard();
   }
 }
 
 if (!function_exists('schv_template')) {
-  function schv_template(array $options = []): \SchemableValidator\Template {
-    return new \SchemableValidator\Template($options);
+  function schv_template(array $options = []): \SchemableValidator\Orchestration\Template {
+    return new \SchemableValidator\Orchestration\Template($options);
   }
 }
 
 if (!function_exists('schv_form')) {
-  function schv_form(): \SchemableValidator\Controllers\FormController {
-    return new \SchemableValidator\Controllers\FormController();
+  function schv_form(): \SchemableValidator\Infrastructure\FormController {
+    return new \SchemableValidator\Infrastructure\FormController();
+  }
+}
+
+if (!function_exists('schv_stored_schema')) {
+  function schv_stored_schema(string $slug): \SchemableValidator\Interfaces\WordPress\StoredSchemaProvider {
+    return new \SchemableValidator\Interfaces\WordPress\StoredSchemaProvider($slug);
   }
 }
 

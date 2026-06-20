@@ -2,16 +2,18 @@
 
 namespace SchemableValidator;
 
-use Respect\Validation\Validator as v;
+use SchemableValidator\Adapters\Respect\RespectRules;
+use SchemableValidator\Orchestration\SchemaBuilder;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\ArraySchema;
 use SchemableValidator\Schema\BooleanSchema;
+use SchemableValidator\Schema\CustomFieldSchema;
 use SchemableValidator\Schema\EnumSchema;
 use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\FileSchema;
 use SchemableValidator\Schema\IntegerSchema;
 use SchemableValidator\Schema\NumberSchema;
-use SchemableValidator\Schema\RawRespectSchema;
+use SchemableValidator\Adapters\Respect\RawRespectSchema;
 use SchemableValidator\Schema\StringSchema;
 use SchemableValidator\Schema\WhenExpr;
 
@@ -40,8 +42,13 @@ final class SV {
     return new EnumSchema($values);
   }
 
-  public static function file(array $accept = []): FileSchema {
-    return new FileSchema($accept);
+  /**
+   * @param string[] $accept           Allowed MIME types (empty = any).
+   * @param array<string, int> $imageConstraints  Optional image constraints for ImageDriver:
+   *                                   maxWidth, maxHeight, minWidth, minHeight (px), maxSize (bytes).
+   */
+  public static function file(array $accept = [], array $imageConstraints = []): FileSchema {
+    return new FileSchema($accept, $imageConstraints);
   }
 
   /** Array field: validates each element with the given item schema. */
@@ -49,24 +56,40 @@ final class SV {
     return new ArraySchema($items);
   }
 
-  /** Escape hatch: wrap an arbitrary Respect/Validation rule. */
-  public static function respect(v $rule): RawRespectSchema {
-    return new RawRespectSchema($rule);
+  /**
+   * Dependency-free escape hatch: validate with a custom predicate that has no
+   * JSON Schema form. $predicate is `callable(mixed $value): bool`.
+   */
+  public static function custom(callable $predicate, string $message = 'is invalid'): CustomFieldSchema {
+    return new CustomFieldSchema($predicate, $message);
   }
 
-  /** Country-specific postal code validation (x-unmapped-fields). */
+  /**
+   * @deprecated Use the optional Respect driver: RespectRules::rule($rule).
+   *   Kept for back-compat; delegates to the driver. The dependency-free
+   *   alternative is SV::custom(callable). See docs/backend-adapters.md.
+   *
+   * @param object $rule  A Respect\Validation\Validator instance. Type hint
+   *                      omitted so loading this file does not require the
+   *                      respect/validation package.
+   */
+  public static function respect(object $rule): RawRespectSchema {
+    return RespectRules::rule($rule);
+  }
+
+  /** @deprecated Use RespectRules::postalCode($countryCode) (optional Respect driver). */
   public static function postalCode(string $countryCode): RawRespectSchema {
-    return new RawRespectSchema(v::postalCode($countryCode));
+    return RespectRules::postalCode($countryCode);
   }
 
-  /** Credit card number validation via Luhn algorithm (x-unmapped-fields). */
+  /** @deprecated Use RespectRules::creditCard(...$brands) (optional Respect driver). */
   public static function creditCard(string ...$brands): RawRespectSchema {
-    return new RawRespectSchema(empty($brands) ? v::creditCard() : v::creditCard(...$brands));
+    return RespectRules::creditCard(...$brands);
   }
 
-  /** IBAN (International Bank Account Number) validation (x-unmapped-fields). */
+  /** @deprecated Use RespectRules::iban() (optional Respect driver). */
   public static function iban(): RawRespectSchema {
-    return new RawRespectSchema(v::iban());
+    return RespectRules::iban();
   }
 
   // ── Conditional expression builders ──────────────────────────

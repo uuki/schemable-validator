@@ -2,10 +2,8 @@
 
 `SchemaBuilder` は Schemable Validator の中心となるクラスです。バリデーションルールを PHP で一度定義するだけで、以下の2通りの用途に同時に使えます。
 
-- **サーバーサイド** — `toValidator()` で Respect/Validation ベースの `Validator` に変換して検証。
+- **サーバーサイド** — `toValidator()` で `Validator` に変換して検証（デフォルトは NativeAdapter、依存なし）。
 - **クライアントサイド** — `toJson()` / `toJsonSchema()` で標準 JSON Schema (draft 2020-12) にエクスポートし、Zod・Valibot・AJV などの JS バリデーターで利用。
-
-### 主な機能
 
 | 機能 | 説明 |
 |---|---|
@@ -16,7 +14,7 @@
 | WordPress REST | `schv_register_schema('/contact', $schema)` — スキーマを GET エンドポイントとして公開 |
 | 変換不可フィールド | `SV::file()` / `SV::respect()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
 
-### 最小構成の例
+## 基本的な使い方
 
 ```php
 use SchemableValidator\SV;
@@ -47,7 +45,8 @@ echo $schema->toJson();
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
 | `SV::file(['image/jpeg'])` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
-| `SV::respect(v::...)` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::respect(v::...)` | - | **@deprecated** — 代わりに `SV::custom()` または `RespectRules::rule()` を使用。JSON Schema 変換不可。`x-unmapped-fields` に記録される |
+| `SV::custom(callable, message)` | - | 依存なしのエスケープハッチ。`CustomFieldSchema` を返す。`x-unmapped-fields` に記録される |
 
 修飾子:
 
@@ -167,19 +166,111 @@ $schema = SV::object([
 
 ## `x-unmapped-fields` について
 
-JSON Schema に変換できないフィールド（ファイルアップロード・カスタム Respect ルール）は
+JSON Schema に変換できないフィールド（ファイルアップロード・カスタム callable など）は
 `x-unmapped-fields` 拡張キーに名前だけ記録されます。
-バリデーション自体は `toValidator()` を通じて Respect/Validation で行われます。
+バリデーション自体は `toValidator()` を通じて BackendAdapter（デフォルトは NativeAdapter）で行われます。
 
 ```php
 // JSON Schema として渡す場合
-$jsonSchema = $schema->toJsonSchema(); // array
-$json       = $schema->toJson();       // string
+$jsonSchema = $schema->toJsonSchema();                       // array
+$jsonMeta   = $schema->toJsonSchema(['metaSchema' => true]); // array ($schema URI を含む)
+$json       = $schema->toJson();                             // string
 
-// Respect バリデーターとして使う場合（ファイルフィールドも含む）
+// バリデーターとして使う場合（ファイルフィールドも含む）
 $validator = $schema->toValidator();
 $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 ```
+
+### `toValidator()` のパラメータ
+
+```php
+$schema->toValidator(
+  array $config = []
+): Validator
+```
+
+| パラメータ | 型 | 説明 |
+|:--|:--|:--|
+| `$config['adapter']` | `BackendAdapter` | バリデーションエンジン。デフォルト: `NativeAdapter`（依存なし） |
+| `$config['fileDriver']` | `FileValidationDriver` | ファイル検証ドライバー。デフォルト: `NativeFileValidator` |
+| `$config['imageDriver']` | `ImageDriver` | 画像制約ドライバー。デフォルト: `null`（画像制約をスキップ） |
+| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA 検証ドライバー。デフォルト: `null`（CAPTCHA 検証は使用不可） |
+
+### `toJsonSchema()` のオプション
+
+```php
+$schema->toJsonSchema(array $options = []): array
+```
+
+| オプション | 型 | デフォルト | 説明 |
+|:--|:--|:--|:--|
+| `metaSchema` | `bool` | `false` | `true` の場合、出力に `$schema` URI を含める |
+
+### `toUiSchema()`
+
+JSON Forms / RJSF 互換の UI Schema 配列を返します。
+
+```php
+$uiSchema = $schema->toUiSchema(); // array
+```
+
+### `customFields()`
+
+`x-custom-fields` 拡張キーでカスタムフィールド名を宣言します。
+
+```php
+$schema->customFields(array $names): self
+```
+
+### `mergeJsonSchema()`
+
+外部の JSON Schema をビルダーのフィールドとマージします。
+外部スキーマが[スキーマエディタ](/ja/feature-guide#スキーマエディタ)等で定義したプリミティブフィールドを供給し、ビルダー側はコードでしか表現できないフィールド（ファイルアップロード、カスタムバリデーション、条件付き必須、ドライバ注入）を供給します。
+
+```php
+$schema->mergeJsonSchema(array $jsonSchema): self
+```
+
+同名のフィールドが両方に存在する場合、ビルダー側の定義が優先されます。
+
+```php
+use SchemableValidator\SV;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
+
+// GUI で定義されたスキーマ（StoredSchemaProvider 等から取得）
+$gui = [
+  'type'       => 'object',
+  'properties' => [
+    'name'  => ['type' => 'string', 'minLength' => 1, 'maxLength' => 100],
+    'email' => ['type' => 'string', 'format' => 'email'],
+    'type'  => ['type' => 'string', 'enum' => ['personal', 'company']],
+  ],
+  'required' => ['name', 'email', 'type'],
+];
+
+// GUI では表現できないものをコードで追加
+$result = SV::object([
+  'avatar' => SV::file(['image/jpeg', 'image/png'], ['maxWidth' => 4096]),
+])->mergeJsonSchema($gui)
+  ->when('type', SV::equal('company'), ['company_name'])
+  ->toValidator([
+    'imageDriver'   => new NativeImageDriver(),
+    'captchaDriver' => new ReCaptchaV3Driver('SECRET'),
+  ])
+  ->validate($_POST)
+  ->validateFiles($_FILES)
+  ->validateCaptcha()
+  ->getResult();
+```
+
+::: tip WordPress
+スキーマエディタで作成したスキーマは `schv_stored_schema($slug)` で読み込めます。
+```php
+$gui = schv_stored_schema('contact')->toJsonSchema();
+$result = SV::object([...])->mergeJsonSchema($gui)->toValidator()->validate($_POST)->getResult();
+```
+:::
 
 ---
 

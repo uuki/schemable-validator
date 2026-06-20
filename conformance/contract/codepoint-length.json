@@ -1,0 +1,16 @@
+{
+  "name": "maxLength counts codepoints, not UTF-16 code units",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "maxLength": 1 }
+    },
+    "required": ["name"]
+  },
+  "input": { "name": "😀" },
+  "expected": {
+    "name": { "is_valid": true }
+  }
+}

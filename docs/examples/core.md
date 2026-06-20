@@ -26,9 +26,9 @@ Use `validateFiles()` to validate the extension and error code of uploaded files
 
 ---
 
-## 3. reCAPTCHA v3 Validation
+## 3. CAPTCHA Validation (reCAPTCHA v3)
 
-Incorporate `validateReCaptcha()` into the method chain to verify the score threshold and action name.
+Inject a `CaptchaDriver` and call `validateCaptcha()` to verify the score threshold and action name.
 
 <<< ../../packages/example/core/03-recaptcha.php
 

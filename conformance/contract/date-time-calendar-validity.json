@@ -1,0 +1,16 @@
+{
+  "name": "date-time format rejects a calendar-invalid date (Feb 30)",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "occurredAt": { "type": "string", "format": "date-time" }
+    },
+    "required": ["occurredAt"]
+  },
+  "input": { "occurredAt": "2026-02-30T12:00:00Z" },
+  "expected": {
+    "occurredAt": { "is_valid": false }
+  }
+}

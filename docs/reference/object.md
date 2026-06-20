@@ -34,8 +34,12 @@ $schema = SV::object([
 Returns the schema as a **JSON Schema draft 2020-12 array**.
 
 ```php
-$schema->toJsonSchema(): array
+$schema->toJsonSchema(array $options = []): array
 ```
+
+| Option | Type | Default | Description |
+|:--|:--|:--|:--|
+| `metaSchema` | `bool` | `false` | When `true`, includes the `$schema` URI in the output |
 
 - `SV::file()` / `SV::respect()` fields are excluded from `properties` and recorded in `x-unmapped-fields`
 - Fields without `optional()` are included in the `required` array
@@ -86,16 +90,22 @@ echo $schema->toJson();
 
 ## .toValidator() {#tovalidator}
 
-Generates a Respect/Validation-based **`Validator` instance** from the schema.  
-Can validate all fields including `SV::file()` / `SV::respect()`.
+Generates a **`Validator` instance** from the schema. Default backend is the dependency-free NativeAdapter.  
+Can validate all fields including `SV::file()` / `SV::respect()` / `SV::custom()`.
 
 ```php
-$schema->toValidator(array $options = []): Validator
+$schema->toValidator(
+  array $options = [],
+  ?BackendAdapter $adapter = null,
+  ?FileValidationDriver $fileDriver = null
+): Validator
 ```
 
 | Parameter | Type | Description |
 |:--|:--|:--|
 | `$options` | `array` | `Validator` options (e.g. reCAPTCHA configuration) |
+| `$adapter` | `?BackendAdapter` | Backend adapter. `null` = NativeAdapter (default) |
+| `$fileDriver` | `?FileValidationDriver` | File validation driver. `null` = default driver |
 
 **Use case:** Server-side form validation. Combined with `toJsonSchema()`, avoids maintaining duplicate definitions.
 
@@ -109,10 +119,12 @@ $result = $schema->toValidator()
   ->validateFiles($_FILES)
   ->getResult();
 
-// Validation including reCAPTCHA
-$result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
+// Validation including CAPTCHA
+$result = $schema->toValidator([
+    'captchaDriver' => new ReCaptchaV3Driver('SECRET'),
+  ])
   ->validate($_POST)
-  ->validateReCaptcha()
+  ->validateCaptcha()
   ->getResult();
 ```
 
@@ -124,6 +136,30 @@ $result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
   "email": { "value": "bad",   "is_valid": false, "errors": "\"bad\" must be valid email" }
 }
 ```
+
+---
+
+## .toUiSchema() {#touischema}
+
+Returns a JSON Forms / RJSF compatible UI Schema array.
+
+```php
+$schema->toUiSchema(): array
+```
+
+---
+
+## .customFields(names) {#customfields}
+
+Declares custom field names via the `x-custom-fields` extension key.
+
+```php
+$schema->customFields(array $names): self
+```
+
+| Parameter | Type | Description |
+|:--|:--|:--|
+| `$names` | `string[]` | Array of custom field names |
 
 ---
 

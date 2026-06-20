@@ -1,0 +1,16 @@
+{
+  "name": "integer field accepts numeric string '42'",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "age": { "type": "integer" }
+    },
+    "required": ["age"]
+  },
+  "input": { "age": "42" },
+  "expected": {
+    "age": { "is_valid": true }
+  }
+}

@@ -4,23 +4,24 @@ namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Respect\Validation\Validator as v;
-use SchemableValidator\SchemaBuilder;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
+use SchemableValidator\Orchestration\SchemaBuilder;
+use SchemableValidator\Orchestration\Validator;
 use SchemableValidator\SV;
 use SchemableValidator\Schema\RuleMapper;
 use SchemableValidator\Schema\RuleMapping;
-use SchemableValidator\Validator;
 
 class SchemaBuilderTest extends TestCase {
   // ── RuleMapping ─────────────────────────────────────────────
 
   public function test_ruleMapping_isMappable_true_when_jsonSchema_set(): void {
-    $m = new RuleMapping(v::stringType(), ['type' => 'string']);
+    $m = new RuleMapping('string', [], ['type' => 'string']);
     $this->assertTrue($m->isMappable());
     $this->assertSame(['type' => 'string'], $m->jsonSchema);
   }
 
   public function test_ruleMapping_isMappable_false_when_jsonSchema_null(): void {
-    $m = new RuleMapping(v::create(), null);
+    $m = new RuleMapping('fileExt', [['image/jpeg']], null);
     $this->assertFalse($m->isMappable());
     $this->assertNull($m->jsonSchema);
   }
@@ -140,17 +141,17 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_stringSchema_toRespect_validates_valid(): void {
-    $r = SV::string()->min(2)->toRespect();
+    $r = RespectAdapter::compileField(SV::string()->min(2));
     $this->assertTrue($r->validate('hello'));
   }
 
   public function test_stringSchema_toRespect_validates_invalid(): void {
-    $r = SV::string()->min(5)->toRespect();
+    $r = RespectAdapter::compileField(SV::string()->min(5));
     $this->assertFalse($r->validate('hi'));
   }
 
   public function test_stringSchema_email_toRespect(): void {
-    $r = SV::string()->email()->toRespect();
+    $r = RespectAdapter::compileField(SV::string()->email());
     $this->assertTrue($r->validate('user@example.com'));
     $this->assertFalse($r->validate('not-an-email'));
   }
@@ -165,7 +166,7 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_integerSchema_toRespect_validates(): void {
-    $r = SV::integer()->min(1)->max(10)->toRespect();
+    $r = RespectAdapter::compileField(SV::integer()->min(1)->max(10));
     $this->assertTrue($r->validate(5));
     $this->assertFalse($r->validate(0));
     $this->assertFalse($r->validate(11));
@@ -186,9 +187,11 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_booleanSchema_toRespect(): void {
-    $r = SV::boolean()->toRespect();
+    $r = RespectAdapter::compileField(SV::boolean());
     $this->assertTrue($r->validate(true));
-    $this->assertFalse($r->validate('yes'));
+    // Coercion Contract v1: {true,false,1,0,on,off,yes,no} accepted, case-insensitive.
+    $this->assertTrue($r->validate('on'));
+    $this->assertFalse($r->validate('maybe'));
   }
 
   // ── EnumSchema ──────────────────────────────────────────────
@@ -200,7 +203,7 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_enumSchema_toRespect(): void {
-    $r = SV::enum(['general', 'support'])->toRespect();
+    $r = RespectAdapter::compileField(SV::enum(['general', 'support']));
     $this->assertTrue($r->validate('general'));
     $this->assertFalse($r->validate('unknown'));
   }
@@ -224,6 +227,25 @@ class SchemaBuilderTest extends TestCase {
   public function test_rawRespectSchema_toRespect_delegates(): void {
     $r = SV::respect(v::email())->toRespect();
     $this->assertTrue($r->validate('a@b.com'));
+  }
+
+  // ── SchemaBuilder constructor validation ────────────────────
+
+  public function test_constructor_rejects_nested_schemaBuilder_field(): void {
+    $inner = SV::object(['street' => SV::string()]);
+
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessageMatches('/Nested SV::object\(\)/');
+    SV::object([
+      'name'    => SV::string(),
+      'address' => $inner,
+    ]);
+  }
+
+  public function test_constructor_rejects_non_field_schema_value(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessageMatches("/field 'name'/");
+    SV::object(['name' => 'not-a-field-schema']);
   }
 
   // ── SchemaBuilder::toJsonSchema() ───────────────────────────
@@ -256,6 +278,34 @@ class SchemaBuilderTest extends TestCase {
     $js = $sb->toJsonSchema();
     $this->assertArrayNotHasKey('file', $js['properties']);
     $this->assertSame(['file'], $js['x-unmapped-fields']);
+  }
+
+  // ── meta-schema ──────────────────────────────────────────────
+
+  public function test_toJsonSchema_default_uses_draft_2020_12(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema();
+    $this->assertSame('https://json-schema.org/draft/2020-12/schema', $js['$schema']);
+  }
+
+  public function test_toJsonSchema_metaSchema_option_uses_schemable_uri(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema(['metaSchema' => true]);
+    $this->assertSame(SchemaBuilder::META_SCHEMA_URI, $js['$schema']);
+  }
+
+  public function test_meta_schema_json_is_valid(): void {
+    $path = dirname(__DIR__, 2) . '/Schema/meta-schema.json';
+    $this->assertFileExists($path);
+    $json = json_decode((string) file_get_contents($path), true);
+    $this->assertIsArray($json);
+    $this->assertArrayHasKey('$id', $json);
+    $this->assertSame(SchemaBuilder::META_SCHEMA_URI, $json['$id']);
+    // Has all x-* keywords defined
+    $this->assertArrayHasKey('x-when', $json['properties']);
+    $this->assertArrayHasKey('x-custom-fields', $json['properties']);
+    $this->assertArrayHasKey('x-unmapped-fields', $json['properties']);
+    // Has $defs for property-level extensions
+    $this->assertArrayHasKey('transformCatalog', $json['$defs']);
+    $this->assertArrayHasKey('errorMessageMap', $json['$defs']);
   }
 
   public function test_schemaBuilder_toJson_produces_valid_json(): void {
@@ -397,12 +447,12 @@ class SchemaBuilderTest extends TestCase {
   }
 
   public function test_arraySchema_toRespect_validates_valid_items(): void {
-    $r = SV::array(SV::string()->min(2))->toRespect();
+    $r = RespectAdapter::compileField(SV::array(SV::string()->min(2)));
     $this->assertTrue($r->validate(['ab', 'cd']));
   }
 
   public function test_arraySchema_toRespect_rejects_short_items(): void {
-    $r = SV::array(SV::string()->min(3))->toRespect();
+    $r = RespectAdapter::compileField(SV::array(SV::string()->min(3)));
     $this->assertFalse($r->validate(['ab']));
   }
 
@@ -459,10 +509,12 @@ class SchemaBuilderTest extends TestCase {
 
     $this->assertArrayHasKey('x-when', $js);
     $this->assertCount(1, $js['x-when']);
-    $this->assertSame('===',          $js['x-when'][0]['op']);
-    $this->assertSame('type',         $js['x-when'][0]['field']);
-    $this->assertSame('company',      $js['x-when'][0]['equals']);
-    $this->assertSame(['company_name'], $js['x-when'][0]['require']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('condition', $cond);
+    $this->assertArrayHasKey('===', $cond['condition']);
+    $this->assertSame(['var' => 'type'], $cond['condition']['==='][0]);
+    $this->assertSame('company',         $cond['condition']['==='][1]);
+    $this->assertSame(['company_name'], $cond['require']);
     // literal === also emits standard if/then
     $this->assertArrayHasKey('if', $js);
     $this->assertArrayHasKey('then', $js);
@@ -475,8 +527,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('role', SV::notEqual('admin'), ['note'])->toJsonSchema();
 
     $this->assertArrayHasKey('x-when', $js);
-    $this->assertSame('!==',   $js['x-when'][0]['op']);
-    $this->assertSame('admin', $js['x-when'][0]['equals']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('!==', $cond['condition']);
+    $this->assertSame(['var' => 'role'], $cond['condition']['!=='][0]);
+    $this->assertSame('admin',           $cond['condition']['!=='][1]);
     // !== conditions are not expressible in standard JSON Schema
     $this->assertArrayNotHasKey('if', $js);
     $this->assertArrayNotHasKey('then', $js);
@@ -490,10 +544,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('password', SV::equal(SV::field('confirm_password')), ['hint'])->toJsonSchema();
 
     $this->assertArrayHasKey('x-when', $js);
-    $this->assertSame('===',             $js['x-when'][0]['op']);
-    $this->assertArrayHasKey('equalsField', $js['x-when'][0]);
-    $this->assertSame('confirm_password', $js['x-when'][0]['equalsField']);
-    $this->assertArrayNotHasKey('equals', $js['x-when'][0]);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('===', $cond['condition']);
+    $this->assertSame(['var' => 'password'],         $cond['condition']['==='][0]);
+    $this->assertSame(['var' => 'confirm_password'], $cond['condition']['==='][1]);
     // field refs can't emit standard if/then
     $this->assertArrayNotHasKey('if', $js);
   }
@@ -505,8 +559,10 @@ class SchemaBuilderTest extends TestCase {
       'confirmation_msg' => SV::string()->optional(),
     ])->when('new_password', SV::notEqual(SV::field('old_password')), ['confirmation_msg'])->toJsonSchema();
 
-    $this->assertSame('!==',          $js['x-when'][0]['op']);
-    $this->assertSame('old_password', $js['x-when'][0]['equalsField']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('!==', $cond['condition']);
+    $this->assertSame(['var' => 'new_password'], $cond['condition']['!=='][0]);
+    $this->assertSame(['var' => 'old_password'], $cond['condition']['!=='][1]);
   }
 
   // ── Validator: equal / notEqual runtime ──────────────────────
@@ -583,8 +639,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('age', SV::{$method}(18), ['consent'])->toJsonSchema();
 
     $this->assertArrayHasKey('x-when', $js);
-    $this->assertSame($expectedOp, $js['x-when'][0]['op']);
-    $this->assertSame(18, $js['x-when'][0]['equals']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey($expectedOp, $cond['condition']);
+    $this->assertSame(['var' => 'age'], $cond['condition'][$expectedOp][0]);
+    $this->assertSame(18,               $cond['condition'][$expectedOp][1]);
     // Numeric ops are not expressible in standard JSON Schema
     $this->assertArrayNotHasKey('if', $js);
   }
@@ -650,8 +708,10 @@ class SchemaBuilderTest extends TestCase {
     ])->when('price', SV::greaterThanOrEqual(SV::field('min_price')), ['note']);
 
     $js = $sb->toJsonSchema();
-    $this->assertSame('>=',        $js['x-when'][0]['op']);
-    $this->assertSame('min_price', $js['x-when'][0]['equalsField']);
+    $cond = $js['x-when'][0];
+    $this->assertArrayHasKey('>=', $cond['condition']);
+    $this->assertSame(['var' => 'price'],     $cond['condition']['>='][0]);
+    $this->assertSame(['var' => 'min_price'], $cond['condition']['>='][1]);
 
     // price(100) >= min_price(50) → triggers
     $result = $sb->toValidator()->validate(['price' => '100', 'min_price' => '50'])->getResult();
@@ -699,7 +759,197 @@ class SchemaBuilderTest extends TestCase {
     $js2 = SV::object(['type' => SV::enum(['a', 'b']), 'x' => SV::string()->optional()])
       ->when('type', SV::equal('a'), ['x'])->toJsonSchema();
 
-    $this->assertSame($js1['x-when'][0]['op'],     $js2['x-when'][0]['op']);
-    $this->assertSame($js1['x-when'][0]['equals'], $js2['x-when'][0]['equals']);
+    $this->assertSame($js1['x-when'][0]['condition'], $js2['x-when'][0]['condition']);
+  }
+
+  // ── UISchema (Step 1-e) ──────────────────────────────────────
+
+  public function test_toUiSchema_basic_layout(): void {
+    $sb = SV::object([
+      'name'  => SV::string(),
+      'email' => SV::string()->email(),
+    ]);
+    $ui = $sb->toUiSchema();
+    $this->assertSame('VerticalLayout', $ui['type']);
+    $this->assertCount(2, $ui['elements']);
+    $this->assertSame('Control',             $ui['elements'][0]['type']);
+    $this->assertSame('#/properties/name',   $ui['elements'][0]['scope']);
+    $this->assertSame('name',                $ui['elements'][0]['label']);
+    $this->assertSame('#/properties/email',  $ui['elements'][1]['scope']);
+    $this->assertSame('email',               $ui['elements'][1]['label']);
+  }
+
+  public function test_toUiSchema_label_override(): void {
+    $sb = SV::object([
+      'name'  => SV::string()->label('お名前'),
+      'email' => SV::string()->email()->label('メールアドレス'),
+    ]);
+    $ui = $sb->toUiSchema();
+    $this->assertSame('お名前',           $ui['elements'][0]['label']);
+    $this->assertSame('メールアドレス',   $ui['elements'][1]['label']);
+  }
+
+  public function test_toUiSchema_excludes_unmapped_fields(): void {
+    $sb = SV::object([
+      'name' => SV::string(),
+      'file' => SV::file(['image/jpeg']),
+    ]);
+    $ui = $sb->toUiSchema();
+    // Only mappable fields appear in elements
+    $this->assertCount(1, $ui['elements']);
+    $this->assertSame('#/properties/name', $ui['elements'][0]['scope']);
+  }
+
+  public function test_toUiSchema_does_not_affect_toJsonSchema(): void {
+    $sb = SV::object(['name' => SV::string()->label('お名前')]);
+    $js = $sb->toJsonSchema();
+    // label must not leak into the JSON Schema output
+    $this->assertArrayNotHasKey('label', $js['properties']['name']);
+  }
+
+  // ── errorMessages (Step 1-a) ────────────────────────────────
+
+  public function test_errorMessages_appears_in_toJsonSchema(): void {
+    $js = SV::string()->email()->errorMessages([
+      'format' => '有効なメールアドレスを入力してください',
+    ])->toJsonSchema();
+    $this->assertArrayHasKey('errorMessage', $js);
+    $this->assertSame('有効なメールアドレスを入力してください', $js['errorMessage']['format']);
+  }
+
+  public function test_errorMessages_absent_when_not_set(): void {
+    $js = SV::string()->email()->toJsonSchema();
+    $this->assertArrayNotHasKey('errorMessage', $js);
+  }
+
+  public function test_errorMessages_on_integer(): void {
+    $js = SV::integer()->min(1)->errorMessages(['type' => '整数で入力してください'])->toJsonSchema();
+    $this->assertSame('整数で入力してください', $js['errorMessage']['type']);
+  }
+
+  public function test_errorMessages_survives_nullable(): void {
+    $js = SV::string()->nullable()->errorMessages(['type' => 'custom'])->toJsonSchema();
+    $this->assertSame(['string', 'null'], $js['type']);
+    $this->assertSame('custom', $js['errorMessage']['type']);
+  }
+
+  public function test_errorMessages_in_object_toJsonSchema(): void {
+    $sb = SV::object([
+      'email' => SV::string()->email()->errorMessages(['format' => 'メール形式が無効です']),
+    ]);
+    $js = $sb->toJsonSchema();
+    $this->assertArrayHasKey('errorMessage', $js['properties']['email']);
+    $this->assertSame('メール形式が無効です', $js['properties']['email']['errorMessage']['format']);
+  }
+
+  // ── SchemaBuilder::customFields() (Step 3-c) ─────────────────
+
+  public function test_customFields_appears_in_json_schema(): void {
+    $js = SV::object(['email' => SV::string()])
+      ->customFields(['email_unique', 'age_verify'])
+      ->toJsonSchema();
+
+    $this->assertArrayHasKey('x-custom-fields', $js);
+    $this->assertSame(['email_unique', 'age_verify'], $js['x-custom-fields']);
+  }
+
+  public function test_customFields_absent_when_not_called(): void {
+    $js = SV::object(['name' => SV::string()])->toJsonSchema();
+    $this->assertArrayNotHasKey('x-custom-fields', $js);
+  }
+
+  public function test_customFields_single_entry(): void {
+    $js = SV::object(['email' => SV::string()])
+      ->customFields(['email_unique'])
+      ->toJsonSchema();
+
+    $this->assertSame(['email_unique'], $js['x-custom-fields']);
+  }
+
+  public function test_customFields_does_not_affect_validation(): void {
+    $sb = SV::object(['name' => SV::string()])->customFields(['custom_check']);
+    $result = $sb->toValidator()->validate(['name' => 'Alice'])->getResult();
+    $this->assertTrue($result['name']['is_valid']);
+    // custom_check not in result — server-side only
+    $this->assertArrayNotHasKey('custom_check', $result);
+  }
+
+  // ── mergeJsonSchema ─────────────────────────────────────────
+
+  public function test_mergeJsonSchema_combines_properties(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'name'  => ['type' => 'string', 'minLength' => 1],
+        'email' => ['type' => 'string', 'format' => 'email'],
+      ],
+      'required' => ['name', 'email'],
+    ];
+
+    $schema = SV::object([
+      'avatar' => SV::file(['image/jpeg']),
+    ])->mergeJsonSchema($external);
+
+    $js = $schema->toJsonSchema();
+
+    $this->assertArrayHasKey('name', $js['properties']);
+    $this->assertArrayHasKey('email', $js['properties']);
+    $this->assertContains('name', $js['required']);
+    $this->assertContains('email', $js['required']);
+    $this->assertContains('avatar', $js['x-unmapped-fields']);
+  }
+
+  public function test_mergeJsonSchema_builder_overrides_external(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'name' => ['type' => 'string', 'maxLength' => 50],
+      ],
+      'required' => ['name'],
+    ];
+
+    $js = SV::object([
+      'name' => SV::string()->min(1)->max(100),
+    ])->mergeJsonSchema($external)->toJsonSchema();
+
+    $this->assertSame(100, $js['properties']['name']['maxLength']);
+  }
+
+  public function test_mergeJsonSchema_validation_works(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'email' => ['type' => 'string', 'format' => 'email'],
+      ],
+      'required' => ['email'],
+    ];
+
+    $result = SV::object([])
+      ->mergeJsonSchema($external)
+      ->toValidator()
+      ->validate(['email' => 'not-email'])
+      ->getResult();
+
+    $this->assertFalse($result['email']['is_valid']);
+  }
+
+  public function test_mergeJsonSchema_with_when(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'type'         => ['type' => 'string', 'enum' => ['personal', 'company']],
+        'company_name' => ['type' => 'string', 'minLength' => 1],
+      ],
+      'required' => ['type'],
+    ];
+
+    $result = SV::object([])
+      ->mergeJsonSchema($external)
+      ->when('type', SV::equal('company'), ['company_name'])
+      ->toValidator()
+      ->validate(['type' => 'company', 'company_name' => ''])
+      ->getResult();
+
+    $this->assertFalse($result['company_name']['is_valid']);
   }
 }

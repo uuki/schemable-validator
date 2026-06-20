@@ -2,7 +2,7 @@
 
 ## 概要
 
-`SchemaBuilder::toJsonSchema()` は PHP 側のバリデーションルールを標準 JSON Schema（Draft-07）オブジェクトとしてエクスポートします。JSON Schema に対応した任意のバリデーターをクライアント側で直接利用できます。
+`SchemaBuilder::toJsonSchema()` は PHP 側のバリデーションルールを標準 JSON Schema（draft 2020-12）オブジェクトとしてエクスポートします。JSON Schema に対応した任意のバリデーターをクライアント側で直接利用できます。
 
 `@uuki/schemable-validator-client` には JSON Schema を Zod または Valibot のネイティブスキーマに変換するビルトイン**アダプター**も同梱されており、型推論やフレームワーク連携など、JSON Schema バリデーター単体では得られない機能を提供します。
 
@@ -63,7 +63,7 @@ TypeScript の型推論やリアクティブフォームとの統合、カスタ
 import { sv } from '@uuki/schemable-validator-client/zod'
 
 const jsonSchema = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
   properties: {
     name:  { type: 'string', minLength: 1 },
@@ -101,7 +101,7 @@ import { sv } from '@uuki/schemable-validator-client/valibot'
 import * as v from 'valibot'
 
 const jsonSchema = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
   properties: {
     name:  { type: 'string', minLength: 1 },

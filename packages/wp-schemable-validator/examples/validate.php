@@ -1,5 +1,5 @@
 <?php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
 // WordPress uses $_REQUEST to build query vars, so a POST body with name=Alice
 // would route to "find post with slug Alice" and return 404. Strip 'name' from
@@ -15,23 +15,22 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'validate') {
     return;
   }
-  $validator = schv_validator([]);
-  if (!$validator->checkToken($_POST['schv_csrf_token'] ?? '', 'validate')) {
+  if (!schv_csrf()->checkToken($_POST['schv_csrf_token'] ?? '', 'validate')) {
     $GLOBALS['schv_ex_validate'] = ['_error' => 'Invalid or expired CSRF token.'];
     return;
   }
-  $schema = [
-    'name'  => v::stringType()->length(1, 50),
-    'email' => v::email(),
-    'type'  => v::in(['general', 'support', 'sales', 'other']),
-    'body'  => v::stringType()->length(1, 1000),
-  ];
-  $GLOBALS['schv_ex_validate'] = schv_validator($schema)->validate($_POST)->getResult();
+  $schema = SV::object([
+    'name'  => SV::string()->min(1)->max(50),
+    'email' => SV::string()->email(),
+    'type'  => SV::enum(['general', 'support', 'sales', 'other']),
+    'body'  => SV::string()->min(1)->max(1000),
+  ]);
+  $GLOBALS['schv_ex_validate'] = $schema->toValidator()->validate($_POST)->getResult();
 });
 
 add_shortcode('schv_example_validate', function (): string {
   $r     = $GLOBALS['schv_ex_validate'] ?? [];
-  $token = schv_validator([])->createToken('validate');
+  $token = schv_csrf()->createToken('validate');
   ob_start(); ?>
   <div style="font-family:sans-serif;max-width:500px">
     <h2>Example: Validate</h2>

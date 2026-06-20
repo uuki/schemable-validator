@@ -1,12 +1,12 @@
 <?php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
-function schv_multipage_schema(): array {
-  return [
-    'name'  => v::stringType()->length(1, 50),
-    'email' => v::email(),
-    'body'  => v::stringType()->length(1, 1000),
-  ];
+function schv_multipage_schema() {
+  return SV::object([
+    'name'  => SV::string()->min(1)->max(50),
+    'email' => SV::string()->email(),
+    'body'  => SV::string()->min(1)->max(1000),
+  ]);
 }
 
 // ── Step 1: Input ──────────────────────────────────────────────────────────────
@@ -15,12 +15,11 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'form_input') {
     return;
   }
-  $csrf = schv_validator([]);
-  if (!$csrf->checkToken($_POST['schv_csrf_token'] ?? '', 'form_input')) {
+  if (!schv_csrf()->checkToken($_POST['schv_csrf_token'] ?? '', 'form_input')) {
     $GLOBALS['schv_ex_input_error'] = 'Invalid or expired CSRF token.';
     return;
   }
-  $validator = schv_validator(schv_multipage_schema());
+  $validator = schv_multipage_schema()->toValidator();
   $result    = $validator->validate($_POST)->getResult();
   $all_valid = array_reduce($result, fn($c, $i) => $c && $i['is_valid'], true);
 
@@ -34,7 +33,7 @@ add_action('template_redirect', function () {
 
 add_shortcode('schv_example_form_input', function (): string {
   $r     = $GLOBALS['schv_ex_input'] ?? [];
-  $token = schv_validator([])->createToken('form_input');
+  $token = schv_csrf()->createToken('form_input');
   ob_start(); ?>
   <div style="font-family:sans-serif;max-width:500px">
     <h2>Step 1: Input</h2>
@@ -68,8 +67,7 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'form_confirm') {
     return;
   }
-  $csrf = schv_validator([]);
-  if (!$csrf->checkToken($_POST['schv_csrf_token'] ?? '', 'form_confirm')) {
+  if (!schv_csrf()->checkToken($_POST['schv_csrf_token'] ?? '', 'form_confirm')) {
     $GLOBALS['schv_ex_confirm_error'] = 'Invalid or expired CSRF token.';
     return;
   }
@@ -96,7 +94,7 @@ add_shortcode('schv_example_form_confirm', function (): string {
     <?php endif; ?>
     <form method="post">
       <input type="hidden" name="schv_action" value="form_confirm">
-      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr(schv_validator([])->createToken('form_confirm')); ?>">
+      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr(schv_csrf()->createToken('form_confirm')); ?>">
       <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>">← Back</a>
       &nbsp;
       <button type="submit">Submit</button>

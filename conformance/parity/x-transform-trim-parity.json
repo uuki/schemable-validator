@@ -1,0 +1,16 @@
+{
+  "name": "x-transform: trim removes ASCII whitespace from both ends (BE/FE parity)",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "x-transform": ["trim"] }
+    },
+    "required": ["name"]
+  },
+  "input": { "name": " hello " },
+  "expected": {
+    "name": { "is_valid": true }
+  }
+}

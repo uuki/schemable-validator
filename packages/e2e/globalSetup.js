@@ -55,9 +55,8 @@ async function pollPage(url, predicate, timeoutMs = 180_000, intervalMs = 2000) 
 }
 
 module.exports = async function globalSetup() {
-  // Step 1: sync core files and install composer deps
-  execSync('pnpm run sync-core', { cwd: PLAYGROUND_DIR, stdio: 'pipe' });
-  execSync('composer install --no-dev', { cwd: PLUGIN_DIR, stdio: 'pipe' });
+  // Step 1: mirror core into vendor (replaces symlink with real copy for Playground)
+  execSync('bash mirror-core.sh', { cwd: PLAYGROUND_DIR, stdio: 'pipe' });
 
   // Step 2: start the playground. Pipe stdout only (to detect "Ready!"),
   //         inherit stderr directly so the Int8Array/WebStreams noise from

@@ -8,22 +8,19 @@ node_modules/
 vendor/
 plugins/schemable-validator/vendor/
 packages/wp-schemable-validator/vendor/
-packages/wp-schemable-validator/lib/core/
+packages/wp-schemable-validator/lib/
 
 # wp-now development files.
 database/
 db.php/
-mu-plugins/
 uploads/
-
-# local development files
-library/Models/
-library/**/ignore.*.php
 
 # cache
 .phpunit.result.cache
+.last-run.json
 
 # local / build artifacts
+test-results/
 playground/.tmp-sessions
 packages/e2e/test-results
 packages/client/dist/

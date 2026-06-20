@@ -1,0 +1,16 @@
+{
+  "name": "ipv6 format rejects an IPv4 address",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "ip": { "type": "string", "format": "ipv6" }
+    },
+    "required": ["ip"]
+  },
+  "input": { "ip": "192.168.1.1" },
+  "expected": {
+    "ip": { "is_valid": false }
+  }
+}

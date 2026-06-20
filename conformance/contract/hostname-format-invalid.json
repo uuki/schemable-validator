@@ -1,0 +1,16 @@
+{
+  "name": "hostname format rejects a non-hostname string",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "host": { "type": "string", "format": "hostname" }
+    },
+    "required": ["host"]
+  },
+  "input": { "host": "not a domain" },
+  "expected": {
+    "host": { "is_valid": false }
+  }
+}

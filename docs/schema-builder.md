@@ -2,10 +2,8 @@
 
 `SchemaBuilder` is the central class of Schemable Validator. It lets you define all validation rules in PHP once and use them in two ways simultaneously:
 
-- **Server-side** — convert to a Respect/Validation-based `Validator` via `toValidator()`.
+- **Server-side** — convert to a `Validator` (NativeAdapter by default, dependency-free) via `toValidator()`.
 - **Client-side** — export to standard JSON Schema (draft 2020-12) via `toJson()` / `toJsonSchema()`, then consume from any JS validator (Zod, Valibot, AJV, …).
-
-### Key features
 
 | Feature | Description |
 |---|---|
@@ -16,7 +14,7 @@
 | WordPress REST | `schv_register_schema('/contact', $schema)` — exposes schema as a GET endpoint |
 | Unmapped fields | `SV::file()` / `SV::respect()` are tracked in `x-unmapped-fields`, validated server-side only |
 
-### Minimal example
+## Basic usage
 
 ```php
 use SchemableValidator\SV;
@@ -47,7 +45,8 @@ echo $schema->toJson();
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
 | `SV::file(['image/jpeg'])` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
-| `SV::respect(v::...)` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
+| `SV::respect(v::...)` | - | **@deprecated** — use `SV::custom()` or `RespectRules::rule()` instead. Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
+| `SV::custom(callable, message)` | - | Dependency-free escape hatch. Returns `CustomFieldSchema`. Recorded in `x-unmapped-fields` |
 
 Modifiers:
 
@@ -167,19 +166,111 @@ Output:
 
 ## About `x-unmapped-fields`
 
-Fields that cannot be converted to JSON Schema (file uploads and custom Respect rules)
+Fields that cannot be converted to JSON Schema (file uploads, custom callables, etc.)
 are recorded by name only under the `x-unmapped-fields` extension key.
-Validation itself is performed via Respect/Validation through `toValidator()`.
+Validation is performed via the BackendAdapter (NativeAdapter by default) through `toValidator()`.
 
 ```php
 // Use as JSON Schema
-$jsonSchema = $schema->toJsonSchema(); // array
-$json       = $schema->toJson();       // string
+$jsonSchema = $schema->toJsonSchema();                       // array
+$jsonMeta   = $schema->toJsonSchema(['metaSchema' => true]); // array (includes $schema URI)
+$json       = $schema->toJson();                             // string
 
-// Use as a Respect validator (includes file fields)
+// Use as a validator (includes file fields)
 $validator = $schema->toValidator();
 $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 ```
+
+### `toValidator()` parameters
+
+```php
+$schema->toValidator(
+  array $config = []
+): Validator
+```
+
+| Parameter | Type | Description |
+|:--|:--|:--|
+| `$config['adapter']` | `BackendAdapter` | Validation engine. Default: `NativeAdapter` (dependency-free) |
+| `$config['fileDriver']` | `FileValidationDriver` | File validation driver. Default: `NativeFileValidator` |
+| `$config['imageDriver']` | `ImageDriver` | Image constraint driver. Default: `null` (image constraints are skipped) |
+| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA verification driver. Default: `null` (captcha verification unavailable) |
+
+### `toJsonSchema()` options
+
+```php
+$schema->toJsonSchema(array $options = []): array
+```
+
+| Option | Type | Default | Description |
+|:--|:--|:--|:--|
+| `metaSchema` | `bool` | `false` | When `true`, includes the `$schema` URI in the output |
+
+### `toUiSchema()`
+
+Returns a JSON Forms / RJSF compatible UI Schema array.
+
+```php
+$uiSchema = $schema->toUiSchema(); // array
+```
+
+### `customFields()`
+
+Declares custom field names via the `x-custom-fields` extension key.
+
+```php
+$schema->customFields(array $names): self
+```
+
+### `mergeJsonSchema()`
+
+Merges an external JSON Schema with the builder's fields.
+The external schema supplies primitive fields (defined via the [Schema Editor](/feature-guide#schema-editor) or any JSON Schema source), while the builder supplies fields that require code: file uploads, custom validators, cross-field conditions, and driver injection.
+
+```php
+$schema->mergeJsonSchema(array $jsonSchema): self
+```
+
+When both sources define the same field name, the builder's definition takes precedence.
+
+```php
+use SchemableValidator\SV;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
+
+// GUI-defined schema (e.g. from StoredSchemaProvider)
+$gui = [
+  'type'       => 'object',
+  'properties' => [
+    'name'  => ['type' => 'string', 'minLength' => 1, 'maxLength' => 100],
+    'email' => ['type' => 'string', 'format' => 'email'],
+    'type'  => ['type' => 'string', 'enum' => ['personal', 'company']],
+  ],
+  'required' => ['name', 'email', 'type'],
+];
+
+// Code adds what the GUI cannot express
+$result = SV::object([
+  'avatar' => SV::file(['image/jpeg', 'image/png'], ['maxWidth' => 4096]),
+])->mergeJsonSchema($gui)
+  ->when('type', SV::equal('company'), ['company_name'])
+  ->toValidator([
+    'imageDriver'   => new NativeImageDriver(),
+    'captchaDriver' => new ReCaptchaV3Driver('SECRET'),
+  ])
+  ->validate($_POST)
+  ->validateFiles($_FILES)
+  ->validateCaptcha()
+  ->getResult();
+```
+
+::: tip WordPress
+Use `schv_stored_schema($slug)` to load a schema created via the Schema Editor:
+```php
+$gui = schv_stored_schema('contact')->toJsonSchema();
+$result = SV::object([...])->mergeJsonSchema($gui)->toValidator()->validate($_POST)->getResult();
+```
+:::
 
 ---
 

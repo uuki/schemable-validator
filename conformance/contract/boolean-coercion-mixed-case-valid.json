@@ -1,0 +1,16 @@
+{
+  "name": "boolean type accepts mixed-case literal TRUE",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "b": { "type": "boolean" }
+    },
+    "required": ["b"]
+  },
+  "input": { "b": "TRUE" },
+  "expected": {
+    "b": { "is_valid": true }
+  }
+}

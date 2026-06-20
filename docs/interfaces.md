@@ -55,7 +55,8 @@ The following global functions become available once the plugin is activated.
 
 | Function | Return | Description |
 |:--|:--|:--|
-| `schv_validator(array $schema, array $options = [])` | `Validator` | Creates a Validator instance |
+| `schv_validator(array $schema, array $options = [], ?MessageDict $dict = null)` | `Validator` | Creates a Validator instance |
+| `schv_message_dict()` | `MessageDict` | Returns the site-wide dictionary via the `schv_message_dict` filter |
 | `schv_template(array $options = [])` | `Template` | Creates a Template instance |
 | `schv_form()` | `FormController` | Creates a FormController instance |
 

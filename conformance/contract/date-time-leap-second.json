@@ -1,0 +1,16 @@
+{
+  "name": "date-time format accepts a leap second (:60)",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "occurredAt": { "type": "string", "format": "date-time" }
+    },
+    "required": ["occurredAt"]
+  },
+  "input": { "occurredAt": "2024-01-15T23:59:60Z" },
+  "expected": {
+    "occurredAt": { "is_valid": true }
+  }
+}

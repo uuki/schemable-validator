@@ -16,7 +16,49 @@ WordPress プラグインとして有効化した環境での実装例です。`
 
 ---
 
-## 2. ファイルアップロードのバリデーション
+## 2. スキーマエディタの定義とコードのマージ
+
+スキーマエディタ（管理画面）で定義したプリミティブフィールドと、GUI では表現できないロジック（ファイルアップロード、条件付き必須、カスタムバリデーション、ドライバ注入）を `mergeJsonSchema()` で組み合わせます。
+
+```php
+use SchemableValidator\SV;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
+
+// 1. スキーマエディタで作成したスキーマを読み込む（スラッグ: "contact"）
+$gui = schv_stored_schema('contact')->toJsonSchema();
+
+// 2. コード側のフィールドと条件を追加してマージ
+$schema = SV::object([
+  'avatar'       => SV::file(['image/jpeg', 'image/png'], ['maxWidth' => 4096]),
+  'company_name' => SV::string()->min(1)->max(200)->optional(),
+])->mergeJsonSchema($gui)
+  ->when('type', SV::equal('company'), ['company_name']);
+
+// 3. ドライバを指定してバリデーション
+$result = $schema
+  ->toValidator([
+    'imageDriver'   => new NativeImageDriver(),
+    'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
+  ])
+  ->validate($_POST)
+  ->validateFiles($_FILES)
+  ->validateCaptcha()
+  ->getResult();
+```
+
+GUI で定義したフィールド（`name`、`email`、`type`）と、コードで定義したフィールド（`avatar`、`company_name`）がまとめて検証されます。
+同名のフィールドが両方に存在する場合、コード側の定義が優先されます。
+
+マージしたスキーマをクライアント向けに REST エンドポイントとして公開するには以下のようにします。
+
+```php
+schv_register_schema('/contact', schv_stored_schema('contact'));
+```
+
+---
+
+## 3. ファイルアップロードのバリデーション
 
 `validateFiles()` で `$_FILES` を検証し、許容する MIME タイプを制限します。
 
@@ -26,7 +68,7 @@ WordPress プラグインとして有効化した環境での実装例です。`
 
 ---
 
-## 3. CSRF トークン保護
+## 4. CSRF トークン保護
 
 `createToken()` で hidden フィールドにトークンを埋め込み、送信時に `checkToken()` で照合します。
 
@@ -36,7 +78,7 @@ WordPress プラグインとして有効化した環境での実装例です。`
 
 ---
 
-## 4. メールテンプレートレンダリング
+## 5. メールテンプレートレンダリング
 
 `schv_template()` で WP オプションのテンプレートにバリデーション済みデータを差し込みます。
 
@@ -46,7 +88,7 @@ WordPress プラグインとして有効化した環境での実装例です。`
 
 ---
 
-## 5. マルチページフォーム（入力 → 確認 → 完了）
+## 6. マルチページフォーム（入力 → 確認 → 完了）
 
 `schv_form()` でセッションにデータを保持し、3ページにまたがるフォームを実装します。
 

@@ -1,0 +1,8 @@
+{
+  "name": "default message: minimum (no override, BE/FE canonical parity)",
+  "category": "parity",
+  "schema": { "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "properties": { "f": { "type": "integer", "minimum": 10 } }, "required": ["f"] },
+  "input": { "f": "5" },
+  "expected": { "f": { "is_valid": false, "errors": ["must be at least 10"] } }
+}

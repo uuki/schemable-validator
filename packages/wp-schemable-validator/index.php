@@ -5,6 +5,8 @@
  * Version: 0.12.3
  * Requires at least: 5.9
  * Requires PHP: 7.4
+ * Text Domain: schemable-validator
+ * Domain Path: /languages
  */
 
 // ── Activation / deactivation ─────────────────────────────────────────────────
@@ -61,6 +63,8 @@ if (version_compare($wp_version, '5.9', '<')) {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 require_once __DIR__ . '/vendor/autoload.php';
+
+load_plugin_textdomain('schemable-validator', false, dirname(plugin_basename(__FILE__)) . '/languages');
 
 use SchemableValidator\Interfaces\WordPress\Plugin;
 new Plugin();

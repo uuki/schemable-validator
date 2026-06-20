@@ -23,18 +23,41 @@ final class MessageDict {
     $this->defaults    = $defaults;
   }
 
-  public function resolve(string $field, string $ruleId, string $fallback): string {
+  /**
+   * @param array<string, int|float|string> $vars  Substitution map for {varName} / {varName, type} placeholders.
+   */
+  public function resolve(string $field, string $ruleId, string $fallback, array $vars = []): string {
     $def = $this->definitions[$field] ?? null;
 
     if (is_array($def) && isset($def[$ruleId])) {
-      return $def[$ruleId];
+      return self::interpolate($def[$ruleId], $vars);
     }
 
     if (is_string($def)) {
-      return $def;
+      return self::interpolate($def, $vars);
     }
 
-    return $this->defaults[$ruleId] ?? $fallback;
+    return self::interpolate($this->defaults[$ruleId] ?? $fallback, $vars);
+  }
+
+  /**
+   * Replace {varName} and {varName, type} placeholders with values from $vars.
+   * The ICU type annotation (", type") is accepted and silently ignored.
+   * Unknown keys are left as-is. Mirrors substituteVars() in packages/client/src/constraint.ts.
+   *
+   * @param array<string, int|float|string> $vars
+   */
+  public static function interpolate(string $template, array $vars): string {
+    if (empty($vars)) {
+      return $template;
+    }
+    return (string) preg_replace_callback(
+      '/\{(\w+)(?:,\s*\w+)?\}/',
+      static function (array $m) use ($vars): string {
+        return isset($vars[$m[1]]) ? (string) $vars[$m[1]] : $m[0];
+      },
+      $template
+    );
   }
 
   public function merge(array $definitions): self {

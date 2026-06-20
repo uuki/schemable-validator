@@ -1,0 +1,16 @@
+{
+  "name": "time format accepts a leap second (:60)",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "startTime": { "type": "string", "format": "time" }
+    },
+    "required": ["startTime"]
+  },
+  "input": { "startTime": "23:59:60" },
+  "expected": {
+    "startTime": { "is_valid": true }
+  }
+}

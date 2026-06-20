@@ -3,9 +3,9 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Respect\Validation\Validator as v;
 use SchemableValidator\SV;
-use SchemableValidator\Validator;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
+use SchemableValidator\Orchestration\Validator;
 
 class ValidatorTest extends TestCase
 {
@@ -13,7 +13,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_valid_data_returns_is_valid_true(): void
   {
-    $validator = new Validator(['name' => v::stringType()->length(1, 50)]);
+    $validator = SV::object(['name' => SV::string()->min(1)->max(50)])->toValidator();
     $result = $validator->validate(['name' => 'Alice'])->getResult();
 
     $this->assertTrue($result['name']['is_valid']);
@@ -23,7 +23,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_invalid_data_returns_is_valid_false(): void
   {
-    $validator = new Validator(['name' => v::stringType()->length(1, 50)]);
+    $validator = SV::object(['name' => SV::string()->min(1)->max(50)])->toValidator();
     $result = $validator->validate(['name' => ''])->getResult();
 
     $this->assertFalse($result['name']['is_valid']);
@@ -32,7 +32,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_missing_field_returns_is_valid_false(): void
   {
-    $validator = new Validator(['name' => v::stringType()->notEmpty()]);
+    $validator = SV::object(['name' => SV::string()->min(1)])->toValidator();
     $result = $validator->validate([])->getResult();
 
     $this->assertFalse($result['name']['is_valid']);
@@ -42,7 +42,7 @@ class ValidatorTest extends TestCase
   {
     // validate() returns raw values — output-layer callers (esc_html, wp_kses, etc.) are
     // responsible for context-appropriate escaping.
-    $validator = new Validator(['name' => v::stringType()]);
+    $validator = SV::object(['name' => SV::string()])->toValidator();
     $result = $validator->validate(['name' => '<script>alert(1)</script>'])->getResult();
 
     $this->assertSame('<script>alert(1)</script>', $result['name']['value']);
@@ -50,7 +50,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_returns_static_for_chaining(): void
   {
-    $validator = new Validator(['name' => v::stringType()]);
+    $validator = SV::object(['name' => SV::string()])->toValidator();
     $result = $validator->validate(['name' => 'Alice']);
 
     $this->assertSame($validator, $result);
@@ -60,20 +60,27 @@ class ValidatorTest extends TestCase
 
   public function test_validateFiles_normalizes_single_file(): void
   {
-    $schema = ['doc' => v::key('error', v::equals(UPLOAD_ERR_OK))];
-    $validator = new Validator($schema);
+    // Use an accept list that matches the real MIME type of an empty temp file (application/x-empty or similar).
+    // An empty accept list means "accept any file with UPLOAD_ERR_OK".
+    $validator = SV::object([
+      'doc' => SV::file([]),
+    ])->toValidator();
+
+    $tmp = tempnam(sys_get_temp_dir(), 'sv_test_');
+    file_put_contents($tmp, 'PDF content');
 
     $files = [
       'doc' => [
         'name' => 'test.pdf',
         'type' => 'application/pdf',
-        'tmp_name' => '/tmp/phpXXX',
+        'tmp_name' => $tmp,
         'error' => UPLOAD_ERR_OK,
         'size' => 1024,
       ],
     ];
 
     $result = $validator->validateFiles($files)->getResult();
+    unlink($tmp);
 
     $this->assertTrue($result['doc'][0]['is_valid']);
   }
@@ -173,15 +180,26 @@ class ValidatorTest extends TestCase
     $this->assertArrayNotHasKey('expire_test', $_SESSION['schv_csrf_tokens']);
   }
 
+  /**
+   * @runInSeparateProcess
+   */
+  public function test_checkToken_is_single_use(): void {
+    $v     = new Validator([]);
+    $token = $v->createToken('single_use_test');
+
+    $this->assertTrue($v->checkToken($token, 'single_use_test'));
+    // Second call with the same token must fail: it was consumed on first use.
+    $this->assertFalse($v->checkToken($token, 'single_use_test'));
+  }
+
   // ── chaining ─────────────────────────────────────────────
 
   public function test_method_chaining_validate_and_getResult(): void
   {
-    $schema = [
-      'email' => v::email(),
-      'name'  => v::stringType()->length(1, 50),
-    ];
-    $result = (new Validator($schema))
+    $result = SV::object([
+      'email' => SV::string()->email(),
+      'name'  => SV::string()->min(1)->max(50),
+    ])->toValidator()
       ->validate(['email' => 'test@example.com', 'name' => 'Bob'])
       ->getResult();
 
@@ -335,5 +353,185 @@ class ValidatorTest extends TestCase
     ])->getResult();
 
     $this->assertTrue($result['company_name']['is_valid']);
+  }
+
+  // ── fromJsonSchema() ───────────────────────────────────────
+
+  public function test_fromJsonSchema_validates_required_string(): void {
+    $validator = Validator::fromJsonSchema([
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => [
+        'name' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 50],
+      ],
+      'required' => ['name'],
+    ]);
+
+    $valid = $validator->validate(['name' => 'Alice'])->getResult();
+    $this->assertTrue($valid['name']['is_valid']);
+
+    $invalid = $validator->validate(['name' => ''])->getResult();
+    $this->assertFalse($invalid['name']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_optional_field_allows_empty(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'nickname' => ['type' => 'string'],
+      ],
+    ]);
+
+    $result = $validator->validate([])->getResult();
+    $this->assertTrue($result['nickname']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_applies_coercion_contract_for_integer_and_boolean(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'age'       => ['type' => 'integer'],
+        'subscribe' => ['type' => 'boolean'],
+      ],
+      'required' => ['age', 'subscribe'],
+    ]);
+
+    $result = $validator->validate(['age' => '42', 'subscribe' => 'on'])->getResult();
+    $this->assertTrue($result['age']['is_valid']);
+    $this->assertTrue($result['subscribe']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_applies_format_constraint(): void {
+    $validator = Validator::fromJsonSchema([
+      'type'       => 'object',
+      'properties' => [
+        'email' => ['type' => 'string', 'format' => 'email'],
+      ],
+      'required' => ['email'],
+    ]);
+
+    $invalid = $validator->validate(['email' => 'not-an-email'])->getResult();
+    $this->assertFalse($invalid['email']['is_valid']);
+
+    $valid = $validator->validate(['email' => 'user@example.com'])->getResult();
+    $this->assertTrue($valid['email']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_matches_schemaBuilder_toValidator_for_same_schema(): void {
+    $sb   = SV::object([
+      'name' => SV::string()->min(1)->max(50),
+      'age'  => SV::integer()->min(0),
+    ]);
+    $data = ['name' => 'Bob', 'age' => '30'];
+
+    $fromBuilder = $sb->toValidator()->validate($data)->getResult();
+    $fromRaw     = Validator::fromJsonSchema($sb->toJsonSchema())->validate($data)->getResult();
+
+    $this->assertSame($fromBuilder['name']['is_valid'], $fromRaw['name']['is_valid']);
+    $this->assertSame($fromBuilder['age']['is_valid'], $fromRaw['age']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_matches_schemaBuilder_toValidator_for_array_field(): void {
+    $sb = SV::object(['tags' => SV::array(SV::string()->min(1))]);
+
+    foreach ([['tags' => ['php', 'js']], ['tags' => ['']]] as $data) {
+      $fromBuilder = $sb->toValidator()->validate($data)->getResult();
+      $fromRaw     = Validator::fromJsonSchema($sb->toJsonSchema())->validate($data)->getResult();
+
+      $this->assertSame($fromBuilder['tags']['is_valid'], $fromRaw['tags']['is_valid']);
+    }
+  }
+
+  public function test_fromJsonSchema_applies_array_minItems(): void {
+    $validator = Validator::fromJsonSchema([
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => [
+        'tags' => ['type' => 'array', 'items' => ['type' => 'string'], 'minItems' => 2],
+      ],
+      'required' => ['tags'],
+    ]);
+
+    $result = $validator->validate(['tags' => ['php']])->getResult();
+    $this->assertFalse($result['tags']['is_valid']);
+
+    $result = $validator->validate(['tags' => ['php', 'js']])->getResult();
+    $this->assertTrue($result['tags']['is_valid']);
+  }
+
+  // ── fromJsonSchema() format round-trip (uri/ipv4/ipv6/hostname) ───────────
+
+  public function test_fromJsonSchema_matches_schemaBuilder_toValidator_for_format_methods(): void {
+    $cases = [
+      'website' => ['schema' => SV::string()->url(),    'bad' => 'not a url'],
+      'ip4'     => ['schema' => SV::string()->ipv4(),   'bad' => '999.999.999.999'],
+      'ip6'     => ['schema' => SV::string()->ipv6(),   'bad' => '192.168.1.1'],
+      'host'    => ['schema' => SV::string()->domain(), 'bad' => 'not a domain'],
+    ];
+
+    foreach ($cases as $field => $case) {
+      $sb   = SV::object([$field => $case['schema']]);
+      $data = [$field => $case['bad']];
+
+      $fromBuilder = $sb->toValidator()->validate($data)->getResult();
+      $fromRaw     = Validator::fromJsonSchema($sb->toJsonSchema())->validate($data)->getResult();
+
+      $this->assertSame($fromBuilder[$field]['is_valid'], $fromRaw[$field]['is_valid'], "{$field} round-trip parity");
+      $this->assertFalse($fromRaw[$field]['is_valid'], "{$field} should reject '{$case['bad']}' via fromJsonSchema");
+    }
+  }
+
+  // ── fromJsonSchema() adapter parameter ──────────────────
+
+  public function test_fromJsonSchema_default_adapter_validates_correctly(): void {
+    $schema = [
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => ['name' => ['type' => 'string', 'minLength' => 2]],
+      'required'   => ['name'],
+    ];
+    $result = Validator::fromJsonSchema($schema)->validate(['name' => 'Alice'])->getResult();
+    $this->assertTrue($result['name']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_explicit_null_adapter_behaves_as_default(): void {
+    $schema = [
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => ['n' => ['type' => 'integer']],
+      'required'   => ['n'],
+    ];
+    $default  = Validator::fromJsonSchema($schema)->validate(['n' => '42'])->getResult();
+    $explicit = Validator::fromJsonSchema($schema, [], null, null)->validate(['n' => '42'])->getResult();
+    $this->assertSame($default['n']['is_valid'], $explicit['n']['is_valid']);
+  }
+
+  public function test_fromJsonSchema_explicit_respect_adapter_behaves_as_default(): void {
+    $schema = [
+      '$schema'    => 'https://json-schema.org/draft/2020-12/schema',
+      'type'       => 'object',
+      'properties' => ['n' => ['type' => 'integer']],
+      'required'   => ['n'],
+    ];
+    $default  = Validator::fromJsonSchema($schema)->validate(['n' => '42'])->getResult();
+    $explicit = Validator::fromJsonSchema($schema, [], null, new RespectAdapter())->validate(['n' => '42'])->getResult();
+    $this->assertTrue($default['n']['is_valid']);
+    $this->assertSame($default['n']['is_valid'], $explicit['n']['is_valid']);
+  }
+
+  // ── SchemaBuilder::toValidator() backward-compat (re-verify after W1) ──
+
+  public function test_schemaBuilder_toValidator_still_validates_after_w1_delegation(): void {
+    $result = SV::object(['email' => SV::string()->email()])
+      ->toValidator()
+      ->validate(['email' => 'user@example.com'])
+      ->getResult();
+    $this->assertTrue($result['email']['is_valid']);
+
+    $result2 = SV::object(['email' => SV::string()->email()])
+      ->toValidator()
+      ->validate(['email' => 'not-an-email'])
+      ->getResult();
+    $this->assertFalse($result2['email']['is_valid']);
   }
 }

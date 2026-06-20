@@ -1,0 +1,16 @@
+{
+  "name": "uri format rejects a non-URL string",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "website": { "type": "string", "format": "uri" }
+    },
+    "required": ["website"]
+  },
+  "input": { "website": "not a url" },
+  "expected": {
+    "website": { "is_valid": false }
+  }
+}

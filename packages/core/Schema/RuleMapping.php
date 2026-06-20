@@ -2,17 +2,19 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-
 final class RuleMapping {
-  /** @var v */
-  public $respect;
+  /** @var string */
+  public $rule;
+
+  /** @var array */
+  public $args;
 
   /** @var array|null */
   public $jsonSchema;
 
-  public function __construct(v $respect, ?array $jsonSchema) {
-    $this->respect    = $respect;
+  public function __construct(string $rule, array $args, ?array $jsonSchema) {
+    $this->rule       = $rule;
+    $this->args       = $args;
     $this->jsonSchema = $jsonSchema;
   }
 

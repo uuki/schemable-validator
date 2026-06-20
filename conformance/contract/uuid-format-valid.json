@@ -1,0 +1,16 @@
+{
+  "name": "uuid format accepts a well-formed UUID",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "format": "uuid" }
+    },
+    "required": ["id"]
+  },
+  "input": { "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479" },
+  "expected": {
+    "id": { "is_valid": true }
+  }
+}

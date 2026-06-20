@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   checkFormat,
   checkPattern,
@@ -8,6 +8,8 @@ import {
   checkMaximum,
   checkEnum,
   checkType,
+  constraintsFromSchema,
+  applyTransform,
   PATTERN_MAX_INPUT_LENGTH,
 } from '../src/constraint.js'
 
@@ -28,13 +30,42 @@ describe('checkType', () => {
   it('fails number for non-numeric strings', () => {
     expect(checkType('number')(state('hello')).errors.length).toBeGreaterThan(0)
   })
-  it('passes boolean for accepted literals', () => {
-    for (const v of ['true', 'false', '1', '0', 'on', 'off']) {
+  it('passes boolean for accepted literals (lowercase)', () => {
+    for (const v of ['true', 'false', '1', '0', 'on', 'off', 'yes', 'no']) {
       expect(checkType('boolean')(state(v)).errors).toHaveLength(0)
+    }
+  })
+  it('passes boolean for mixed-case literals', () => {
+    for (const v of ['TRUE', 'True', 'FALSE', 'YES', 'Yes', 'NO', 'ON', 'OFF']) {
+      expect(checkType('boolean')(state(v)).errors).toHaveLength(0)
+    }
+  })
+  it('rejects boolean with leading or trailing whitespace', () => {
+    for (const v of [' true', 'true ', ' true ', ' 1 ', '\ttrue']) {
+      expect(checkType('boolean')(state(v)).errors.length).toBeGreaterThan(0)
     }
   })
   it('fails boolean for arbitrary strings', () => {
     expect(checkType('boolean')(state('yes_maybe')).errors.length).toBeGreaterThan(0)
+  })
+  it('passes integer for whitespace-padded whole numbers', () => {
+    expect(checkType('integer')(state(' 42 ')).errors).toHaveLength(0)
+    expect(checkType('integer')(state('\t5\n')).errors).toHaveLength(0)
+  })
+  it('passes number for whitespace-padded float strings', () => {
+    expect(checkType('number')(state(' 3.14 ')).errors).toHaveLength(0)
+  })
+  it('rejects integer and number for hex/octal/binary literals', () => {
+    for (const v of ['0x10', '0X10', '0o7', '0O7', '0b101', '0B101']) {
+      expect(checkType('integer')(state(v)).errors.length).toBeGreaterThan(0)
+      expect(checkType('number')(state(v)).errors.length).toBeGreaterThan(0)
+    }
+  })
+  it('rejects integer and number for Infinity and NaN', () => {
+    for (const v of ['Infinity', '-Infinity', 'NaN']) {
+      expect(checkType('integer')(state(v)).errors.length).toBeGreaterThan(0)
+      expect(checkType('number')(state(v)).errors.length).toBeGreaterThan(0)
+    }
   })
   it('accepts null type in array (string | null)', () => {
     expect(checkType(['string', 'null'])(state('hello')).errors).toHaveLength(0)
@@ -67,6 +98,10 @@ describe('checkMaxLength', () => {
   it('fails when value exceeds limit', () => {
     expect(checkMaxLength(2)(state('abc')).errors.length).toBeGreaterThan(0)
   })
+  it('counts an astral-plane codepoint as 1 character, not 2', () => {
+    // U+1F600 "😀" is a surrogate pair in UTF-16/JS .length, but a single codepoint.
+    expect(checkMaxLength(1)(state('😀')).errors).toHaveLength(0)
+  })
 })
 
 // ── checkMinimum / checkMaximum ──────────────────────────────────────────────
@@ -78,6 +113,13 @@ describe('checkMinimum', () => {
   it('fails below boundary', () => {
     expect(checkMinimum(5)(state('4')).errors.length).toBeGreaterThan(0)
   })
+  it('passes for whitespace-padded value at boundary', () => {
+    expect(checkMinimum(5)(state(' 5 ')).errors).toHaveLength(0)
+  })
+  it('rejects hex literal that Number() would accept as in-range', () => {
+    // Number('0x10') === 16 >= 5, but parseDecimalInput returns NaN → rejects
+    expect(checkMinimum(5)(state('0x10')).errors.length).toBeGreaterThan(0)
+  })
 })
 
 describe('checkMaximum', () => {
@@ -86,6 +128,13 @@ describe('checkMaximum', () => {
   })
   it('fails above boundary', () => {
     expect(checkMaximum(10)(state('11')).errors.length).toBeGreaterThan(0)
+  })
+  it('passes for whitespace-padded value at boundary', () => {
+    expect(checkMaximum(10)(state(' 10 ')).errors).toHaveLength(0)
+  })
+  it('rejects hex literal that Number() would accept as in-range', () => {
+    // Number('0x5') === 5 <= 10, but parseDecimalInput returns NaN → rejects
+    expect(checkMaximum(10)(state('0x5')).errors.length).toBeGreaterThan(0)
   })
 })
 
@@ -153,10 +202,17 @@ describe('checkFormat: email', () => {
 })
 
 describe('checkFormat: date', () => {
-  it.each(['2024-01-15', '2000-12-31'])('accepts %s', (v) => {
+  it.each(['2024-01-15', '2000-12-31', '2024-02-29'])('accepts %s', (v) => {
     expect(checkFormat('date')(state(v)).errors).toHaveLength(0)
   })
-  it.each(['2024-1-5', '01-15-2024', 'not-a-date'])('rejects %s', (v) => {
+  it.each([
+    '2024-1-5',
+    '01-15-2024',
+    'not-a-date',
+    '2026-02-30',
+    '2024-04-31',
+    '2023-02-29',
+  ])('rejects %s', (v) => {
     expect(checkFormat('date')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })
@@ -166,19 +222,28 @@ describe('checkFormat: date-time', () => {
     '2024-01-15T12:00:00Z',
     '2024-01-15T12:00:00+09:00',
     '2024-01-15T12:00:00.123Z',
+    '2024-02-29T12:00:00Z',
+    '2024-01-15T23:59:60Z',
   ])('accepts %s', (v) => {
     expect(checkFormat('date-time')(state(v)).errors).toHaveLength(0)
   })
-  it.each(['2024-01-15', '2024-01-15 12:00:00', 'not-a-datetime'])('rejects %s', (v) => {
+  it.each([
+    '2024-01-15',
+    '2024-01-15 12:00:00',
+    'not-a-datetime',
+    '2026-02-30T12:00:00Z',
+    '2023-02-29T00:00:00Z',
+    '2024-01-15T12:00:61Z',
+  ])('rejects %s', (v) => {
     expect(checkFormat('date-time')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })
 
 describe('checkFormat: time', () => {
-  it.each(['12:30:00', '00:00:00', '23:59:59'])('accepts %s', (v) => {
+  it.each(['12:30:00', '00:00:00', '23:59:59', '23:59:60'])('accepts %s', (v) => {
     expect(checkFormat('time')(state(v)).errors).toHaveLength(0)
   })
-  it.each(['25:00:00', '12:60:00', 'not-a-time'])('rejects %s', (v) => {
+  it.each(['25:00:00', '12:60:00', '12:30:61', 'not-a-time'])('rejects %s', (v) => {
     expect(checkFormat('time')(state(v)).errors.length).toBeGreaterThan(0)
   })
 })
@@ -275,6 +340,101 @@ describe('checkFormat: injection and invisible characters', () => {
   })
 })
 
+// ── errorMessage override (Step 1-a) ─────────────────────────────────────────
+
+describe('constraintsFromSchema: errorMessage override', () => {
+  it('uses custom type message for integer error', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      errorMessage: { type: '整数で入力してください' },
+    })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['整数で入力してください'])
+  })
+
+  it('uses custom type message for number error', () => {
+    const result = constraintsFromSchema({
+      type: 'number',
+      errorMessage: { type: '数値で入力してください' },
+    })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['数値で入力してください'])
+  })
+
+  it('uses custom type message for boolean error', () => {
+    const result = constraintsFromSchema({
+      type: 'boolean',
+      errorMessage: { type: 'true か false を入力してください' },
+    })({ value: 'maybe', errors: [] })
+    expect(result.errors).toEqual(['true か false を入力してください'])
+  })
+
+  it('uses custom format message for format error', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      format: 'email',
+      errorMessage: { format: '有効なメールアドレスを入力してください' },
+    })({ value: 'not-an-email', errors: [] })
+    expect(result.errors).toEqual(['有効なメールアドレスを入力してください'])
+  })
+
+  it('uses custom minLength message', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 5,
+      errorMessage: { minLength: '5文字以上で入力してください' },
+    })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['5文字以上で入力してください'])
+  })
+
+  it('uses custom maxLength message', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      maxLength: 3,
+      errorMessage: { maxLength: '3文字以内で入力してください' },
+    })({ value: 'abcdef', errors: [] })
+    expect(result.errors).toEqual(['3文字以内で入力してください'])
+  })
+
+  it('uses custom minimum message', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      minimum: 10,
+      errorMessage: { minimum: '10以上で入力してください' },
+    })({ value: '5', errors: [] })
+    expect(result.errors).toEqual(['10以上で入力してください'])
+  })
+
+  it('uses custom maximum message', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      maximum: 100,
+      errorMessage: { maximum: '100以下で入力してください' },
+    })({ value: '200', errors: [] })
+    expect(result.errors).toEqual(['100以下で入力してください'])
+  })
+
+  it('falls back to default message when errorMessage absent', () => {
+    const result = constraintsFromSchema({ type: 'integer' })({ value: 'abc', errors: [] })
+    expect(result.errors).toEqual(['must be an integer'])
+  })
+
+  it('falls back to default when errorMessage does not include the triggered key', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      format: 'email',
+      errorMessage: { minLength: 'something else' },
+    })({ value: 'not-an-email', errors: [] })
+    expect(result.errors).toEqual(['must be a valid email'])
+  })
+
+  it('does not affect valid input', () => {
+    const result = constraintsFromSchema({
+      type: 'integer',
+      errorMessage: { type: 'カスタムエラー' },
+    })({ value: '42', errors: [] })
+    expect(result.errors).toHaveLength(0)
+  })
+})
+
 describe('checkPattern: injection and invisible characters', () => {
   it('rejects input with null byte when pattern requires printable chars', () => {
     expect(checkPattern('^[\\w]+$')(state('hello\x00world')).errors.length).toBeGreaterThan(0)
@@ -312,5 +472,128 @@ describe('checkPattern: injection and invisible characters', () => {
     // \\p{L} requires the u flag; checkPattern always compiles with u
     expect(checkPattern('^\\p{L}+$')(state('hello')).errors).toHaveLength(0)
     expect(checkPattern('^\\p{L}+$')(state('123')).errors.length).toBeGreaterThan(0)
+  })
+})
+
+// ── applyTransform ────────────────────────────────────────────────────────────
+
+describe('applyTransform: trim', () => {
+  it('removes leading and trailing spaces', () => {
+    expect(applyTransform('  hello  ', ['trim'])).toBe('hello')
+  })
+  it('removes tabs', () => {
+    expect(applyTransform('\thello\t', ['trim'])).toBe('hello')
+  })
+  it('removes LF', () => {
+    expect(applyTransform('\nhello\n', ['trim'])).toBe('hello')
+  })
+  it('removes CR', () => {
+    expect(applyTransform('\rhello\r', ['trim'])).toBe('hello')
+  })
+  it('all-whitespace becomes empty string', () => {
+    expect(applyTransform('   ', ['trim'])).toBe('')
+  })
+  it('preserves inner whitespace', () => {
+    expect(applyTransform('  hello world  ', ['trim'])).toBe('hello world')
+  })
+})
+
+describe('applyTransform: toLowerCase', () => {
+  it('lowercases ASCII A-Z', () => {
+    expect(applyTransform('Hello World', ['toLowerCase'])).toBe('hello world')
+  })
+  it('leaves non-ASCII untouched', () => {
+    expect(applyTransform('Ñ', ['toLowerCase'])).toBe('Ñ')
+  })
+})
+
+describe('applyTransform: toUpperCase', () => {
+  it('uppercases ASCII a-z', () => {
+    expect(applyTransform('hello world', ['toUpperCase'])).toBe('HELLO WORLD')
+  })
+})
+
+describe('applyTransform: pipeline order', () => {
+  it('trim then toLowerCase', () => {
+    expect(applyTransform('  HELLO  ', ['trim', 'toLowerCase'])).toBe('hello')
+  })
+  it('trim then toUpperCase', () => {
+    expect(applyTransform('  hello  ', ['trim', 'toUpperCase'])).toBe('HELLO')
+  })
+})
+
+describe('applyTransform: unknown transform warns', () => {
+  it('emits console.warn for unknown name', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    applyTransform('value', ['stripHtml'])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("unknown transform 'stripHtml'"))
+    warn.mockRestore()
+  })
+})
+
+// ── errorMessage template substitution (Step 5) ───────────────────────────────
+
+describe('constraintsFromSchema: errorMessage template substitution', () => {
+  it('checkMinLength: {min} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '最低{min}文字必要です' },
+    })({ value: 'ab', errors: [] })
+    expect(result.errors).toContain('最低3文字必要です')
+  })
+
+  it('checkMaxLength: {max} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      maxLength: 5,
+      errorMessage: { maxLength: '{max}文字以内で入力してください' },
+    })({ value: 'toolong!', errors: [] })
+    expect(result.errors).toContain('5文字以内で入力してください')
+  })
+
+  it('checkMinimum: {min} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'number',
+      minimum: 10,
+      errorMessage: { minimum: '{min}以上で入力してください' },
+    })({ value: '5', errors: [] })
+    expect(result.errors).toContain('10以上で入力してください')
+  })
+
+  it('checkMaximum: {max} is substituted with the constraint value', () => {
+    const result = constraintsFromSchema({
+      type: 'number',
+      maximum: 100,
+      errorMessage: { maximum: '{max}以下で入力してください' },
+    })({ value: '200', errors: [] })
+    expect(result.errors).toContain('100以下で入力してください')
+  })
+
+  it('ICU-style {min, number} type annotation is silently ignored', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '{min, number}文字以上' },
+    })({ value: 'a', errors: [] })
+    expect(result.errors).toContain('3文字以上')
+  })
+
+  it('unknown placeholder key remains unchanged', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '{foo}文字以上' },
+    })({ value: 'a', errors: [] })
+    expect(result.errors).toContain('{foo}文字以上')
+  })
+
+  it('static message with no placeholders is returned as-is', () => {
+    const result = constraintsFromSchema({
+      type: 'string',
+      minLength: 3,
+      errorMessage: { minLength: '短すぎます' },
+    })({ value: 'a', errors: [] })
+    expect(result.errors).toContain('短すぎます')
   })
 })

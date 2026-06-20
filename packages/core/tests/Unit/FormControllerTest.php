@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Controllers\FormController;
+use SchemableValidator\Infrastructure\FormController;
 
 class FormControllerTest extends TestCase
 {

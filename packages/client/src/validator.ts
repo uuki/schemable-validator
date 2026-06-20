@@ -1,6 +1,8 @@
 import { ok, err, type Result } from './result.js'
-import { constraintsFromSchema, type FieldState } from './constraint.js'
-import type { ObjectSchema, PropertySchema, ConditionalSchema, WhenCondition, WhenOp } from './schema.js'
+import { constraintsFromSchema, applyTransform, type FieldState } from './constraint.js'
+import type { ObjectSchema, PropertySchema, ConditionalSchema, WhenEntry } from './schema.js'
+import { applyJsonLogic } from './jsonLogic.js'
+import { DEFAULT_MESSAGES } from './messages.js'
 
 // ── Output types ─────────────────────────────────────────────────────────────
 // Mirror the shape of PHP Validator::getResult() for cross-stack consistency.
@@ -20,15 +22,19 @@ const validateField = (
   schema: PropertySchema,
   required: boolean,
 ): Result<string, readonly string[]> => {
-  const isEmpty = value === ''
+  const transformed = schema['x-transform']?.length
+    ? applyTransform(value, schema['x-transform'])
+    : value
 
-  if (required && isEmpty) return err(['is required'])
-  if (isEmpty) return ok(value) // optional + empty → always valid
+  const isEmpty = transformed === ''
 
-  const initial: FieldState = { value, errors: [] }
+  if (required && isEmpty) return err([DEFAULT_MESSAGES.required])
+  if (isEmpty) return ok(transformed) // optional + empty → always valid
+
+  const initial: FieldState = { value: transformed, errors: [] }
   const final = constraintsFromSchema(schema)(initial)
 
-  return final.errors.length === 0 ? ok(value) : err(final.errors)
+  return final.errors.length === 0 ? ok(transformed) : err(final.errors)
 }
 
 const validateArrayField = (
@@ -36,7 +42,7 @@ const validateArrayField = (
   schema: PropertySchema,
   required: boolean,
 ): Result<readonly string[], readonly string[]> => {
-  if (required && values.length === 0) return err(['is required'])
+  if (required && values.length === 0) return err([DEFAULT_MESSAGES.required])
   if (values.length === 0) return ok(values)
 
   const itemSchema = schema.items
@@ -58,12 +64,12 @@ const validateArrayField = (
 }
 
 const toFieldResult = (
-  value: string | readonly string[],
+  rawValue: string | readonly string[],
   result: Result<string | readonly string[], readonly string[]>,
 ): FieldResult =>
   result._tag === 'Ok'
-    ? { value, is_valid: true, errors: null }
-    : { value, is_valid: false, errors: result.error }
+    ? { value: result.value, is_valid: true, errors: null }
+    : { value: rawValue, is_valid: false, errors: result.error }
 
 // ── Conditional evaluation ────────────────────────────────────────────────────
 
@@ -72,35 +78,17 @@ const resolveString = (
 ): string =>
   Array.isArray(value) ? (value as readonly string[]).join(',') : (value as string) ?? ''
 
-const NUMERIC_OPS = new Set<WhenOp>(['>=', '<=', '>', '<'])
-
-const evaluateWhenCondition = (
-  cond: WhenCondition,
+const evaluateWhenEntry = (
+  cond: WhenEntry,
   data: Readonly<Record<string, string | readonly string[]>>,
   result: Record<string, FieldResult>,
 ): void => {
-  const triggerStr = resolveString(data[cond.field])
-  const operandStr = 'equalsField' in cond
-    ? resolveString(data[cond.equalsField])
-    : String(cond.equals)
-
-  let matches: boolean
-  if (NUMERIC_OPS.has(cond.op)) {
-    const t = Number(triggerStr)
-    const o = Number(operandStr)
-    matches = cond.op === '>=' ? t >= o
-            : cond.op === '<=' ? t <= o
-            : cond.op === '>'  ? t >  o
-            :                    t <  o
-  } else {
-    matches = cond.op === '!==' ? triggerStr !== operandStr : triggerStr === operandStr
-  }
-  if (!matches) return
+  if (!applyJsonLogic(cond.condition, data as Record<string, unknown>)) return
   for (const name of cond.require) {
     const val = data[name] ?? ''
     const isEmpty = Array.isArray(val) ? (val as readonly string[]).length === 0 : val === ''
     if (isEmpty) {
-      result[name] = { value: val as string, is_valid: false, errors: ['is required'] }
+      result[name] = { value: val as string, is_valid: false, errors: [DEFAULT_MESSAGES.required] }
     }
   }
 }
@@ -120,7 +108,7 @@ const evaluateConditional = (
     const val = data[name] ?? ''
     const isEmpty = Array.isArray(val) ? (val as readonly string[]).length === 0 : val === ''
     if (isEmpty) {
-      result[name] = { value: val as string, is_valid: false, errors: ['is required'] }
+      result[name] = { value: val as string, is_valid: false, errors: [DEFAULT_MESSAGES.required] }
     }
   }
 }
@@ -157,7 +145,7 @@ export const validateObject = (
   // Fall back to standard if/then / allOf for schemas without x-when.
   if (schema['x-when'] !== undefined) {
     for (const cond of schema['x-when']) {
-      evaluateWhenCondition(cond, data, result)
+      evaluateWhenEntry(cond, data, result)
     }
   } else {
     if (schema.if && schema.then) {

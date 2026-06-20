@@ -1,38 +1,38 @@
 <?php
 /**
- * Example: reCAPTCHA v3 validation
+ * Example: CAPTCHA validation (reCAPTCHA v3)
  * Run: php example/core/03-recaptcha.php
  *
- * Replace RECAPTCHA_SECRET with your actual secret key.
- * The frontend must send the token via POST['recaptcha_token'].
+ * Replace YOUR_SECRET with your actual secret key.
+ * The frontend must send the token via POST (e.g. 'g-recaptcha-response').
  */
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-use Respect\Validation\Validator as v;
-use SchemableValidator\Validator;
+use SchemableValidator\SV;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
 
-$validator = new Validator(
-  ['name' => v::stringType()->notEmpty()],
-  [
-    'recaptcha_secret'      => 'RECAPTCHA_SECRET',
-    'recaptcha_valid_score' => 0.5,
-  ]
-);
+$schema = SV::object([
+  'name' => SV::string()->min(1),
+]);
 
-// Simulate: $_POST would contain 'recaptcha_token' from the frontend widget.
+$validator = $schema->toValidator([
+  'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
+]);
+
+// Simulate: $_POST would contain 'g-recaptcha-response' from the frontend widget.
 $post = [
-  'name'            => 'Alice',
-  'recaptcha_token' => 'token-from-frontend',
+  'name'                 => 'Alice',
+  'g-recaptcha-response' => 'token-from-frontend',
 ];
 
 $result = $validator
   ->validate($post)
-  ->validateReCaptcha(['action' => 'contact'])
+  ->validateCaptcha(['action' => 'contact'])
   ->getResult();
 
-echo "name:      " . ($result['name']['is_valid'] ? 'OK' : 'NG') . "\n";
-echo "recaptcha: " . ($result['recaptcha']['is_valid'] ? 'OK' : 'NG') . "\n";
+echo "name:    " . ($result['name']['is_valid'] ? 'OK' : 'NG') . "\n";
+echo "captcha: " . ($result['captcha']['is_valid'] ? 'OK' : 'NG') . "\n";
 
-if ($result['recaptcha']['errors']) {
-  echo "error: " . $result['recaptcha']['errors']['message'] . "\n";
+if ($result['captcha']['errors']) {
+  echo "error: " . $result['captcha']['errors'] . "\n";
 }

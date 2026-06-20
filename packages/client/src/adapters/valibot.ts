@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import type { ObjectSchema, PropertySchema, WhenCondition } from '../schema.js'
+import type { ObjectSchema, PropertySchema, WhenEntry } from '../schema.js'
 import { applyWhenConditions, SchemaBuilderBase, type SvConfigBase } from './builder.js'
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -130,7 +130,7 @@ function propertyToValibot(field: PropertySchema): v.GenericSchema {
 }
 
 /** Wrap the shared when-condition iterator with Valibot's rawCheck error API. */
-function buildWhenChecker(conditions: readonly WhenCondition[]): ValibotRefiner {
+function buildWhenChecker(conditions: readonly WhenEntry[]): ValibotRefiner {
   return ({ dataset, addIssue }) => {
     if (!dataset.typed) return
     const data = dataset.value as Record<string, unknown>
@@ -160,6 +160,10 @@ class ValibotSchemaBuilder extends SchemaBuilderBase<OnUnknown, ValibotExtField,
       const { unsupported } = checkValibotSchema(this.json)
       if (unsupported.length) {
         console.warn('[schemable] sv.build(): unsupported fields detected:', unsupported)
+      }
+      const customFields = this.json['x-custom-fields'] ?? []
+      if (customFields.length > 0 && this.syncRefiners.length === 0 && this.asyncRefiners.length === 0) {
+        console.warn('[schemable] sv.build(): x-custom-fields declared but no .refine()/.refineAsync() registered:', customFields)
       }
     }
 

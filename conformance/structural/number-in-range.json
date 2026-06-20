@@ -1,0 +1,16 @@
+{
+  "name": "number within minimum/maximum bounds is valid",
+  "category": "structural",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "score": { "type": "number", "minimum": 0, "maximum": 100 }
+    },
+    "required": ["score"]
+  },
+  "input": { "score": "50" },
+  "expected": {
+    "score": { "is_valid": true }
+  }
+}

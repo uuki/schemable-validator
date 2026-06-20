@@ -1,0 +1,16 @@
+{
+  "name": "enum field rejects an unlisted value",
+  "category": "structural",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "plan": { "type": "string", "enum": ["free", "pro"] }
+    },
+    "required": ["plan"]
+  },
+  "input": { "plan": "enterprise" },
+  "expected": {
+    "plan": { "is_valid": false }
+  }
+}

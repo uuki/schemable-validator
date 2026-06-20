@@ -1,0 +1,16 @@
+{
+  "name": "ipv4 format rejects an out-of-range address",
+  "category": "contract",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "ip": { "type": "string", "format": "ipv4" }
+    },
+    "required": ["ip"]
+  },
+  "input": { "ip": "999.999.999.999" },
+  "expected": {
+    "ip": { "is_valid": false }
+  }
+}

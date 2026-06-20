@@ -1,0 +1,19 @@
+{
+  "name": "array field rejects items shorter than minLength",
+  "category": "structural",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "tags": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 3 }
+      }
+    },
+    "required": ["tags"]
+  },
+  "input": { "tags": ["ab"] },
+  "expected": {
+    "tags": { "is_valid": false }
+  }
+}

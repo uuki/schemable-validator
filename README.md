@@ -4,7 +4,8 @@
 [![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-8892BF?logo=php&logoColor=white)](https://packagist.org/packages/uuki/schemable-validator)
 [![WordPress](https://img.shields.io/badge/WordPress-%3E%3D5.9-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
 
-A PHP-first validation library whose core purpose is **defining and executing validation constraints on the server**. Its distinguishing feature is the ability to export those constraints as [JSON Schema draft 2020-12](https://json-schema.org/), making the same rules available to any JavaScript framework on the client — without maintaining duplicate definitions across the stack.
+A PHP-first validation library for **defining and executing validation constraints on the server**.
+Its distinguishing feature is the ability to export those constraints as [JSON Schema draft 2020-12](https://json-schema.org/), making the same rules available to any JavaScript framework on the client without maintaining duplicate definitions across the stack.
 
 The name reflects this: *validator* is the primary role, *schemable* is its defining feature.
 
@@ -33,7 +34,7 @@ cd packages/wp-schemable-validator && composer install --no-dev
 npm install @uuki/schemable-validator-client
 ```
 
-See [docs/01-installation.md](docs/01-installation.md) for full setup.
+See [docs/installation.md](docs/installation.md) for full setup.
 
 ---
 
@@ -67,13 +68,12 @@ $result = $schema->toValidator()->validate($_POST)->getResult();
 schv_register_schema('/schema/contact', $schema);
 ```
 
-### 4. Client-side validation (TypeScript client)
+### 4. Client-side validation (TypeScript)
 
 ```typescript
 import { validateObject, isAllValid, extractErrors } from '@uuki/schemable-validator-client'
 
 const schema = await fetch('/wp-json/schv/v1/schema/contact').then(r => r.json())
-
 const result = validateObject(formData, schema)
 
 if (!isAllValid(result)) {
@@ -84,10 +84,8 @@ if (!isAllValid(result)) {
 Or with Zod:
 
 ```typescript
-import { z } from 'zod'
+import { buildZodSchema } from '@uuki/schemable-validator-client/zod'
 
-// Build a Zod schema from the fetched JSON Schema, then extend with
-// custom .superRefine() for x-unmapped-fields (see docs/06-custom-validation.md)
 const zodSchema = buildZodSchema(schema)
 const parsed = zodSchema.safeParse(formData)
 ```
@@ -120,17 +118,22 @@ const parsed = zodSchema.safeParse(formData)
 ```
 SV::object([...])          ← PHP: single source of truth
     │
-    ├─ toValidator()        → server-side validation (Respect/Validation)
+    ├─ toValidator()        → server-side validation (NativeAdapter, dependency-free)
     │
     └─ toJson()             → JSON Schema draft 2020-12
            │
            └─ REST endpoint (WordPress)
                   │
                   └─ @uuki/schemable-validator-client  → client-side validation
-                     Zod / any JS validator
+                     Zod / Valibot / any JS validator
 ```
 
-Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and delegated to the server automatically by the client library.
+Field validation runs through a swappable **backend adapter**.
+The default is `NativeAdapter`, which has no external dependencies and mirrors the client-side validation semantics.
+Optional adapters (`RespectAdapter`, `OpisAdapter`) can be installed and swapped in without changing the public API.
+See [Backend Adapters](docs/backend-adapters.md) for details.
+
+Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and handled server-side automatically.
 
 ---
 
@@ -138,18 +141,26 @@ Constraints that cannot be expressed in JSON Schema (file uploads, custom rules)
 
 | | |
 |:--|:--|
-| [Installation](docs/01-installation.md) | Requirements, package structure |
-| [Feature Guide](docs/02-feature-guide.md) | Validator, file validation, CSRF, reCAPTCHA |
-| [Interfaces](docs/03-interfaces.md) | WordPress helpers, REST API |
-| [Development](docs/04-development.md) | Local playground, E2E tests |
-| [SchemaBuilder](docs/05-schema-builder.md) | `SV::object()` API, JSON Schema output samples |
-| [Custom Validation](docs/06-custom-validation.md) | External libraries (libphonenumber etc.), `x-unmapped-fields` |
+| [Installation](docs/installation.md) | Requirements, package structure |
+| [Feature Guide](docs/feature-guide.md) | Validator, file validation, CSRF, reCAPTCHA |
+| [Interfaces](docs/interfaces.md) | WordPress helpers, REST API |
+| [Schema Builder](docs/schema-builder.md) | `SV::object()` API, JSON Schema output |
+| [Backend Adapters](docs/backend-adapters.md) | Swapping the validation engine, custom adapters |
+| [Custom Validation](docs/custom-validation.md) | `SV::custom()`, escape hatches, `x-unmapped-fields` |
+| [Message Dict](docs/message-dict.md) | Localisation, custom error messages |
+| [Development](docs/development.md) | Local playground, conformance suite |
 
 ---
 
 ## 🔗 Dependencies
 
-- [Respect/Validation](https://packagist.org/packages/respect/validation) ^2.2
+The PHP core requires only PHP >= 7.4 and [`symfony/polyfill-php80`](https://packagist.org/packages/symfony/polyfill-php80).
+No validation engine is bundled.
+
+Optional engine packages are only loaded when explicitly installed:
+
+- [Respect/Validation](https://packagist.org/packages/respect/validation) ^2.2 — enables `RespectAdapter` and the Respect escape hatches (`SV::respect`, `RespectRules`, `postalCode`, `creditCard`, `iban`)
+- [Opis/json-schema](https://packagist.org/packages/opis/json-schema) ^2.6 — enables `OpisAdapter` (strict JSON Schema semantics, no coercion)
 
 ---
 

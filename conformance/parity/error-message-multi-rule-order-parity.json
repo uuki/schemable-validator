@@ -1,0 +1,27 @@
+{
+  "name": "errorMessage multi-rule: format and pattern fail in the same canonical order (BE/FE parity)",
+  "category": "parity",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "format": "email",
+        "pattern": "^[0-9]+$",
+        "errorMessage": {
+          "format": "メール形式が不正です",
+          "pattern": "数字のみ入力してください"
+        }
+      }
+    },
+    "required": ["code"]
+  },
+  "input": { "code": "zz" },
+  "expected": {
+    "code": {
+      "is_valid": false,
+      "errors": ["メール形式が不正です", "数字のみ入力してください"]
+    }
+  }
+}
