@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Schemable Validator
  * Description: Schema based validation plugin.
- * Version: 0.20.0
+ * Version: 0.20.1
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Text Domain: schemable-validator
