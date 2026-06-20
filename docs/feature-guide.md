@@ -1,12 +1,12 @@
 # Feature Guide
 
-This page covers the primary runtime features: the `Validator` class, error messages, security (CSRF, reCAPTCHA), session management, and the `Template` helper.
+This page covers the primary runtime features: the `Validator` class, error messages, security (CSRF, CAPTCHA), session management, and the `Template` helper.
 For the schema definition API, see [SchemaBuilder](./schema-builder.md).
 For localisation, see [MessageDict](./message-dict.md).
 
 ## Validator
 
-`Validator` runs field validation against a schema. Text, file, and reCAPTCHA checks can be chained in any combination.
+`Validator` runs field validation against a schema. Text, file, and CAPTCHA checks can be chained in any combination.
 
 ### 1. Instantiation
 

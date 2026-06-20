@@ -16,6 +16,13 @@ const updated = pluginContent.replace(
 writeFileSync(pluginPath, updated)
 console.log(`Updated ${pluginPath} → ${version}`)
 
+// ── Core composer.json ────────────────────────────────────────────────────────
+const corePath = 'packages/core/composer.json'
+const corePkg = JSON.parse(readFileSync(corePath, 'utf8'))
+corePkg.version = version
+writeFileSync(corePath, JSON.stringify(corePkg, null, 2) + '\n')
+console.log(`Updated ${corePath} → ${version}`)
+
 // ── Client package.json ───────────────────────────────────────────────────────
 const clientPath = 'packages/client/package.json'
 const pkg = JSON.parse(readFileSync(clientPath, 'utf8'))

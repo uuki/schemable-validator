@@ -1,26 +1,62 @@
 # Overview
 
-Schemable Validator is designed to eliminate the duplication of validation constraints across stacks.
+Schemable Validator is a dependency-free PHP form validation library.
+A fluent API defines constraints once; the default engine validates server-side with zero external packages.
+The same definition can be exported as JSON Schema for client-side consumption.
 
-Constraints are defined in PHP as the single source of truth. The client side consumes an equivalent schema derived from that definition, keeping both layers in sync without redundant maintenance.
+## Features
 
-## Concept
+- **Server-side validation with no dependencies.**
+  The default engine (`NativeAdapter`) requires nothing beyond PHP 7.4.
+  `$_POST` string values are automatically coerced to the declared types (integer, number, boolean) via the built-in Coercion Contract, so form submissions work without manual casting.
 
-The library provides a Fluent Interface layer that expresses constraints in a framework-agnostic form and converts them into the schema format suited to each runtime — a PHP `Validator` on the server side, and JSON Schema for the client.
+- **Client-side sync when you need it.**
+  Call `toJson()` on the same schema to produce a JSON Schema (draft 2020-12) document.
+  Built-in Zod and Valibot adapters convert it into native client schemas; AJV can consume it directly.
+  When a rule changes in PHP, the client picks it up automatically.
+
+- **Pluggable drivers for cross-cutting concerns.**
+  CAPTCHA verification (reCAPTCHA v3, hCaptcha, Cloudflare Turnstile), file upload validation, image constraint checks, and CSRF protection are injected through driver interfaces.
+  Swap providers with a one-line config change.
+
+## Architecture
 
 ```
 PHP (SchemaBuilder)
-  └─ SV::object()->string('name')->email('email')
+  └─ SV::object([ 'name' => SV::string()->min(1), ... ])
         │
-        │  toJsonSchema()
-        ▼
-  JSON Schema (draft 2020-12)
+        ├─ toValidator()          → server-side validation (NativeAdapter, zero deps)
         │
-        ├─ AJV          (direct consumption)
-        ├─ Zod adapter  (sv(jsonSchema).build())
-        └─ Valibot adapter
+        └─ toJson() / toJsonSchema()
+              │
+              JSON Schema (draft 2020-12)
+              │
+              ├─ AJV          (direct consumption)
+              ├─ Zod adapter  (sv(jsonSchema).build())
+              └─ Valibot adapter
 ```
 
-When a rule changes in PHP, the client picks it up automatically — no parallel maintenance, no drift.
+The validation engine is swappable.
+Pass a `RespectAdapter` or `OpisAdapter` in the config to use a different backend; the public API and the `{value, is_valid, errors}` result shape stay the same.
 
-A key feature of this library is the built-in adapters that convert JSON Schema into native Zod or Valibot schemas, automatically applying the PHP-defined constraints on the client side. Rules that fall outside the adapter's mapping scope — file fields, cross-field constraints, and custom formats — can be filled in through extension points such as `.extend()` and `.refine()`.
+Rules that fall outside the adapter's mapping scope (file fields, cross-field constraints, and custom logic) are filled in through extension points: `.extend()`, `.refine()`, and `SV::custom()`.
+The boundary is explicit: unmappable fields are listed in `x-unmapped-fields` so clients know exactly which rules require server-side validation.
+
+## Quick start
+
+```php
+use SchemableValidator\SV;
+
+$schema = SV::object([
+  'name'  => SV::string()->min(1)->max(100),
+  'email' => SV::string()->email(),
+]);
+
+// Server-side validation (no external dependencies)
+$result = $schema->toValidator()->validate($_POST)->getResult();
+
+// Export for client-side consumption
+echo $schema->toJson();
+```
+
+For the full API, see [SchemaBuilder](./schema-builder.md) and [Feature Guide](./feature-guide.md).

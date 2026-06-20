@@ -1,11 +1,11 @@
 # 機能ガイド
 
-このページでは `Validator` クラス、エラーメッセージ、セキュリティ（CSRF、reCAPTCHA）、セッション管理、`Template` ヘルパーについて説明します。
+このページでは `Validator` クラス、エラーメッセージ、セキュリティ（CSRF、CAPTCHA）、セッション管理、`Template` ヘルパーについて説明します。
 スキーマ定義 API は [SchemaBuilder](./schema-builder.md)、ローカライズは [MessageDict](./message-dict.md) を参照してください。
 
 ## Validator
 
-フィールドスキーマに対して入力値を検証する中核クラスです。テキスト・ファイル・reCAPTCHA の検証をメソッドチェーンで組み合わせられます。
+フィールドスキーマに対して入力値を検証する中核クラスです。テキスト・ファイル・CAPTCHA の検証をメソッドチェーンで組み合わせられます。
 
 ### 1. インスタンス化
 

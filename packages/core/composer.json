@@ -1,5 +1,6 @@
 {
   "name": "uuki/schemable-validator-core",
+  "version": "0.12.2",
   "description": "Schemable Validator core — schema-based validation with JSON Schema IR",
   "type": "library",
   "license": "MIT",
@@ -15,6 +16,8 @@
     "psr-4": {
       "SchemableValidator\\": ""
     },
-    "files": ["constants.php"]
+    "files": [
+      "constants.php"
+    ]
   }
 }
