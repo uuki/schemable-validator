@@ -1,6 +1,6 @@
 {
   "name": "uuki/schemable-validator-core",
-  "version": "1.0.0",
+  "version": "0.12.2",
   "description": "Schemable Validator core — schema-based validation with JSON Schema IR",
   "type": "library",
   "license": "MIT",
