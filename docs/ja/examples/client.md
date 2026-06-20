@@ -12,7 +12,7 @@
 
 <<< ../../../packages/client/examples/01-basic.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/01-basic.ts)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/client/examples/01-basic.ts)
 
 ---
 
@@ -54,7 +54,7 @@ Zod・Valibot はビルトインアダプター経由、AJV は JSON Schema を�
 
 <<< ../../../packages/client/examples/03-custom-constraint.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/03-custom-constraint.ts)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/client/examples/03-custom-constraint.ts)
 
 ---
 
@@ -64,4 +64,4 @@ Zod・Valibot はビルトインアダプター経由、AJV は JSON Schema を�
 
 <<< ../../../packages/client/examples/04-result-chaining.ts
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/04-result-chaining.ts)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/client/examples/04-result-chaining.ts)

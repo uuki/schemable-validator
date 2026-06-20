@@ -12,7 +12,7 @@ Create a validator with `schv_validator()` and handle form submissions via the `
 
 <<< ../../packages/example/wordpress/01-validate.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/01-validate.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/01-validate.php)
 
 ---
 
@@ -65,7 +65,7 @@ Validate `$_FILES` with `validateFiles()` and restrict the allowed MIME types.
 
 <<< ../../packages/example/wordpress/02-validate-files.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/02-validate-files.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/02-validate-files.php)
 
 ---
 
@@ -75,7 +75,7 @@ Embed a token in a hidden field with `createToken()` and verify it on submission
 
 <<< ../../packages/example/wordpress/03-csrf.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/03-csrf.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/03-csrf.php)
 
 ---
 
@@ -85,7 +85,7 @@ Use `schv_template()` to inject validated data into a WP options template.
 
 <<< ../../packages/example/wordpress/04-template.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/04-template.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/04-template.php)
 
 ---
 
@@ -95,4 +95,4 @@ Use `schv_form()` to persist data in the session and implement a form spanning t
 
 <<< ../../packages/example/wordpress/05-multipage-form.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/05-multipage-form.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/05-multipage-form.php)

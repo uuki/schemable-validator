@@ -12,7 +12,7 @@ WordPress プラグインとして有効化した環境での実装例です。`
 
 <<< ../../../packages/example/wordpress/01-validate.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/01-validate.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/01-validate.php)
 
 ---
 
@@ -64,7 +64,7 @@ schv_register_schema('/contact', schv_stored_schema('contact'));
 
 <<< ../../../packages/example/wordpress/02-validate-files.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/02-validate-files.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/02-validate-files.php)
 
 ---
 
@@ -74,7 +74,7 @@ schv_register_schema('/contact', schv_stored_schema('contact'));
 
 <<< ../../../packages/example/wordpress/03-csrf.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/03-csrf.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/03-csrf.php)
 
 ---
 
@@ -84,7 +84,7 @@ schv_register_schema('/contact', schv_stored_schema('contact'));
 
 <<< ../../../packages/example/wordpress/04-template.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/04-template.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/04-template.php)
 
 ---
 
@@ -94,4 +94,4 @@ schv_register_schema('/contact', schv_stored_schema('contact'));
 
 <<< ../../../packages/example/wordpress/05-multipage-form.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/05-multipage-form.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/wordpress/05-multipage-form.php)

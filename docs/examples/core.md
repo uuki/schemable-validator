@@ -12,7 +12,7 @@ Define a field schema and validate input values with `Validator`.
 
 <<< ../../packages/example/core/01-validate.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/01-validate.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/01-validate.php)
 
 ---
 
@@ -22,7 +22,7 @@ Use `validateFiles()` to validate the extension and error code of uploaded files
 
 <<< ../../packages/example/core/02-validate-files.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/02-validate-files.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/02-validate-files.php)
 
 ---
 
@@ -32,7 +32,7 @@ Inject a `CaptchaDriver` and call `validateCaptcha()` to verify the score thresh
 
 <<< ../../packages/example/core/03-recaptcha.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/03-recaptcha.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/03-recaptcha.php)
 
 ---
 
@@ -42,7 +42,7 @@ Generate a token with `createToken()` and verify it against form submissions usi
 
 <<< ../../packages/example/core/04-csrf-token.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/04-csrf-token.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/04-csrf-token.php)
 
 ---
 
@@ -52,4 +52,4 @@ Use the `Template` class to inject validated session data into an email body.
 
 <<< ../../packages/example/core/05-template.php
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/05-template.php)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/05-template.php)

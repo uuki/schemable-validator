@@ -12,7 +12,7 @@
 
 <<< ../../../packages/example/core/01-validate.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/01-validate.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/01-validate.php)
 
 ---
 
@@ -22,7 +22,7 @@
 
 <<< ../../../packages/example/core/02-validate-files.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/02-validate-files.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/02-validate-files.php)
 
 ---
 
@@ -32,7 +32,7 @@
 
 <<< ../../../packages/example/core/03-recaptcha.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/03-recaptcha.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/03-recaptcha.php)
 
 ---
 
@@ -42,7 +42,7 @@
 
 <<< ../../../packages/example/core/04-csrf-token.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/04-csrf-token.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/04-csrf-token.php)
 
 ---
 
@@ -52,4 +52,4 @@
 
 <<< ../../../packages/example/core/05-template.php
 
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/core/05-template.php)
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/example/core/05-template.php)

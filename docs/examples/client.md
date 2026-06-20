@@ -12,7 +12,7 @@ Match an object against a schema with `validateObject`, then retrieve results us
 
 <<< ../../packages/client/examples/01-basic.ts
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/01-basic.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/client/examples/01-basic.ts)
 
 ---
 
@@ -54,7 +54,7 @@ Define a `Constraint` (a pure function of `FieldState → FieldState`) and compo
 
 <<< ../../packages/client/examples/03-custom-constraint.ts
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/03-custom-constraint.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/client/examples/03-custom-constraint.ts)
 
 ---
 
@@ -64,4 +64,4 @@ Wrap the result of `validateObject` in the `Result` type and chain success/failu
 
 <<< ../../packages/client/examples/04-result-chaining.ts
 
-[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/client/examples/04-result-chaining.ts)
+[View on GitHub](https://github.com/uuki/schemable-validator/blob/v0.20.1/packages/client/examples/04-result-chaining.ts)
