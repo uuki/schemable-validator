@@ -1,11 +1,11 @@
 <?php
 
-namespace SchemableValidator\Schema;
+namespace SchemableValidator\Adapters\Respect;
 
 use Respect\Validation\Validator as v;
 use SchemableValidator\I18n\MessageDict;
+use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Validation\CustomField;
-use SchemableValidator\Adapters\Respect\RespectExecutableValidator;
 
 /**
  * (B) escape hatch wrapping an arbitrary Respect/Validation rule (SV::respect,

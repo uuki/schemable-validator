@@ -13,7 +13,7 @@ use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\FileSchema;
 use SchemableValidator\Schema\IntegerSchema;
 use SchemableValidator\Schema\NumberSchema;
-use SchemableValidator\Schema\RawRespectSchema;
+use SchemableValidator\Adapters\Respect\RawRespectSchema;
 use SchemableValidator\Schema\StringSchema;
 use SchemableValidator\Schema\WhenExpr;
 

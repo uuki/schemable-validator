@@ -13,12 +13,7 @@ packages/wp-schemable-validator/lib/
 # wp-now development files.
 database/
 db.php/
-mu-plugins/
 uploads/
-
-# local development files
-library/Models/
-library/**/ignore.*.php
 
 # cache
 .phpunit.result.cache

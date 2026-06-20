@@ -5,7 +5,7 @@ namespace SchemableValidator\Tests\Unit;
 use Respect\Validation\Validator as v;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\Adapters\Respect\RespectRules;
-use SchemableValidator\Schema\RawRespectSchema;
+use SchemableValidator\Adapters\Respect\RawRespectSchema;
 use SchemableValidator\SV;
 
 /**

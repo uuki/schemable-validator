@@ -3,7 +3,7 @@
 namespace SchemableValidator\Adapters\Respect;
 
 use Respect\Validation\Validator as v;
-use SchemableValidator\Schema\RawRespectSchema;
+use SchemableValidator\Adapters\Respect\RawRespectSchema;
 
 /**
  * Optional Respect driver: factory for (B) escape-hatch fields backed by
