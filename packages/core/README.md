@@ -53,7 +53,7 @@ Pass a `RespectAdapter` or `OpisAdapter` in the config to use a different backen
 ## Installation
 
 ```shell
-composer require uuki/schemable-validator-core
+composer require uuki/schemable-validator
 ```
 
 Optional engine packages (only loaded when installed):

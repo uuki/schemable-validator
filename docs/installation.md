@@ -14,7 +14,7 @@ Install only the packages you need.
 ## PHP library
 
 ```shell
-composer require uuki/schemable-validator-core
+composer require uuki/schemable-validator
 ```
 
 ## WordPress plugin

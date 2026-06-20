@@ -14,7 +14,7 @@ Schemable Validator は PHP コアライブラリ、WordPress プラグイン、
 ## PHP library
 
 ```shell
-composer require uuki/schemable-validator-core
+composer require uuki/schemable-validator
 ```
 
 ## WordPress プラグイン
