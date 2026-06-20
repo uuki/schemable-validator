@@ -3,8 +3,7 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Respect\Validation\Validator as v;
-use SchemableValidator\Validator;
+use SchemableValidator\SV;
 
 /**
  * Verifies that validate() returns raw, unmodified values.
@@ -14,9 +13,9 @@ use SchemableValidator\Validator;
  */
 class SecurityTest extends TestCase
 {
-  private function makeValidator(): Validator
+  private function makeValidator(): \SchemableValidator\Validator
   {
-    return new Validator(['field' => v::stringType()]);
+    return SV::object(['field' => SV::string()])->toValidator();
   }
 
   public function test_validate_returns_raw_html_tags(): void

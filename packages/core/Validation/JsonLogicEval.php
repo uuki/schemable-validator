@@ -72,14 +72,14 @@ final class JsonLogicEval {
   }
 
   /**
-   * Convert any value to float, mirroring Coercion Contract v1.
-   * Rejects hex/octal/binary prefixes; trims whitespace before parsing.
+   * Convert any value to float, delegating to Coercion::toNumber().
+   *
+   * Coercion::toNumber() returns NAN for unparseable input. NAN compares
+   * false with all relational operators, which is the correct behaviour
+   * for x-when numeric conditions (an unparseable operand makes the
+   * condition evaluate to false).
    */
   private static function toFloat($value): float {
-    $str = trim(self::toStr($value));
-    if ($str !== '' && is_numeric($str) && !preg_match('/^[+-]?0[xXoObB]/i', $str)) {
-      return (float) $str;
-    }
-    return 0.0;
+    return Coercion::toNumber(self::toStr($value));
   }
 }

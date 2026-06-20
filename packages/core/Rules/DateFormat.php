@@ -3,23 +3,17 @@
 namespace SchemableValidator\Rules;
 
 use Respect\Validation\Rules\AbstractRule;
-use SchemableValidator\Validation\CalendarDate;
+use SchemableValidator\Validation\Formats;
 
 /**
- * format: "date" (RFC 3339 full-date) — fast regex (YYYY-MM-DD) plus the
- * same pure-arithmetic calendar check as packages/client/src/constraint.ts,
- * so "2026-02-30" is rejected on both sides without DateTime/checkdate.
+ * format: "date" (RFC 3339 full-date) — delegates to Formats::matches('date'),
+ * which applies the same regex + CalendarDate check as the FE constraint.ts.
  */
 final class DateFormat extends AbstractRule {
-  private const PATTERN = '/^(\d{4})-(\d{2})-(\d{2})$/';
-
   public function validate($input): bool {
     if (!is_string($input)) {
       return false;
     }
-    if (!preg_match(self::PATTERN, $input, $m)) {
-      return false;
-    }
-    return CalendarDate::isValid((int) $m[1], (int) $m[2], (int) $m[3]);
+    return Formats::matches('date', $input) === true;
   }
 }

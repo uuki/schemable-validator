@@ -16,11 +16,16 @@ use SchemableValidator\Validation\RespectExecutableValidator;
  * methods) into a separate optional Drivers\Respect namespace is the next step
  * toward making respect/validation a fully optional dependency.
  */
-final class RawRespectSchema extends AbstractFieldSchema implements UnmappableField, CustomField {
-  /** @var v */
+final class RawRespectSchema extends AbstractFieldSchema implements CustomField {
+  /** @var object Respect\Validation\Validator instance. */
   private $rule;
 
-  public function __construct(v $rule) {
+  /**
+   * @param object $rule  A Respect\Validation\Validator instance. Type hint
+   *                      is object so loading this class does not require the
+   *                      respect/validation package at parse time.
+   */
+  public function __construct(object $rule) {
     $this->rule = $rule;
   }
 
@@ -28,7 +33,8 @@ final class RawRespectSchema extends AbstractFieldSchema implements UnmappableFi
     return false;
   }
 
-  public function toRespect(): v {
+  /** @return v */
+  public function toRespect() {
     return $this->rule;
   }
 

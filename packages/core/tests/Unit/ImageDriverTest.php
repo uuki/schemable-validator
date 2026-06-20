@@ -213,7 +213,7 @@ final class ImageDriverTest extends TestCase {
     ];
 
     $result = $schema
-      ->toValidator([], ['imageDriver' => $alwaysReject])
+      ->toValidator(['imageDriver' => $alwaysReject])
       ->validateFiles($files)
       ->getResult();
 
@@ -249,7 +249,7 @@ final class ImageDriverTest extends TestCase {
     ];
 
     $schema
-      ->toValidator([], ['imageDriver' => $imageDriver])
+      ->toValidator(['imageDriver' => $imageDriver])
       ->validateFiles($files)
       ->getResult();
 
@@ -283,7 +283,7 @@ final class ImageDriverTest extends TestCase {
     ];
 
     $schema
-      ->toValidator([], ['imageDriver' => $imageDriver])
+      ->toValidator(['imageDriver' => $imageDriver])
       ->validateFiles($files)
       ->getResult();
 

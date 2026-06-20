@@ -328,7 +328,7 @@ use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
 'captchaDriver' => new NullCaptchaDriver() // 常に通る。false を渡すと常に弾く
 ```
 
-セキュリティ特性、スコア閾値、レガシー `validateReCaptcha()` との違いについては [バックエンドアダプタ](./backend-adapters.md#captcha-検証ドライバを注入する) を参照してください。
+セキュリティ特性、スコア閾値については [バックエンドアダプタ](./backend-adapters.md#captcha-検証ドライバを注入する) を参照してください。
 
 ### ベストプラクティス
 

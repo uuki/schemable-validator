@@ -2,10 +2,7 @@
 
 namespace SchemableValidator\Schema;
 
-use Respect\Validation\Validator as v;
-use SchemableValidator\Rules\FileExtension;
-
-final class FileSchema extends AbstractFieldSchema implements UnmappableField {
+final class FileSchema extends AbstractFieldSchema {
   /** @var array */
   private $accept;
 
@@ -33,12 +30,6 @@ final class FileSchema extends AbstractFieldSchema implements UnmappableField {
   /** @return array<string, int> Image constraints (empty if none set). Consumed by ImageDriver. */
   public function getImageConstraints(): array {
     return $this->imageConstraints;
-  }
-
-  public function toRespect(): v {
-    $chain = v::create();
-    $chain->addRule(new FileExtension($this->accept));
-    return $chain;
   }
 
   public function toJsonSchema(): array {

@@ -3,7 +3,6 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Respect\Validation\Validator as v;
 use SchemableValidator\SV;
 use SchemableValidator\Validator;
 use SchemableValidator\Validation\Adapters\RespectAdapter;
@@ -14,7 +13,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_valid_data_returns_is_valid_true(): void
   {
-    $validator = new Validator(['name' => v::stringType()->length(1, 50)]);
+    $validator = SV::object(['name' => SV::string()->min(1)->max(50)])->toValidator();
     $result = $validator->validate(['name' => 'Alice'])->getResult();
 
     $this->assertTrue($result['name']['is_valid']);
@@ -24,7 +23,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_invalid_data_returns_is_valid_false(): void
   {
-    $validator = new Validator(['name' => v::stringType()->length(1, 50)]);
+    $validator = SV::object(['name' => SV::string()->min(1)->max(50)])->toValidator();
     $result = $validator->validate(['name' => ''])->getResult();
 
     $this->assertFalse($result['name']['is_valid']);
@@ -33,7 +32,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_missing_field_returns_is_valid_false(): void
   {
-    $validator = new Validator(['name' => v::stringType()->notEmpty()]);
+    $validator = SV::object(['name' => SV::string()->min(1)])->toValidator();
     $result = $validator->validate([])->getResult();
 
     $this->assertFalse($result['name']['is_valid']);
@@ -43,7 +42,7 @@ class ValidatorTest extends TestCase
   {
     // validate() returns raw values — output-layer callers (esc_html, wp_kses, etc.) are
     // responsible for context-appropriate escaping.
-    $validator = new Validator(['name' => v::stringType()]);
+    $validator = SV::object(['name' => SV::string()])->toValidator();
     $result = $validator->validate(['name' => '<script>alert(1)</script>'])->getResult();
 
     $this->assertSame('<script>alert(1)</script>', $result['name']['value']);
@@ -51,7 +50,7 @@ class ValidatorTest extends TestCase
 
   public function test_validate_returns_static_for_chaining(): void
   {
-    $validator = new Validator(['name' => v::stringType()]);
+    $validator = SV::object(['name' => SV::string()])->toValidator();
     $result = $validator->validate(['name' => 'Alice']);
 
     $this->assertSame($validator, $result);
@@ -61,20 +60,27 @@ class ValidatorTest extends TestCase
 
   public function test_validateFiles_normalizes_single_file(): void
   {
-    $schema = ['doc' => v::key('error', v::equals(UPLOAD_ERR_OK))];
-    $validator = new Validator($schema);
+    // Use an accept list that matches the real MIME type of an empty temp file (application/x-empty or similar).
+    // An empty accept list means "accept any file with UPLOAD_ERR_OK".
+    $validator = SV::object([
+      'doc' => SV::file([]),
+    ])->toValidator();
+
+    $tmp = tempnam(sys_get_temp_dir(), 'sv_test_');
+    file_put_contents($tmp, 'PDF content');
 
     $files = [
       'doc' => [
         'name' => 'test.pdf',
         'type' => 'application/pdf',
-        'tmp_name' => '/tmp/phpXXX',
+        'tmp_name' => $tmp,
         'error' => UPLOAD_ERR_OK,
         'size' => 1024,
       ],
     ];
 
     $result = $validator->validateFiles($files)->getResult();
+    unlink($tmp);
 
     $this->assertTrue($result['doc'][0]['is_valid']);
   }
@@ -190,11 +196,10 @@ class ValidatorTest extends TestCase
 
   public function test_method_chaining_validate_and_getResult(): void
   {
-    $schema = [
-      'email' => v::email(),
-      'name'  => v::stringType()->length(1, 50),
-    ];
-    $result = (new Validator($schema))
+    $result = SV::object([
+      'email' => SV::string()->email(),
+      'name'  => SV::string()->min(1)->max(50),
+    ])->toValidator()
       ->validate(['email' => 'test@example.com', 'name' => 'Bob'])
       ->getResult();
 
@@ -497,7 +502,7 @@ class ValidatorTest extends TestCase
       'required'   => ['n'],
     ];
     $default  = Validator::fromJsonSchema($schema)->validate(['n' => '42'])->getResult();
-    $explicit = Validator::fromJsonSchema($schema, [], [], null, null)->validate(['n' => '42'])->getResult();
+    $explicit = Validator::fromJsonSchema($schema, [], null, null)->validate(['n' => '42'])->getResult();
     $this->assertSame($default['n']['is_valid'], $explicit['n']['is_valid']);
   }
 
@@ -509,7 +514,7 @@ class ValidatorTest extends TestCase
       'required'   => ['n'],
     ];
     $default  = Validator::fromJsonSchema($schema)->validate(['n' => '42'])->getResult();
-    $explicit = Validator::fromJsonSchema($schema, [], [], null, new RespectAdapter())->validate(['n' => '42'])->getResult();
+    $explicit = Validator::fromJsonSchema($schema, [], null, new RespectAdapter())->validate(['n' => '42'])->getResult();
     $this->assertTrue($default['n']['is_valid']);
     $this->assertSame($default['n']['is_valid'], $explicit['n']['is_valid']);
   }

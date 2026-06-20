@@ -185,18 +185,16 @@ $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 
 ```php
 $schema->toValidator(
-  array $options = [],
-  array $config  = []
+  array $config = []
 ): Validator
 ```
 
 | Parameter | Type | Description |
 |:--|:--|:--|
-| `$options` | `array` | Runtime options for the legacy `validateReCaptcha()` path (`recaptcha_secret`, `recaptcha_valid_score`, `recaptcha_provider`) |
 | `$config['adapter']` | `BackendAdapter` | Validation engine. Default: `NativeAdapter` (dependency-free) |
 | `$config['fileDriver']` | `FileValidationDriver` | File validation driver. Default: `NativeFileValidator` |
 | `$config['imageDriver']` | `ImageDriver` | Image constraint driver. Default: `null` (image constraints are skipped) |
-| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA verification driver. Default: `null` (use the legacy `validateReCaptcha()` path) |
+| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA verification driver. Default: `null` (captcha verification unavailable) |
 
 ### `toJsonSchema()` options
 

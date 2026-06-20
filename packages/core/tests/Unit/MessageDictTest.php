@@ -3,10 +3,8 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Respect\Validation\Validator as v;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\SV;
-use SchemableValidator\Validator;
 
 class MessageDictTest extends TestCase
 {
@@ -146,21 +144,18 @@ class MessageDictTest extends TestCase
   public function test_validator_uses_dict_for_error_messages(): void
   {
     $dict = MessageDict::ja();
-    $validator = new Validator(
-      ['email' => v::email()],
-      [],
-      [],
-      $dict
-    );
+    $validator = SV::object(['email' => SV::string()->email()])
+      ->withMessages($dict)
+      ->toValidator();
     $result = $validator->validate(['email' => 'invalid'])->getResult();
 
     $this->assertFalse($result['email']['is_valid']);
     $this->assertSame('有効なメールアドレスを入力してください', $result['email']['errors']);
   }
 
-  public function test_validator_without_dict_uses_respect_default(): void
+  public function test_validator_without_dict_uses_default_message(): void
   {
-    $validator = new Validator(['email' => v::email()]);
+    $validator = SV::object(['email' => SV::string()->email()])->toValidator();
     $result = $validator->validate(['email' => 'invalid'])->getResult();
 
     $this->assertFalse($result['email']['is_valid']);
@@ -171,7 +166,9 @@ class MessageDictTest extends TestCase
   public function test_validator_dict_field_specific_override(): void
   {
     $dict = MessageDict::ja(['email' => 'メールを正しく入力してください']);
-    $validator = new Validator(['email' => v::email()], [], [], $dict);
+    $validator = SV::object(['email' => SV::string()->email()])
+      ->withMessages($dict)
+      ->toValidator();
     $result = $validator->validate(['email' => 'bad'])->getResult();
 
     $this->assertSame('メールを正しく入力してください', $result['email']['errors']);
@@ -195,8 +192,8 @@ class MessageDictTest extends TestCase
 
   public function test_errors_format_has_no_bullet_prefix_without_dict(): void
   {
-    // Without dict, errors must NOT start with "- " (Respect's getFullMessage format)
-    $validator = new Validator(['email' => v::email()]);
+    // Without dict, errors must NOT start with "- "
+    $validator = SV::object(['email' => SV::string()->email()])->toValidator();
     $result = $validator->validate(['email' => 'bad'])->getResult();
 
     $this->assertStringNotContainsString('- ', substr($result['email']['errors'], 0, 2));
@@ -205,8 +202,10 @@ class MessageDictTest extends TestCase
   public function test_errors_format_consistent_between_dict_and_no_dict(): void
   {
     // Both paths must produce the same message for the same failure when dict has no match
-    $withoutDict = new Validator(['email' => v::email()]);
-    $withDict    = new Validator(['email' => v::email()], [], [], new MessageDict());
+    $withoutDict = SV::object(['email' => SV::string()->email()])->toValidator();
+    $withDict    = SV::object(['email' => SV::string()->email()])
+      ->withMessages(new MessageDict())
+      ->toValidator();
 
     $r1 = $withoutDict->validate(['email' => 'bad'])->getResult();
     $r2 = $withDict->validate(['email' => 'bad'])->getResult();
@@ -295,7 +294,7 @@ class MessageDictTest extends TestCase
   }
 
   public function test_be_inline_errorMessage_via_fromJsonSchema(): void {
-    $validator = Validator::fromJsonSchema([
+    $validator = \SchemableValidator\Validator::fromJsonSchema([
       'type'       => 'object',
       'properties' => [
         'name' => ['type' => 'string', 'minLength' => 3, 'errorMessage' => ['minLength' => '最低{min}文字']],
@@ -311,7 +310,7 @@ class MessageDictTest extends TestCase
   public function test_be_multi_rule_failure_order_matches_fe_contract(): void {
     // Rule-ordering contract: format → pattern → enum, mirroring
     // constraintsFromSchema() in packages/client/src/constraint.ts.
-    $validator = Validator::fromJsonSchema([
+    $validator = \SchemableValidator\Validator::fromJsonSchema([
       'type'       => 'object',
       'properties' => [
         'code' => [

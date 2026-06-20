@@ -1,7 +1,14 @@
 <?php
 namespace SchemableValidator\Controllers;
 
+/**
+ * SSRF-guarded HTTPS client optimised for CAPTCHA verification.
+ *
+ * Enforces https-only, rejects private/reserved IPs (IPv4 and IPv6), pins DNS
+ * resolution via CURLOPT_RESOLVE, and disables redirects.
+ */
 final class CurlController {
+  /** @var resource|object|null cURL handle (resource on PHP 7.4, CurlHandle on 8.0+). */
   private $curl;
   private $options = [];
 
@@ -244,11 +251,13 @@ final class CurlController {
     if ($response === false) {
       $error = curl_error($this->curl);
       curl_close($this->curl);
+      $this->curl = null;
       throw new \Exception("cURL Error: $error");
     }
 
     $httpCode = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
     curl_close($this->curl);
+    $this->curl = null;
 
     return [
       'status_code' => $httpCode,
@@ -258,7 +267,8 @@ final class CurlController {
 
   public function __destruct()
   {
-    if (is_resource($this->curl)) {
+    // PHP 7.4 returns a resource from curl_init(); PHP 8.0+ returns a CurlHandle object.
+    if ($this->curl !== null && $this->curl !== false) {
       curl_close($this->curl);
     }
   }

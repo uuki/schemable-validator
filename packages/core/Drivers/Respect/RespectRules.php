@@ -19,8 +19,14 @@ use SchemableValidator\Schema\RawRespectSchema;
  *   SV::object([ 'iban' => R::iban(), 'zip' => R::postalCode('JP') ]);
  */
 final class RespectRules {
-  /** Wrap an arbitrary Respect/Validation rule. */
-  public static function rule(v $rule): RawRespectSchema {
+  /**
+   * Wrap an arbitrary Respect/Validation rule.
+   *
+   * @param v|object $rule  A Respect\Validation\Validator instance. Accepts
+   *                        object to support callers that strip the type hint
+   *                        (e.g. SV::respect()).
+   */
+  public static function rule(object $rule): RawRespectSchema {
     return new RawRespectSchema($rule);
   }
 

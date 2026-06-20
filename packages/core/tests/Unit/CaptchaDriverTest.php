@@ -109,7 +109,7 @@ final class CaptchaDriverTest extends TestCase {
 
   public function test_validateCaptcha_returns_invalid_when_no_token_in_post(): void {
     $schema    = SV::object(['name' => SV::string()]);
-    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(true)]);
+    $validator = $schema->toValidator(['captchaDriver' => new NullCaptchaDriver(true)]);
 
     // No CAPTCHA field in the POST data — validateCaptcha must short-circuit locally.
     $result = $validator
@@ -137,7 +137,7 @@ final class CaptchaDriverTest extends TestCase {
 
   public function test_validateCaptcha_passes_with_null_driver(): void {
     $schema    = SV::object(['name' => SV::string()]);
-    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(true)]);
+    $validator = $schema->toValidator(['captchaDriver' => new NullCaptchaDriver(true)]);
 
     $result = $validator
       ->validate(['name' => 'Alice', 'recaptcha_token' => 'tok'])
@@ -150,7 +150,7 @@ final class CaptchaDriverTest extends TestCase {
 
   public function test_validateCaptcha_fails_with_rejecting_null_driver(): void {
     $schema    = SV::object(['name' => SV::string()]);
-    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(false)]);
+    $validator = $schema->toValidator(['captchaDriver' => new NullCaptchaDriver(false)]);
 
     $result = $validator
       ->validate(['name' => 'Alice', 'recaptcha_token' => 'tok'])
@@ -173,7 +173,7 @@ final class CaptchaDriverTest extends TestCase {
 
   public function test_validateCaptcha_reads_g_recaptcha_response_field(): void {
     $schema    = SV::object(['name' => SV::string()]);
-    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(true)]);
+    $validator = $schema->toValidator(['captchaDriver' => new NullCaptchaDriver(true)]);
 
     // Token sent as g-recaptcha-response (reCAPTCHA standard field name)
     $result = $validator
@@ -186,7 +186,7 @@ final class CaptchaDriverTest extends TestCase {
 
   public function test_validateCaptcha_reads_h_captcha_response_field(): void {
     $schema    = SV::object(['name' => SV::string()]);
-    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(true)]);
+    $validator = $schema->toValidator(['captchaDriver' => new NullCaptchaDriver(true)]);
 
     $result = $validator
       ->validate(['name' => 'Alice', 'h-captcha-response' => 'tok'])
@@ -198,7 +198,7 @@ final class CaptchaDriverTest extends TestCase {
 
   public function test_validateCaptcha_reads_cf_turnstile_response_field(): void {
     $schema    = SV::object(['name' => SV::string()]);
-    $validator = $schema->toValidator([], ['captchaDriver' => new NullCaptchaDriver(true)]);
+    $validator = $schema->toValidator(['captchaDriver' => new NullCaptchaDriver(true)]);
 
     $result = $validator
       ->validate(['name' => 'Alice', 'cf-turnstile-response' => 'tok'])

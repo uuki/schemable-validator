@@ -2,7 +2,6 @@
 
 namespace SchemableValidator;
 
-use Respect\Validation\Validator as v;
 use SchemableValidator\Drivers\Respect\RespectRules;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\ArraySchema;
@@ -68,8 +67,12 @@ final class SV {
    * @deprecated Use the optional Respect driver: RespectRules::rule($rule).
    *   Kept for back-compat; delegates to the driver. The dependency-free
    *   alternative is SV::custom(callable). See docs/backend-adapters.md.
+   *
+   * @param object $rule  A Respect\Validation\Validator instance. Type hint
+   *                      omitted so loading this file does not require the
+   *                      respect/validation package.
    */
-  public static function respect(v $rule): RawRespectSchema {
+  public static function respect(object $rule): RawRespectSchema {
     return RespectRules::rule($rule);
   }
 

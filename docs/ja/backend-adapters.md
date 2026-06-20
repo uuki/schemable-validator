@@ -258,7 +258,7 @@ $result = $validator
     ->getResult();
 ```
 
-トークンは次の POST フィールドのうち最初に値があるものから読み取ります: `recaptcha_token`、`g-recaptcha-response`、`h-captcha-response`、`cf-turnstile-response`。
+トークンは次の POST フィールドのうち最初に値があるものから読み取ります: `g-recaptcha-response`、`h-captcha-response`、`cf-turnstile-response`、`recaptcha_token`。
 
 結果は `$result['captcha']` に書き込まれます。
 
@@ -285,20 +285,10 @@ new ReCaptchaV3Driver(
 各ドライバはエンドポイントをハードコードしているため、呼び出し元が指定した URL がネットワークに届くことはありません。
 内部エラー（エンドポイント URL、プロバイダからのエラーコードなど）は `error_log()` にのみ出力し、呼び出し元には `"CAPTCHA verification failed"` というメッセージのみ返します。
 
-**レガシーパス。**
-`validateReCaptcha()` メソッドとコンストラクタの `recaptcha_*` オプションは引き続き動作し、変更はありません。
-新規コードでは `captchaDriver` と `validateCaptcha()` を使うことを推奨します。
+**使用例。**
 
 ```php
-// レガシー（引き続き動作する）
-$validator = new Validator($schema, [
-    'recaptcha_secret'      => 'YOUR_SECRET',
-    'recaptcha_valid_score' => 0.5,
-]);
-$result = $validator->validate($_POST)->validateReCaptcha()->getResult();
-
-// 推奨
-$validator = $schema->toValidator([], [
+$validator = $schema->toValidator([
     'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
 ]);
 $result = $validator->validate($_POST)->validateCaptcha()->getResult();

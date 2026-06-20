@@ -13,7 +13,7 @@ use SchemableValidator\Rules\TimeFormat;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\MappableField;
-use SchemableValidator\Schema\UnmappableField;
+use SchemableValidator\Validation\CustomField;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\ExecutableValidator;
 use SchemableValidator\Validation\RespectExecutableValidator;
@@ -25,7 +25,7 @@ use SchemableValidator\Validation\RespectExecutableValidator;
  *   the execution half of the old RuleMapper::resolve() switch.
  * - AbstractFieldSchema -> Respect validator (compileField), used by
  *   SchemaBuilder::toValidator() for both MappableField descriptors and the
- *   UnmappableField escape hatches (FileSchema/RawRespectSchema).
+ *   CustomField escape hatches (RawRespectSchema).
  * - Respect exception -> ruleId/message extraction (extractRuleMessages),
  *   moved from Validator::extractRuleMessages().
  */
@@ -53,17 +53,13 @@ final class RespectAdapter implements BackendAdapter {
   public function compile(array $jsonSchema, ?MessageDict $dict = null): ExecutableValidator {
     $required       = $jsonSchema['required'] ?? [];
     $schema         = [];
-    $inlineMessages = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
       $chain          = self::compileProperty($prop);
       $schema[$name]  = in_array($name, $required, true) ? $chain : v::optional($chain);
-      if (!empty($prop['errorMessage'])) {
-        $inlineMessages[$name] = $prop['errorMessage'];
-      }
     }
 
-    return new RespectExecutableValidator($schema, $dict, $inlineMessages);
+    return new RespectExecutableValidator($schema, $dict, AdapterHelper::extractInlineMessages($jsonSchema));
   }
 
   /**
@@ -78,15 +74,15 @@ final class RespectAdapter implements BackendAdapter {
     return self::compileDescriptors(self::jsonSchemaPropertyToDescriptors($prop));
   }
 
-  /** Compile a single field schema (Mappable or Unmappable) to a Respect validator. */
+  /** Compile a single field schema (Mappable or CustomField) to a Respect validator. */
   public static function compileField(AbstractFieldSchema $field): v {
-    if ($field instanceof UnmappableField) {
+    if ($field instanceof CustomField && method_exists($field, 'toRespect')) {
       return $field->toRespect();
     }
     if ($field instanceof MappableField) {
       return self::compileDescriptors($field->toDescriptors());
     }
-    throw new \LogicException(get_class($field) . ' implements neither MappableField nor UnmappableField');
+    throw new \LogicException(get_class($field) . ' implements neither MappableField nor CustomField with toRespect()');
   }
 
   /** @param array<int, array{rule: string, args: array}> $descriptors */

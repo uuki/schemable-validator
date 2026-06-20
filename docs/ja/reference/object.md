@@ -119,10 +119,12 @@ $result = $schema->toValidator()
   ->validateFiles($_FILES)
   ->getResult();
 
-// reCAPTCHA を含む検証
-$result = $schema->toValidator(['recaptcha_secret' => 'SECRET'])
+// CAPTCHA を含む検証
+$result = $schema->toValidator([
+    'captchaDriver' => new ReCaptchaV3Driver('SECRET'),
+  ])
   ->validate($_POST)
-  ->validateReCaptcha()
+  ->validateCaptcha()
   ->getResult();
 ```
 

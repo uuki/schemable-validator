@@ -2,9 +2,10 @@
 
 namespace SchemableValidator\Schema;
 
-final class NumberSchema extends AbstractFieldSchema implements MappableField {
-  /** @var array */
-  private $bounds = [];
+final class NumberSchema extends AbstractNumericSchema {
+  protected function typeName(): string {
+    return 'number';
+  }
 
   /**
    * @param int|float $n
@@ -22,22 +23,5 @@ final class NumberSchema extends AbstractFieldSchema implements MappableField {
   public function max($n) {
     $this->bounds[] = ['rule' => 'max', 'args' => [$n]];
     return $this;
-  }
-
-  public function toDescriptors(): array {
-    $descriptors = [['rule' => 'number', 'args' => []]];
-    foreach ($this->bounds as $bound) {
-      $descriptors[] = $bound;
-    }
-    return $descriptors;
-  }
-
-  public function toJsonSchema(): array {
-    $schema = ['type' => 'number'];
-    foreach ($this->bounds as $bound) {
-      $mapping = RuleMapper::resolve($bound['rule'], $bound['args']);
-      $schema  = array_merge($schema, $mapping->jsonSchema);
-    }
-    return $this->applyXTransform($this->applyErrorMessages($this->applyNullable($schema)));
   }
 }

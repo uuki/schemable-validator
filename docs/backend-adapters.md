@@ -258,7 +258,7 @@ $result = $validator
     ->getResult();
 ```
 
-The token is read from whichever of these POST fields is present: `recaptcha_token`, `g-recaptcha-response`, `h-captcha-response`, or `cf-turnstile-response`.
+The token is read from whichever of these POST fields is present: `g-recaptcha-response`, `h-captcha-response`, `cf-turnstile-response`, or `recaptcha_token`.
 
 The result is written under `$result['captcha']`:
 
@@ -285,20 +285,10 @@ All three built-in drivers send verification requests through `CurlController`, 
 Each driver hardcodes its verification endpoint, so no caller-supplied URL reaches the network.
 Internal error details (endpoint URL, error codes from the provider) are written to `error_log()` only; callers receive the generic message `"CAPTCHA verification failed"`.
 
-**Legacy path.**
-The `validateReCaptcha()` method and the `recaptcha_*` constructor options still work and are unchanged.
-New code should prefer `captchaDriver` + `validateCaptcha()`.
+**Usage example.**
 
 ```php
-// Legacy (still works)
-$validator = new Validator($schema, [
-    'recaptcha_secret'      => 'YOUR_SECRET',
-    'recaptcha_valid_score' => 0.5,
-]);
-$result = $validator->validate($_POST)->validateReCaptcha()->getResult();
-
-// Preferred
-$validator = $schema->toValidator([], [
+$validator = $schema->toValidator([
     'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
 ]);
 $result = $validator->validate($_POST)->validateCaptcha()->getResult();

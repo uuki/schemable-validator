@@ -29,22 +29,22 @@ final class AdapterDispatchTest extends TestCase {
   // ── engine is actually swapped ──
 
   public function test_native_adapter_coerces_form_strings(): void {
-    $r = SV::object(['age' => SV::integer()])->toValidator([], ['adapter' => new NativeAdapter()])
+    $r = SV::object(['age' => SV::integer()])->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['age' => '42'])->getResult();
     $this->assertTrue($r['age']['is_valid']);
   }
 
   public function test_opis_adapter_is_strict_rejects_form_string(): void {
     // Same schema + input, different engine → different result (documented coercion divergence).
-    $r = SV::object(['age' => SV::integer()])->toValidator([], ['adapter' => new OpisAdapter()])
+    $r = SV::object(['age' => SV::integer()])->toValidator(['adapter' => new OpisAdapter()])
       ->validate(['age' => '42'])->getResult();
     $this->assertFalse($r['age']['is_valid']);
   }
 
   public function test_native_and_respect_agree_on_canonical_message(): void {
-    $native = SV::object(['email' => SV::string()->email()])->toValidator([], ['adapter' => new NativeAdapter()])
+    $native = SV::object(['email' => SV::string()->email()])->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['email' => 'bad'])->getResult();
-    $respect = SV::object(['email' => SV::string()->email()])->toValidator([], ['adapter' => new RespectAdapter()])
+    $respect = SV::object(['email' => SV::string()->email()])->toValidator(['adapter' => new RespectAdapter()])
       ->validate(['email' => 'bad'])->getResult();
 
     $this->assertSame('must be a valid email', $native['email']['errors']);
@@ -56,7 +56,7 @@ final class AdapterDispatchTest extends TestCase {
   public function test_dict_applies_through_native_adapter(): void {
     $r = SV::object(['email' => SV::string()->email()])
       ->withMessages(MessageDict::ja())
-      ->toValidator([], ['adapter' => new NativeAdapter()])
+      ->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['email' => 'bad'])->getResult();
     $this->assertSame('有効なメールアドレスを入力してください', $r['email']['errors']);
   }
@@ -77,7 +77,7 @@ final class AdapterDispatchTest extends TestCase {
       'properties' => ['n' => ['type' => 'integer']],
       'required'   => ['n'],
     ];
-    $r = \SchemableValidator\Validator::fromJsonSchema($schema, [], [], null, new NativeAdapter())
+    $r = \SchemableValidator\Validator::fromJsonSchema($schema, [], null, new NativeAdapter())
       ->validate(['n' => '7'])->getResult();
     $this->assertTrue($r['n']['is_valid']); // Native coerces
   }
@@ -85,13 +85,13 @@ final class AdapterDispatchTest extends TestCase {
   // ── (B) escape hatch: RawRespectSchema still validated regardless of adapter ──
 
   public function test_raw_respect_escape_hatch_runs_under_native_adapter(): void {
-    // postal_code is a RawRespectSchema (UnmappableField) — it has no JSON Schema
+    // postal_code is a RawRespectSchema (CustomField) — it has no JSON Schema
     // form, so it runs on Respect directly even when the mappable engine is Native.
     $sb = SV::object([
       'name'        => SV::string()->min(1),
       'postal_code' => SV::respect(v::digit()->length(3, 3)),
     ]);
-    $r = $sb->toValidator([], ['adapter' => new NativeAdapter()])
+    $r = $sb->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['name' => 'Alice', 'postal_code' => 'xx'])->getResult();
 
     $this->assertTrue($r['name']['is_valid']);          // mappable via Native
@@ -102,7 +102,7 @@ final class AdapterDispatchTest extends TestCase {
     $sb = SV::object([
       'postal_code' => SV::respect(v::digit()->length(3, 3)),
     ]);
-    $r = $sb->toValidator([], ['adapter' => new NativeAdapter()])
+    $r = $sb->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['postal_code' => '123'])->getResult();
     $this->assertTrue($r['postal_code']['is_valid']);
   }

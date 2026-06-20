@@ -329,7 +329,7 @@ use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
 'captchaDriver' => new NullCaptchaDriver() // always passes; pass false to simulate rejection
 ```
 
-For the full driver reference including security properties, score threshold, and the legacy `validateReCaptcha()` path, see [Backend Adapters](./backend-adapters.md#injecting-a-captcha-driver).
+For the full driver reference including security properties and score threshold, see [Backend Adapters](./backend-adapters.md#injecting-a-captcha-driver).
 
 ### Best Practices
 

@@ -185,18 +185,16 @@ $result    = $validator->validate($_POST)->validateFiles($_FILES)->getResult();
 
 ```php
 $schema->toValidator(
-  array $options = [],
-  array $config  = []
+  array $config = []
 ): Validator
 ```
 
 | パラメータ | 型 | 説明 |
 |:--|:--|:--|
-| `$options` | `array` | レガシー `validateReCaptcha()` 用ランタイムオプション（`recaptcha_secret`、`recaptcha_valid_score`、`recaptcha_provider`） |
 | `$config['adapter']` | `BackendAdapter` | バリデーションエンジン。デフォルト: `NativeAdapter`（依存なし） |
 | `$config['fileDriver']` | `FileValidationDriver` | ファイル検証ドライバー。デフォルト: `NativeFileValidator` |
 | `$config['imageDriver']` | `ImageDriver` | 画像制約ドライバー。デフォルト: `null`（画像制約をスキップ） |
-| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA 検証ドライバー。デフォルト: `null`（レガシー `validateReCaptcha()` を使用） |
+| `$config['captchaDriver']` | `CaptchaDriver` | CAPTCHA 検証ドライバー。デフォルト: `null`（CAPTCHA 検証は使用不可） |
 
 ### `toJsonSchema()` のオプション
 

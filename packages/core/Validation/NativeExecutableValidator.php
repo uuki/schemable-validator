@@ -2,7 +2,6 @@
 
 namespace SchemableValidator\Validation;
 
-use SchemableValidator\I18n\DefaultMessages;
 use SchemableValidator\I18n\MessageDict;
 
 /**
@@ -197,21 +196,20 @@ final class NativeExecutableValidator implements ExecutableValidator {
   }
 
   /**
-   * Resolve a message: inline errorMessage[keyword] > canonical catalog(neutral)
-   * > generic fallback, interpolating {var} values.
+   * Resolve a message via the shared MessageResolver chain.
    *
    * @param array<string, int|float|string> $vars
    */
   private function message(string $field, string $keyword, string $neutralRuleId, array $vars): string {
-    // Resolution order: MessageDict(neutral) > inline errorMessage(keyword)
-    // > canonical catalog(neutral) > generic fallback.
-    $template = DefaultMessages::template($neutralRuleId) ?? "must be a valid {$neutralRuleId}";
-    if (isset($this->inlineMessages[$field][$keyword])) {
-      $template = $this->inlineMessages[$field][$keyword];
-    }
-    return $this->dict !== null
-      ? $this->dict->resolve($field, $neutralRuleId, $template, $vars)
-      : MessageDict::interpolate($template, $vars);
+    return MessageResolver::resolve(
+      $this->dict,
+      $field,
+      $neutralRuleId,
+      $keyword,
+      $vars,
+      $this->inlineMessages,
+      "must be a valid {$neutralRuleId}"
+    );
   }
 
   /**

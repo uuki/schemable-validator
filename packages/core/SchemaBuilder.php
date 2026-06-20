@@ -2,7 +2,6 @@
 
 namespace SchemableValidator;
 
-use Respect\Validation\Validator as v;
 use SchemableValidator\Contracts\SchemaProviderInterface;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Schema\AbstractFieldSchema;
@@ -15,7 +14,6 @@ use SchemableValidator\Validation\CustomField;
 use SchemableValidator\Validation\FileValidationDriver;
 use SchemableValidator\Validation\ImageDriver;
 use SchemableValidator\Validation\JsonLogicEval;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
 
 final class SchemaBuilder implements SchemaProviderInterface {
   /** @var array<string, AbstractFieldSchema> */
@@ -92,19 +90,13 @@ final class SchemaBuilder implements SchemaProviderInterface {
   /**
    * Build a Validator from the schema.
    *
-   * @param array $options  Runtime options (e.g. recaptcha_secret, recaptcha_valid_score).
-   * @param array $config   Engine config:
-   *                        'adapter'       => BackendAdapter      (default: NativeAdapter)
-   *                        'fileDriver'    => FileValidationDriver (default: NativeFileValidator)
-   *                        'imageDriver'   => ImageDriver          (default: null — skips image checks)
-   *                        'captchaDriver' => CaptchaDriver        (default: null — use validateReCaptcha())
+   * @param array $config  Engine config:
+   *                       'adapter'       => BackendAdapter      (default: NativeAdapter)
+   *                       'fileDriver'    => FileValidationDriver (default: NativeFileValidator)
+   *                       'imageDriver'   => ImageDriver          (default: null — skips image checks)
+   *                       'captchaDriver' => CaptchaDriver        (default: null — captcha unavailable)
    */
-  public function toValidator(array $options = [], array $config = []): Validator {
-    $adapter       = $config['adapter']       ?? null;
-    $fileDriver    = $config['fileDriver']    ?? null;
-    $imageDriver   = $config['imageDriver']   ?? null;
-    $captchaDriver = $config['captchaDriver'] ?? null;
-
+  public function toValidator(array $config = []): Validator {
     $jsonSchema     = $this->toJsonSchema();
     $customFields   = [];
     $transforms     = [];
@@ -129,8 +121,13 @@ final class SchemaBuilder implements SchemaProviderInterface {
         $transforms[$name] = $fieldTransforms;
       }
     }
-    $conditionals = $this->conditionals;
-    return new Validator([], $options, $conditionals, $this->messageDict, $adapter, $transforms, [], $jsonSchema, $fileConfigs, $fileDriver, $customFields, $imageDriver, $captchaDriver);
+    return new Validator($jsonSchema, array_merge($config, [
+      'conditionals' => $this->conditionals,
+      'dict'         => $this->messageDict,
+      'transforms'   => $transforms,
+      'fileConfigs'  => $fileConfigs,
+      'customFields' => $customFields,
+    ]));
   }
 
   /** URI of the schemable meta-schema extending draft 2020-12 with x-* keywords. */

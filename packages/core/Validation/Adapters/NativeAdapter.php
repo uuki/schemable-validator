@@ -18,16 +18,11 @@ use SchemableValidator\Validation\NativeExecutableValidator;
  */
 final class NativeAdapter implements BackendAdapter {
   public function compile(array $jsonSchema, ?MessageDict $dict = null): ExecutableValidator {
-    $properties     = $jsonSchema['properties'] ?? [];
-    $required       = $jsonSchema['required'] ?? [];
-    $inlineMessages = [];
-
-    foreach ($properties as $name => $prop) {
-      if (!empty($prop['errorMessage'])) {
-        $inlineMessages[$name] = $prop['errorMessage'];
-      }
-    }
-
-    return new NativeExecutableValidator($properties, $required, $inlineMessages, $dict);
+    return new NativeExecutableValidator(
+      $jsonSchema['properties'] ?? [],
+      $jsonSchema['required'] ?? [],
+      AdapterHelper::extractInlineMessages($jsonSchema),
+      $dict
+    );
   }
 }

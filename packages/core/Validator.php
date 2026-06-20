@@ -12,11 +12,9 @@ namespace SchemableValidator;
 require_once __DIR__ . '/constants.php';
 require_once SV_VENDOR_DIR . '/autoload.php';
 
-use Respect\Validation\Validator as v;
-use SchemableValidator\Controllers\CurlController;
 use SchemableValidator\I18n\MessageDict;
+use SchemableValidator\Security\CsrfGuard;
 use SchemableValidator\Validation\Adapters\NativeAdapter;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\CaptchaDriver;
 use SchemableValidator\Validation\FileValidationDriver;
@@ -24,7 +22,6 @@ use SchemableValidator\Validation\ImageDriver;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\NativeFileValidator;
 use SchemableValidator\Validation\Transform;
-use SchemableValidator\Validation\RespectExecutableValidator;
 
 /**
  * Class Validator
@@ -34,21 +31,11 @@ use SchemableValidator\Validation\RespectExecutableValidator;
 final class Validator {
 
   /**
-   * Respect validator instances executed directly. In legacy mode (constructed
-   * with raw `v` objects) this is the full field set. In IR mode (built via
-   * SchemaBuilder/fromJsonSchema) this holds ONLY the UnmappableField escape
-   * hatches (FileSchema/RawRespectSchema) — mappable fields go through $adapter.
-   * @var array<string, v>
+   * Mappable-field JSON Schema (IR). validate() dispatches field validation
+   * through $adapter->compile($jsonSchema).
+   * @var array<string, mixed>
    */
-  private array $schema;
-
-  /**
-   * Mappable-field JSON Schema (IR). When non-null, validate() dispatches
-   * field validation through $adapter->compile($jsonSchema); when null, the
-   * legacy RespectExecutableValidator path over $schema is used.
-   * @var array<string, mixed>|null
-   */
-  private ?array $jsonSchema;
+  private array $jsonSchema;
 
   /**
    * (B) escape-hatch fields (SV::custom / SV::respect), executed via
@@ -62,12 +49,6 @@ final class Validator {
 
   /** @var array<string, string[]> field → transform list */
   private array $transforms;
-
-  /** @var array<string, array<string, string>> field → (JSON Schema keyword → message template) */
-  private array $inlineMessages;
-
-  /** @var array<string, mixed> */
-  private array $options;
 
   /** @var array<string, mixed> */
   private array $state;
@@ -89,61 +70,52 @@ final class Validator {
   /** @var ImageDriver|null Null = image constraints are skipped. */
   private ?ImageDriver $imageDriver;
 
-  /** @var CaptchaDriver|null Null = use legacy validateReCaptcha() path. */
+  /** @var CaptchaDriver|null Null = captcha verification is unavailable. */
   private ?CaptchaDriver $captchaDriver;
 
   /**
    * Validator constructor.
    *
-   * @param array<string, v> $schema An associative array where keys are field names and values are Respect\Validation\Validator instances.
+   * @param array<string, mixed> $jsonSchema IR schema (JSON Schema object).
+   * @param array<string, mixed> $config     Optional configuration:
+   *   'conditionals' => array, 'dict' => ?MessageDict, 'adapter' => ?BackendAdapter,
+   *   'transforms' => array, 'fileConfigs' => array, 'fileDriver' => ?FileValidationDriver,
+   *   'customFields' => array, 'imageDriver' => ?ImageDriver, 'captchaDriver' => ?CaptchaDriver.
    */
-  function __construct(array $schema = [], array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null, array $transforms = [], array $inlineMessages = [], ?array $jsonSchema = null, array $fileConfigs = [], ?FileValidationDriver $fileDriver = null, array $customFields = [], ?ImageDriver $imageDriver = null, ?CaptchaDriver $captchaDriver = null) {
-    $this->schema = $schema;
-    $this->jsonSchema = $jsonSchema;
-    $this->customFields = $customFields;
-    $this->conditionals = $conditionals;
-    $this->transforms = $transforms;
-    $this->inlineMessages = $inlineMessages;
-    $this->fileConfigs = $fileConfigs;
-    $this->fileDriver = $fileDriver ?? new NativeFileValidator();
-    $this->imageDriver   = $imageDriver;
-    $this->captchaDriver = $captchaDriver;
-    $this->dict = $dict;
+  function __construct(array $jsonSchema = [], array $config = []) {
+    $this->jsonSchema    = $jsonSchema;
+    $this->conditionals  = $config['conditionals'] ?? [];
+    $this->customFields  = $config['customFields'] ?? [];
+    $this->transforms    = $config['transforms'] ?? [];
+    $this->fileConfigs   = $config['fileConfigs'] ?? [];
+    $this->fileDriver    = $config['fileDriver'] ?? new NativeFileValidator();
+    $this->imageDriver   = $config['imageDriver'] ?? null;
+    $this->captchaDriver = $config['captchaDriver'] ?? null;
+    $this->dict          = $config['dict'] ?? null;
     // Default engine is the dependency-free NativeAdapter, so respect/validation
     // is optional (composer "suggest"). Pass a RespectAdapter explicitly (or use
-    // SV::respect/RespectRules / a raw `v` schema) to opt into Respect.
-    $this->adapter = $adapter ?? new NativeAdapter();
-    $this->options = array_merge([
-      'recaptcha_provider' => 'https://www.google.com/recaptcha/api/siteverify',
-      'recaptcha_secret' => '',
-      'recaptcha_valid_score' => 0.5,
-    ], $options);
+    // SV::respect/RespectRules) to opt into Respect.
+    $this->adapter       = $config['adapter'] ?? new NativeAdapter();
     $this->state = [
-      'result'          => [],
-      'token'           => null,
-      'recaptcha_token' => null,
-      'captcha_token'   => null,
+      'result'        => [],
+      'token'         => null,
+      'captcha_token' => null,
     ];
-
-    // Respect's factory is configured lazily by the Respect-backed paths
-    // (RespectAdapter / RespectExecutableValidator) so the default Native path
-    // never loads respect/validation — keeping it a truly optional dependency.
   }
 
   /**
    * Build a Validator directly from a raw JSON Schema 2020-12 object schema
    * (`properties`/`required`), bypassing SchemaBuilder. Each property is
-   * compiled via RespectAdapter, so the resulting Validator behaves the same
+   * compiled via the BackendAdapter, so the resulting Validator behaves the same
    * as one built from SV::object(...)->toValidator().
    *
    * x-when conditionals embedded in $jsonSchema are extracted automatically;
    * explicit $conditionals (JSONLogic format) may be supplied to supplement.
    *
    * @param array<string, mixed> $jsonSchema
-   * @param array<string, mixed> $options
    * @param array<array{condition: array, require: string[]}> $conditionals
    */
-  public static function fromJsonSchema(array $jsonSchema, array $options = [], array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
+  public static function fromJsonSchema(array $jsonSchema, array $conditionals = [], ?MessageDict $dict = null, ?BackendAdapter $adapter = null): self {
     $transforms = [];
 
     foreach ($jsonSchema['properties'] ?? [] as $name => $prop) {
@@ -158,9 +130,12 @@ final class Validator {
       $conditionals = array_merge($xWhen, $conditionals);
     }
 
-    // IR mode: field validation is dispatched through $adapter->compile($jsonSchema).
-    // Raw JSON Schema input has no UnmappableField escape hatches, so $schema is empty.
-    return new self([], $options, $conditionals, $dict, $adapter, $transforms, [], $jsonSchema);
+    return new self($jsonSchema, [
+      'conditionals' => $conditionals,
+      'dict'         => $dict,
+      'adapter'      => $adapter,
+      'transforms'   => $transforms,
+    ]);
   }
 
   /**
@@ -172,10 +147,9 @@ final class Validator {
    */
   public function validate(array $data): self {
     // Capture CAPTCHA token from whichever field name the provider uses.
-    foreach (['recaptcha_token', 'g-recaptcha-response', 'h-captcha-response', 'cf-turnstile-response'] as $field) {
+    foreach (['g-recaptcha-response', 'h-captcha-response', 'cf-turnstile-response', 'recaptcha_token'] as $field) {
       if (!empty($data[$field])) {
-        $this->state['recaptcha_token'] = $data[$field]; // legacy key, kept for validateReCaptcha()
-        $this->state['captcha_token']   = $data[$field];
+        $this->state['captcha_token'] = $data[$field];
         break;
       }
     }
@@ -187,22 +161,13 @@ final class Validator {
       }
     }
 
-    // IR mode (SchemaBuilder / fromJsonSchema): dispatch mappable fields through
-    // the BackendAdapter, then run any UnmappableField escape hatches (file/raw)
-    // via Respect directly. Legacy mode (raw `v` schema): run everything via Respect.
-    if ($this->jsonSchema !== null) {
-      foreach ($this->adapter->compile($this->jsonSchema, $this->dict)->validate($data) as $name => $fieldState) {
-        $this->state['result'][$name] = $fieldState;
-      }
-      // (B) escape hatches (SV::custom / SV::respect) — engine-agnostic evaluate().
-      foreach ($this->customFields as $name => $customField) {
-        $this->state['result'][$name] = $customField->evaluate($name, $data[$name] ?? null, $this->dict);
-      }
-    } else {
-      $executable = new RespectExecutableValidator($this->schema, $this->dict, $this->inlineMessages);
-      foreach ($executable->validate($data) as $name => $fieldState) {
-        $this->state['result'][$name] = $fieldState;
-      }
+    // IR mode: dispatch mappable fields through the BackendAdapter.
+    foreach ($this->adapter->compile($this->jsonSchema, $this->dict)->validate($data) as $name => $fieldState) {
+      $this->state['result'][$name] = $fieldState;
+    }
+    // (B) escape hatches (SV::custom / SV::respect) — engine-agnostic evaluate().
+    foreach ($this->customFields as $name => $customField) {
+      $this->state['result'][$name] = $customField->evaluate($name, $data[$name] ?? null, $this->dict);
     }
 
     // Apply conditional requirements (JSONLogic format)
@@ -274,102 +239,7 @@ final class Validator {
         }
         continue;
       }
-      // Legacy: a raw Respect validator passed directly as the field's schema.
-      if (isset($this->schema[$name])) {
-        $validator = $this->schema[$name];
-        $this->state['result'][$name] = [];
-        foreach ($files as $file_data) {
-          $this->state['result'][$name][] = $this->assert($file_data, $validator, $name);
-        }
-      }
     }
-
-    return $this;
-  }
-
-  /**
-   * @param array<string, mixed> $options
-   * @return static
-   * @throws \RuntimeException if recaptcha_secret is not configured
-   * @throws \InvalidArgumentException if recaptcha_provider is not an allowed endpoint
-   */
-  public function validateReCaptcha(array $options = []): self {
-    // Reject unconfigured secret rather than silently failing.
-    if ($this->options['recaptcha_secret'] === '') {
-      throw new \RuntimeException(
-        'recaptcha_secret must be configured before calling validateReCaptcha()'
-      );
-    }
-
-    // Allow-list the provider URL to Google reCAPTCHA endpoints only.
-    $provider        = $this->options['recaptcha_provider'];
-    $allowedPrefixes = [
-      'https://www.google.com/recaptcha/',
-      'https://www.recaptcha.net/recaptcha/',
-    ];
-    $allowed = false;
-    foreach ($allowedPrefixes as $prefix) {
-      if (strncmp($provider, $prefix, strlen($prefix)) === 0) {
-        $allowed = true;
-        break;
-      }
-    }
-    if (!$allowed) {
-      throw new \InvalidArgumentException(
-        'recaptcha_provider must begin with https://www.google.com/recaptcha/ ' .
-        'or https://www.recaptcha.net/recaptcha/'
-      );
-    }
-
-    $curl    = new CurlController();
-    $options = array_merge(['action' => null], $options);
-
-    $newState = $this->createState();
-
-    // Short-circuit before any network call when no token was submitted.
-    if (empty($this->state['recaptcha_token'])) {
-      $newState['is_valid'] = false;
-      $newState['errors']   = 'reCAPTCHA token is missing';
-      $this->state['result']['recaptcha'] = $newState;
-      return $this;
-    }
-
-    $params = [
-      'secret'   => $this->options['recaptcha_secret'],
-      'response' => $this->state['recaptcha_token'],
-    ];
-
-    try {
-      $result           = $curl->post($provider, $params);
-      $recaptcha_result = json_decode($result['response']);
-
-      // Guard against malformed responses before accessing properties.
-      if (!isset($recaptcha_result->success)) {
-        throw new \RuntimeException('Malformed reCAPTCHA response');
-      }
-
-      $newState['is_valid'] = (bool) $recaptcha_result->success;
-
-      if ($newState['is_valid'] && isset($recaptcha_result->score)) {
-        $newState['value']    = $recaptcha_result->score;
-        $newState['is_valid'] = $recaptcha_result->score >= $this->options['recaptcha_valid_score'];
-      }
-
-      // When the caller specifies an expected action, require it to be present
-      // and matching.  A missing action field means the token was not generated
-      // for the correct interaction — treat as invalid.
-      if (!empty($options['action'])) {
-        if (!isset($recaptcha_result->action) || $options['action'] !== $recaptcha_result->action) {
-          $newState['is_valid'] = false;
-        }
-      }
-    } catch(\Exception $e) {
-      // Do not expose internal error details (endpoint URL, network info) to callers.
-      error_log('schemable-validator: reCAPTCHA verification failed: ' . $e->getMessage());
-      $newState['errors'] = 'reCAPTCHA verification failed';
-    }
-
-    $this->state['result']['recaptcha'] = $newState;
 
     return $this;
   }
@@ -378,8 +248,13 @@ final class Validator {
    * Verify a CAPTCHA token using the injected CaptchaDriver.
    *
    * The token is read from the POST field that was captured by validate():
-   * 'recaptcha_token', 'g-recaptcha-response', 'h-captcha-response', or
-   * 'cf-turnstile-response' — whichever was present first.
+   * 'g-recaptcha-response', 'h-captcha-response', 'cf-turnstile-response',
+   * or 'recaptcha_token' -- whichever was present first.
+   *
+   * validate() must be called before validateCaptcha() so the token is
+   * extracted from POST data. If validateCaptcha() is called without a
+   * prior validate(), the token is treated as empty and the result will
+   * be is_valid => false with 'CAPTCHA token is missing'.
    *
    * The result is written to $result['captcha'].
    *
@@ -391,11 +266,11 @@ final class Validator {
   public function validateCaptcha(array $options = []): self {
     if ($this->captchaDriver === null) {
       throw new \RuntimeException(
-        'A CaptchaDriver must be set via toValidator([...], [\'captchaDriver\' => ...]) before calling validateCaptcha()'
+        'A CaptchaDriver must be set via toValidator([\'captchaDriver\' => ...]) before calling validateCaptcha()'
       );
     }
 
-    $token = (string) ($this->state['captcha_token'] ?? $this->state['recaptcha_token'] ?? '');
+    $token = (string) ($this->state['captcha_token'] ?? '');
 
     // Short-circuit before any network call when no token was submitted.
     if ($token === '') {
@@ -423,83 +298,25 @@ final class Validator {
   }
 
   /**
-   * Generate a CSRF token scoped to a specific form and store it with a 1-hour expiry.
+   * @deprecated Use CsrfGuard directly: (new CsrfGuard())->createToken($form).
+   *   Kept for back-compat; delegates to CsrfGuard.
    *
    * @param string $form Unique identifier for the form (e.g. 'contact', 'login').
    */
   public function createToken(string $form = 'default'): string {
-    $new_token = bin2hex(random_bytes(32));
-    $this->startSession();
-
-    if (!isset($_SESSION['schv_csrf_tokens']) || !is_array($_SESSION['schv_csrf_tokens'])) {
-      $_SESSION['schv_csrf_tokens'] = [];
-    }
-    $_SESSION['schv_csrf_tokens'][$form] = [
-      'token' => $new_token,
-      'exp'   => time() + 3600,
-    ];
-
-    $this->state['token'] = $new_token;
-    return $new_token;
+    $token = (new CsrfGuard())->createToken($form);
+    $this->state['token'] = $token;
+    return $token;
   }
 
   /**
-   * Verify a CSRF token for the given form scope.
-   * Returns false if the token is missing, expired, or does not match.
+   * @deprecated Use CsrfGuard directly: (new CsrfGuard())->checkToken($token, $form).
+   *   Kept for back-compat; delegates to CsrfGuard.
    *
    * @param string $form Must match the $form used in createToken().
    */
   public function checkToken(string $token, string $form = 'default'): bool {
-    $this->startSession();
-    $stored = $_SESSION['schv_csrf_tokens'][$form] ?? null;
-
-    if (!is_array($stored) || !isset($stored['token'], $stored['exp'])) {
-      return false;
-    }
-    if (time() > $stored['exp']) {
-      unset($_SESSION['schv_csrf_tokens'][$form]);
-      return false;
-    }
-    // Consume the token on first successful use so it cannot be replayed.
-    $valid = hash_equals($stored['token'], $token);
-    if ($valid) {
-      unset($_SESSION['schv_csrf_tokens'][$form]);
-    }
-    return $valid;
-  }
-
-  private static bool $sessionStarted = false;
-
-  private function startSession(): void {
-    if (!self::$sessionStarted && session_status() !== PHP_SESSION_ACTIVE) {
-      // Enforce secure session cookie attributes when we start the session ourselves.
-      // Treat TLS-terminating reverse proxy (X-Forwarded-Proto) as HTTPS
-      // in addition to the native HTTPS server variable.
-      $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-               || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-      session_set_cookie_params([
-        'secure'   => $isHttps,
-        'httponly' => true,
-        'samesite' => 'Lax',
-      ]);
-      session_start();
-      self::$sessionStarted = true;
-    }
-  }
-
-  /**
-   * Delegates exception->message extraction to the configured adapter.
-   * RespectAdapter isolates all Respect exception internals; non-Respect
-   * adapters fall back to the exception's own id/message.
-   *
-   * @return array<string, string> ruleId => defaultMessage
-   */
-  private function extractRuleMessages(
-    \Respect\Validation\Exceptions\ValidationException $e
-  ): array {
-    return $this->adapter instanceof RespectAdapter
-      ? RespectAdapter::extractRuleMessages($e)
-      : [$e->getId() => $e->getMessage()];
+    return (new CsrfGuard())->checkToken($token, $form);
   }
 
   private function createState(): array {
@@ -508,30 +325,6 @@ final class Validator {
       'errors' => null,
       'is_valid' => false,
     ];
-  }
-
-  private function assert($data, $validator, string $field = ''): array {
-    $newState = $this->createState();
-    $newState['value'] = $data;
-
-    try {
-      $validator->assert($data);
-    } catch(\Respect\Validation\Exceptions\ValidationException $e) {
-      $ruleMessages = $this->extractRuleMessages($e);
-      $resolved = [];
-      foreach ($ruleMessages as $ruleId => $defaultMsg) {
-        $resolved[] = ($this->dict !== null && $field !== '')
-          ? $this->dict->resolve($field, $ruleId, $defaultMsg)
-          : $defaultMsg;
-      }
-      $newState['errors'] = implode("\n", $resolved);
-    }
-
-    if (!isset($newState['errors'])) {
-      $newState['is_valid'] = true;
-    }
-
-    return $newState;
   }
 
   private function normalizeFile(array $file): array {

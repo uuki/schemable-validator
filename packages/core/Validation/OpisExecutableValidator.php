@@ -4,7 +4,6 @@ namespace SchemableValidator\Validation;
 
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator as OpisValidator;
-use SchemableValidator\I18n\DefaultMessages;
 use SchemableValidator\I18n\MessageDict;
 
 /**
@@ -69,13 +68,15 @@ final class OpisExecutableValidator implements ExecutableValidator {
       if (in_array($value, [null, ''], true)) {
         $errors = null;
         if ($required) {
-          $template = DefaultMessages::template('required');
-          if (isset($this->inlineMessages[$field]['required'])) {
-            $template = $this->inlineMessages[$field]['required'];
-          }
-          $errors = $this->dict !== null
-            ? $this->dict->resolve($field, 'required', $template, [])
-            : $template;
+          $errors = MessageResolver::resolve(
+            $this->dict,
+            $field,
+            'required',
+            'required',
+            [],
+            $this->inlineMessages,
+            'is required'
+          );
         }
         $result[$field] = [
           'value'    => $value,
@@ -101,9 +102,7 @@ final class OpisExecutableValidator implements ExecutableValidator {
   }
 
   /**
-   * Resolution order: MessageDict(neutral ruleId) > inline errorMessage(keyword)
-   * > canonical catalog(neutral ruleId) > opis's own message (last resort).
-   * {var} placeholders interpolated throughout.
+   * Resolve an error message via the shared MessageResolver chain.
    *
    * @param array<string, mixed> $propSchema
    */
@@ -111,14 +110,15 @@ final class OpisExecutableValidator implements ExecutableValidator {
     $keyword = $error->keyword();
     [$neutral, $vars] = self::neutralViolation($error, $propSchema);
 
-    $template = ($neutral !== null ? DefaultMessages::template($neutral) : null) ?? $error->message();
-    if ($keyword !== null && isset($this->inlineMessages[$field][$keyword])) {
-      $template = $this->inlineMessages[$field][$keyword];
-    }
-
-    return $this->dict !== null
-      ? $this->dict->resolve($field, $neutral ?? ($keyword ?? ''), $template, $vars)
-      : MessageDict::interpolate($template, $vars);
+    return MessageResolver::resolve(
+      $this->dict,
+      $field,
+      $neutral ?? ($keyword ?? ''),
+      $keyword,
+      $vars,
+      $this->inlineMessages,
+      $error->message()
+    );
   }
 
   /**

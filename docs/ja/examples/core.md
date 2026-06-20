@@ -26,9 +26,9 @@
 
 ---
 
-## 3. reCAPTCHA v3 バリデーション
+## 3. CAPTCHA バリデーション（reCAPTCHA v3）
 
-`validateReCaptcha()` をメソッドチェーンに組み込み、スコア閾値と action 名を検証します。
+`CaptchaDriver` を注入し、`validateCaptcha()` でスコア閾値と action 名を検証します。
 
 <<< ../../../packages/example/core/03-recaptcha.php
 

@@ -47,7 +47,7 @@ final class CustomFieldTest extends TestCase {
     $r = SV::object([
       'name' => SV::string()->min(1),
       'code' => SV::custom(fn($v) => $v === 'OK'),
-    ])->toValidator([], ['adapter' => new NativeAdapter()])
+    ])->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['name' => 'Alice', 'code' => 'NO'])->getResult();
 
     $this->assertTrue($r['name']['is_valid']);
