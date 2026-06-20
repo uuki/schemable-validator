@@ -16,47 +16,7 @@ WordPress プラグインとして有効化した環境での実装例です。`
 
 ---
 
-## 2. ファイルアップロードのバリデーション
-
-`validateFiles()` で `$_FILES` を検証し、許容する MIME タイプを制限します。
-
-<<< ../../../packages/example/wordpress/02-validate-files.php
-
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/02-validate-files.php)
-
----
-
-## 3. CSRF トークン保護
-
-`createToken()` で hidden フィールドにトークンを埋め込み、送信時に `checkToken()` で照合します。
-
-<<< ../../../packages/example/wordpress/03-csrf.php
-
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/03-csrf.php)
-
----
-
-## 4. メールテンプレートレンダリング
-
-`schv_template()` で WP オプションのテンプレートにバリデーション済みデータを差し込みます。
-
-<<< ../../../packages/example/wordpress/04-template.php
-
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/04-template.php)
-
----
-
-## 5. マルチページフォーム（入力 → 確認 → 完了）
-
-`schv_form()` でセッションにデータを保持し、3ページにまたがるフォームを実装します。
-
-<<< ../../../packages/example/wordpress/05-multipage-form.php
-
-[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/05-multipage-form.php)
-
----
-
-## 6. スキーマエディタの定義とコードのマージ
+## 2. スキーマエディタの定義とコードのマージ
 
 スキーマエディタ（管理画面）で定義したプリミティブフィールドと、GUI では表現できないロジック（ファイルアップロード、条件付き必須、カスタムバリデーション、ドライバ注入）を `mergeJsonSchema()` で組み合わせます。
 
@@ -95,3 +55,43 @@ GUI で定義したフィールド（`name`、`email`、`type`）と、コード
 ```php
 schv_register_schema('/contact', schv_stored_schema('contact'));
 ```
+
+---
+
+## 3. ファイルアップロードのバリデーション
+
+`validateFiles()` で `$_FILES` を検証し、許容する MIME タイプを制限します。
+
+<<< ../../../packages/example/wordpress/02-validate-files.php
+
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/02-validate-files.php)
+
+---
+
+## 4. CSRF トークン保護
+
+`createToken()` で hidden フィールドにトークンを埋め込み、送信時に `checkToken()` で照合します。
+
+<<< ../../../packages/example/wordpress/03-csrf.php
+
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/03-csrf.php)
+
+---
+
+## 5. メールテンプレートレンダリング
+
+`schv_template()` で WP オプションのテンプレートにバリデーション済みデータを差し込みます。
+
+<<< ../../../packages/example/wordpress/04-template.php
+
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/04-template.php)
+
+---
+
+## 6. マルチページフォーム（入力 → 確認 → 完了）
+
+`schv_form()` でセッションにデータを保持し、3ページにまたがるフォームを実装します。
+
+<<< ../../../packages/example/wordpress/05-multipage-form.php
+
+[GitHub で見る](https://github.com/uuki/schemable-validator/blob/v0.9.1/packages/example/wordpress/05-multipage-form.php)
