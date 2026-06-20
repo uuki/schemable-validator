@@ -2,8 +2,10 @@
 
 namespace SchemableValidator\Orchestration;
 
-require_once __DIR__ . '/../constants.php';
-require_once SV_VENDOR_DIR . '/autoload.php';
+if (!defined('SV_VENDOR_DIR')) {
+  require_once __DIR__ . '/../constants.php';
+  require_once SV_VENDOR_DIR . '/autoload.php';
+}
 
 use SchemableValidator\Adapters\Native\NativeAdapter;
 use SchemableValidator\Adapters\Native\NativeFileValidator;

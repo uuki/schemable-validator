@@ -30,8 +30,9 @@ test.describe('contact form example', () => {
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
+    // 4 required fields fail (tel is optional, so it passes when empty)
     const errors = page.locator('p[style*="color:red"]');
-    await expect(errors).toHaveCount(5);
+    await expect(errors).toHaveCount(4);
   });
 
   test('shows error for invalid email', async ({ page }) => {

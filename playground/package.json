@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predeps": "COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev --working-dir=../packages/wp-schemable-validator",
-    "predev": "pnpm run predeps",
+    "mirror-core": "bash mirror-core.sh",
+    "predev": "pnpm run mirror-core",
     "dev": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json",
     "pretest:start": "pnpm run predeps",
     "test:start": "wp-playground-cli start --path=../packages/wp-schemable-validator --port=9400 --blueprint=blueprint.json --reset --skip-browser"

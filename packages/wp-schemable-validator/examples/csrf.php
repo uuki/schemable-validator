@@ -1,5 +1,5 @@
 <?php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
 add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'csrf') {
@@ -9,7 +9,8 @@ add_action('template_redirect', function () {
     $GLOBALS['schv_ex_csrf'] = ['error' => 'Invalid CSRF token.'];
     return;
   }
-  $GLOBALS['schv_ex_csrf'] = schv_validator(['message' => v::stringType()->notEmpty()])->validate($_POST)->getResult();
+  $schema = SV::object(['message' => SV::string()->min(1)]);
+  $GLOBALS['schv_ex_csrf'] = $schema->toValidator()->validate($_POST)->getResult();
 });
 
 add_shortcode('schv_example_csrf', function (): string {

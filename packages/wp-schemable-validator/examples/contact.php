@@ -1,5 +1,5 @@
 <?php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
 // WordPress maps $_REQUEST['name'] to a post-slug query var, which causes 404
 // when name has a value. Strip it from query vars on contact POST.
@@ -15,20 +15,20 @@ add_action('template_redirect', function () {
     return;
   }
 
-  $schema = [
-    // 2文字以上 50文字以内（Unicode・改行対応）
-    'name'    => v::regex('/^.{2,50}$/su'),
+  $schema = SV::object([
+    // 2文字以上 50文字以内
+    'name'    => SV::string()->min(2)->max(50),
     // RFC準拠のメールアドレス形式
-    'email'   => v::email(),
+    'email'   => SV::string()->email(),
     // 日本の電話番号: ハイフンなし 10〜11桁 または ハイフンあり形式
-    'tel'     => v::regex('/^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$/'),
+    'tel'     => SV::string()->pattern('^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$')->optional(),
     // お問い合わせ種別（定義済みの値のみ許可）
-    'type'    => v::in(['general', 'support', 'sales', 'other']),
-    // 10文字以上（Unicode・改行対応）
-    'body'    => v::regex('/^.{10,}$/su'),
-  ];
+    'type'    => SV::enum(['general', 'support', 'sales', 'other']),
+    // 10文字以上
+    'body'    => SV::string()->min(10),
+  ]);
 
-  $GLOBALS['schv_ex_contact'] = schv_validator($schema)->validate($_POST)->getResult();
+  $GLOBALS['schv_ex_contact'] = $schema->toValidator()->validate($_POST)->getResult();
 });
 
 add_shortcode('schv_example_contact', function (): string {

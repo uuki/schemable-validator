@@ -55,22 +55,8 @@ async function pollPage(url, predicate, timeoutMs = 180_000, intervalMs = 2000) 
 }
 
 module.exports = async function globalSetup() {
-  // Step 1: install composer deps then replace the symlink with a real copy
-  // so WP Playground can access core without symlink traversal.
-  execSync('composer install --no-dev', { cwd: PLUGIN_DIR, stdio: 'pipe' });
-
-  const coreLinkPath = path.join(PLUGIN_DIR, 'vendor/uuki/schemable-validator-core');
-  const coreSourcePath = path.join(__dirname, '../../packages/core');
-  const fs = require('fs');
-  try {
-    const stat = fs.lstatSync(coreLinkPath);
-    if (stat.isSymbolicLink()) {
-      fs.unlinkSync(coreLinkPath);
-      execSync(`cp -R "${coreSourcePath}" "${coreLinkPath}"`, { stdio: 'pipe' });
-    }
-  } catch (e) {
-    // not a symlink or doesn't exist — fine
-  }
+  // Step 1: mirror core into vendor (replaces symlink with real copy for Playground)
+  execSync('bash mirror-core.sh', { cwd: PLAYGROUND_DIR, stdio: 'pipe' });
 
   // Step 2: start the playground. Pipe stdout only (to detect "Ready!"),
   //         inherit stderr directly so the Int8Array/WebStreams noise from

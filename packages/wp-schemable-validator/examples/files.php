@@ -1,15 +1,14 @@
 <?php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
 add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'files') {
     return;
   }
-  $schema = [
-    'attachment' => v::key('error', v::equals(UPLOAD_ERR_OK))
-      ->key('name', v::oneOf(v::extension('jpg'), v::extension('png'))),
-  ];
-  $GLOBALS['schv_ex_files'] = schv_validator($schema)->validateFiles($_FILES)->getResult();
+  $schema = SV::object([
+    'attachment' => SV::file(['image/jpeg', 'image/png']),
+  ]);
+  $GLOBALS['schv_ex_files'] = $schema->toValidator()->validateFiles($_FILES)->getResult();
 });
 
 add_shortcode('schv_example_files', function (): string {

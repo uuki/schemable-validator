@@ -8,7 +8,7 @@ node_modules/
 vendor/
 plugins/schemable-validator/vendor/
 packages/wp-schemable-validator/vendor/
-packages/wp-schemable-validator/lib/core/
+packages/wp-schemable-validator/lib/
 
 # wp-now development files.
 database/

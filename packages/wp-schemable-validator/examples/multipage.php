@@ -1,12 +1,12 @@
 <?php
-use Respect\Validation\Validator as v;
+use SchemableValidator\SV;
 
-function schv_multipage_schema(): array {
-  return [
-    'name'  => v::stringType()->length(1, 50),
-    'email' => v::email(),
-    'body'  => v::stringType()->length(1, 1000),
-  ];
+function schv_multipage_schema() {
+  return SV::object([
+    'name'  => SV::string()->min(1)->max(50),
+    'email' => SV::string()->email(),
+    'body'  => SV::string()->min(1)->max(1000),
+  ]);
 }
 
 // ── Step 1: Input ──────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ add_action('template_redirect', function () {
     $GLOBALS['schv_ex_input_error'] = 'Invalid or expired CSRF token.';
     return;
   }
-  $validator = schv_validator(schv_multipage_schema());
+  $validator = schv_multipage_schema()->toValidator();
   $result    = $validator->validate($_POST)->getResult();
   $all_valid = array_reduce($result, fn($c, $i) => $c && $i['is_valid'], true);
 

@@ -1,7 +1,9 @@
 <?php
 namespace SchemableValidator\Infrastructure;
 
-require_once __DIR__ . "/../constants.php";
+if (!defined('SV_VENDOR_DIR')) {
+  require_once __DIR__ . '/../constants.php';
+}
 
 /**
  * Class FormController
