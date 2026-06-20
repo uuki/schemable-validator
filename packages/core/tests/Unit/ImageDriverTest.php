@@ -5,7 +5,7 @@ namespace SchemableValidator\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\SV;
 use SchemableValidator\Validation\ImageDriver;
-use SchemableValidator\Validation\NativeImageDriver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
 
 /**
  * Tests for ImageDriver and its integration with SV::file() / validateFiles().

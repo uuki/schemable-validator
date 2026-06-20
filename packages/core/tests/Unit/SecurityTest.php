@@ -13,7 +13,7 @@ use SchemableValidator\SV;
  */
 class SecurityTest extends TestCase
 {
-  private function makeValidator(): \SchemableValidator\Validator
+  private function makeValidator(): \SchemableValidator\Orchestration\Validator
   {
     return SV::object(['field' => SV::string()])->toValidator();
   }

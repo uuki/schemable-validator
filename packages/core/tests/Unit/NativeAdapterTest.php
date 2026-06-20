@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Validation\Adapters\NativeAdapter;
+use SchemableValidator\Adapters\Native\NativeAdapter;
 
 /**
  * NativeAdapter is the dependency-free, FE-faithful BackendAdapter. It honors

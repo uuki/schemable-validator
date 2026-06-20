@@ -6,7 +6,7 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Respect\Validation\Validator as v;
-use SchemableValidator\Validator;
+use SchemableValidator\Orchestration\Validator;
 
 $schema = [
   'name'  => v::stringType()->length(1, 50),

@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Conformance;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\Transform;
 

@@ -5,7 +5,7 @@ namespace SchemableValidator\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\SV;
 use SchemableValidator\Validation\FileValidationDriver;
-use SchemableValidator\Validation\NativeFileValidator;
+use SchemableValidator\Adapters\Native\NativeFileValidator;
 
 /**
  * SV::file() is validated through a dependency-free FileValidationDriver (no

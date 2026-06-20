@@ -13,7 +13,7 @@ For localisation, see [MessageDict](./message-dict.md).
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Validator;
+use SchemableValidator\Orchestration\Validator;
 
 $validator = new Validator($schema);
 ```
@@ -151,7 +151,7 @@ The `FileExtension` rule class still works but is considered legacy. Prefer `SV:
 ::: tip
 For advanced usage such as defining custom rules for address validation, see [Custom Validation](/custom-validation). You can also use `SV::custom(callable)` as a dependency-free escape hatch for one-off rules.
 
-Note: `creditCard` and `postalCode` rules are **@deprecated** and have been moved to `Drivers\Respect\RespectRules`.
+Note: `creditCard` and `postalCode` rules are **@deprecated** and have been moved to `Adapters\Respect\RespectRules`.
 :::
 
 ### Method Chaining
@@ -288,7 +288,7 @@ Inject a `CaptchaDriver` via `toValidator()`, then call `validateCaptcha()`.
 Three providers are built in: `ReCaptchaV3Driver`, `HCaptchaDriver`, and `TurnstileDriver`.
 
 ```php
-use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
 
 $validator = $schema->toValidator([], [
   'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
@@ -311,8 +311,8 @@ The result is written under `$result['captcha']`:
 To switch providers, replace the driver:
 
 ```php
-use SchemableValidator\Validation\Captcha\HCaptchaDriver;
-use SchemableValidator\Validation\Captcha\TurnstileDriver;
+use SchemableValidator\Adapters\Captcha\HCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\TurnstileDriver;
 
 // hCaptcha
 'captchaDriver' => new HCaptchaDriver('YOUR_SECRET')
@@ -324,7 +324,7 @@ use SchemableValidator\Validation\Captcha\TurnstileDriver;
 In tests and local development, use `NullCaptchaDriver`, which bypasses the network entirely:
 
 ```php
-use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\NullCaptchaDriver;
 
 'captchaDriver' => new NullCaptchaDriver() // always passes; pass false to simulate rejection
 ```
@@ -348,7 +348,7 @@ The `FormController` feature stores validated data in the session, maintaining s
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Controllers\FormController;
+use SchemableValidator\Infrastructure\FormController;
 
 $form = new FormController();
 ```
@@ -368,7 +368,7 @@ $form = schv_form();
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Controllers\FormController;
+use SchemableValidator\Infrastructure\FormController;
 
 // Step 1: validate → save → redirect
 $result = $validator->validate($_POST)->getResult();
@@ -442,7 +442,7 @@ Instantiate by including the template files:
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Template;
+use SchemableValidator\Orchestration\Template;
 
 $template = new Template([
   'aliases'   => [

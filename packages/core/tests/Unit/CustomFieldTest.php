@@ -6,7 +6,7 @@ use Respect\Validation\Validator as v;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\SV;
-use SchemableValidator\Validation\Adapters\NativeAdapter;
+use SchemableValidator\Adapters\Native\NativeAdapter;
 
 /**
  * SV::custom() is a dependency-free (B) escape hatch executed via

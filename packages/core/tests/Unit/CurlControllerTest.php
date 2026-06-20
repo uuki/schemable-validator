@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Controllers\CurlController;
+use SchemableValidator\Infrastructure\CurlController;
 
 /**
  * Verifies that CurlController::validateUrl() blocks every private / reserved /

@@ -6,9 +6,9 @@ use PHPUnit\Framework\TestCase;
 use Respect\Validation\Validator as v;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\SV;
-use SchemableValidator\Validation\Adapters\NativeAdapter;
-use SchemableValidator\Validation\Adapters\OpisAdapter;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Native\NativeAdapter;
+use SchemableValidator\Adapters\Opis\OpisAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
 
 /**
  * Verifies that SchemaBuilder::toValidator() / Validator::fromJsonSchema() now
@@ -77,7 +77,7 @@ final class AdapterDispatchTest extends TestCase {
       'properties' => ['n' => ['type' => 'integer']],
       'required'   => ['n'],
     ];
-    $r = \SchemableValidator\Validator::fromJsonSchema($schema, [], null, new NativeAdapter())
+    $r = \SchemableValidator\Orchestration\Validator::fromJsonSchema($schema, [], null, new NativeAdapter())
       ->validate(['n' => '7'])->getResult();
     $this->assertTrue($r['n']['is_valid']); // Native coerces
   }

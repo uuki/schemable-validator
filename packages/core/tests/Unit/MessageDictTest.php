@@ -294,7 +294,7 @@ class MessageDictTest extends TestCase
   }
 
   public function test_be_inline_errorMessage_via_fromJsonSchema(): void {
-    $validator = \SchemableValidator\Validator::fromJsonSchema([
+    $validator = \SchemableValidator\Orchestration\Validator::fromJsonSchema([
       'type'       => 'object',
       'properties' => [
         'name' => ['type' => 'string', 'minLength' => 3, 'errorMessage' => ['minLength' => '最低{min}文字']],
@@ -310,7 +310,7 @@ class MessageDictTest extends TestCase
   public function test_be_multi_rule_failure_order_matches_fe_contract(): void {
     // Rule-ordering contract: format → pattern → enum, mirroring
     // constraintsFromSchema() in packages/client/src/constraint.ts.
-    $validator = \SchemableValidator\Validator::fromJsonSchema([
+    $validator = \SchemableValidator\Orchestration\Validator::fromJsonSchema([
       'type'       => 'object',
       'properties' => [
         'code' => [

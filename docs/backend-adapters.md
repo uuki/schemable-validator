@@ -59,7 +59,7 @@ composer require respect/validation
 Then pass `RespectAdapter` to `toValidator()`:
 
 ```php
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
 
 $validator = SV::object([
     'name' => SV::string()->min(2),
@@ -95,7 +95,7 @@ composer require opis/json-schema
 Then pass `OpisAdapter` to `toValidator()`:
 
 ```php
-use SchemableValidator\Validation\Adapters\OpisAdapter;
+use SchemableValidator\Adapters\Opis\OpisAdapter;
 
 $validator = SV::object(['count' => SV::integer()])
     ->toValidator([], ['adapter' => new OpisAdapter()]);
@@ -125,8 +125,8 @@ Use it when the input is already typed JSON rather than `$_POST` strings.
 When constructing from a raw JSON Schema, pass the adapter as the **fifth argument**:
 
 ```php
-use SchemableValidator\Validator;
-use SchemableValidator\Validation\Adapters\OpisAdapter;
+use SchemableValidator\Orchestration\Validator;
+use SchemableValidator\Adapters\Opis\OpisAdapter;
 
 $validator = Validator::fromJsonSchema($jsonSchema, [], [], null, new OpisAdapter());
 ```
@@ -181,7 +181,7 @@ Pass image constraints as the second argument to `SV::file()`, then inject a dri
 
 ```php
 use SchemableValidator\SV;
-use SchemableValidator\Validation\NativeImageDriver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
 
 $schema = SV::object([
     'avatar' => SV::file(
@@ -223,10 +223,10 @@ Pass a `CaptchaDriver` as `'captchaDriver'`, then call `validateCaptcha()` on th
 Three providers are built in.
 
 ```php
-use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
-use SchemableValidator\Validation\Captcha\HCaptchaDriver;
-use SchemableValidator\Validation\Captcha\TurnstileDriver;
-use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Captcha\HCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\TurnstileDriver;
+use SchemableValidator\Adapters\Captcha\NullCaptchaDriver;
 
 // Google reCAPTCHA v3
 $validator = $schema->toValidator([], [

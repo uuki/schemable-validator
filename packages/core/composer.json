@@ -1,0 +1,20 @@
+{
+  "name": "uuki/schemable-validator-core",
+  "description": "Schemable Validator core — schema-based validation with JSON Schema IR",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=7.4",
+    "symfony/polyfill-php80": "^1.0"
+  },
+  "suggest": {
+    "respect/validation": "Enables the RespectAdapter engine and Respect driver (RespectRules). Not needed for the default dependency-free NativeAdapter.",
+    "opis/json-schema": "Enables OpisAdapter (strict JSON Schema 2020-12 backend). Not needed for the default NativeAdapter."
+  },
+  "autoload": {
+    "psr-4": {
+      "SchemableValidator\\": ""
+    },
+    "files": ["constants.php"]
+  }
+}

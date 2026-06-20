@@ -6,7 +6,7 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Respect\Validation\Validator as v;
-use SchemableValidator\Validator;
+use SchemableValidator\Orchestration\Validator;
 
 $schema = [
   'attachment' => v::key('error', v::equals(UPLOAD_ERR_OK))

@@ -59,7 +59,7 @@ composer require respect/validation
 `RespectAdapter` を `toValidator()` に渡します。
 
 ```php
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
 
 $validator = SV::object([
     'name' => SV::string()->min(2),
@@ -95,7 +95,7 @@ composer require opis/json-schema
 `OpisAdapter` を `toValidator()` に渡します。
 
 ```php
-use SchemableValidator\Validation\Adapters\OpisAdapter;
+use SchemableValidator\Adapters\Opis\OpisAdapter;
 
 $validator = SV::object(['count' => SV::integer()])
     ->toValidator([], ['adapter' => new OpisAdapter()]);
@@ -125,8 +125,8 @@ opis/json-schema が JSON Schema をそのまま検証
 生の JSON Schema から直接構築する場合は、**第 5 引数**にアダプタを渡します。
 
 ```php
-use SchemableValidator\Validator;
-use SchemableValidator\Validation\Adapters\OpisAdapter;
+use SchemableValidator\Orchestration\Validator;
+use SchemableValidator\Adapters\Opis\OpisAdapter;
 
 $validator = Validator::fromJsonSchema($jsonSchema, [], [], null, new OpisAdapter());
 ```
@@ -181,7 +181,7 @@ $validator = SV::object([
 
 ```php
 use SchemableValidator\SV;
-use SchemableValidator\Validation\NativeImageDriver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
 
 $schema = SV::object([
     'avatar' => SV::file(
@@ -223,10 +223,10 @@ $result = $schema
 3 つのプロバイダが組み込み実装として提供されています。
 
 ```php
-use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
-use SchemableValidator\Validation\Captcha\HCaptchaDriver;
-use SchemableValidator\Validation\Captcha\TurnstileDriver;
-use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Captcha\HCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\TurnstileDriver;
+use SchemableValidator\Adapters\Captcha\NullCaptchaDriver;
 
 // Google reCAPTCHA v3
 $validator = $schema->toValidator([], [

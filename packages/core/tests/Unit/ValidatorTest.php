@@ -4,8 +4,8 @@ namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\SV;
-use SchemableValidator\Validator;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
+use SchemableValidator\Orchestration\Validator;
 
 class ValidatorTest extends TestCase
 {

@@ -62,7 +62,7 @@ $dict = MessageDict::ja([
 ### Direct Constructor
 
 ```php
-use SchemableValidator\Validator;
+use SchemableValidator\Orchestration\Validator;
 use SchemableValidator\I18n\MessageDict;
 
 $validator = new Validator($schema, [], [], MessageDict::ja());

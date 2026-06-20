@@ -5,7 +5,7 @@ namespace SchemableValidator\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\Schema\RuleCatalog;
 use SchemableValidator\Schema\RuleMapper;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
 
 /**
  * Regression tests for Respect/Validation compatibility.

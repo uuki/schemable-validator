@@ -15,8 +15,7 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'form_input') {
     return;
   }
-  $csrf = schv_validator([]);
-  if (!$csrf->checkToken($_POST['schv_csrf_token'] ?? '', 'form_input')) {
+  if (!schv_csrf()->checkToken($_POST['schv_csrf_token'] ?? '', 'form_input')) {
     $GLOBALS['schv_ex_input_error'] = 'Invalid or expired CSRF token.';
     return;
   }
@@ -34,7 +33,7 @@ add_action('template_redirect', function () {
 
 add_shortcode('schv_example_form_input', function (): string {
   $r     = $GLOBALS['schv_ex_input'] ?? [];
-  $token = schv_validator([])->createToken('form_input');
+  $token = schv_csrf()->createToken('form_input');
   ob_start(); ?>
   <div style="font-family:sans-serif;max-width:500px">
     <h2>Step 1: Input</h2>
@@ -68,8 +67,7 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'form_confirm') {
     return;
   }
-  $csrf = schv_validator([]);
-  if (!$csrf->checkToken($_POST['schv_csrf_token'] ?? '', 'form_confirm')) {
+  if (!schv_csrf()->checkToken($_POST['schv_csrf_token'] ?? '', 'form_confirm')) {
     $GLOBALS['schv_ex_confirm_error'] = 'Invalid or expired CSRF token.';
     return;
   }
@@ -96,7 +94,7 @@ add_shortcode('schv_example_form_confirm', function (): string {
     <?php endif; ?>
     <form method="post">
       <input type="hidden" name="schv_action" value="form_confirm">
-      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr(schv_validator([])->createToken('form_confirm')); ?>">
+      <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr(schv_csrf()->createToken('form_confirm')); ?>">
       <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>">← Back</a>
       &nbsp;
       <button type="submit">Submit</button>

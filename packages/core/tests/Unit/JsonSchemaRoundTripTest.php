@@ -4,7 +4,7 @@ namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\Schema\RuleMapper;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
 
 /**
  * Round-trip coverage for RespectAdapter::jsonSchemaPropertyToDescriptors()

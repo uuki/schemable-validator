@@ -5,18 +5,16 @@ add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['schv_action'] ?? '') !== 'csrf') {
     return;
   }
-  $validator = schv_validator(['message' => v::stringType()->notEmpty()]);
-
-  if (!$validator->checkToken($_POST['schv_csrf_token'] ?? '')) {
+  if (!schv_csrf()->checkToken($_POST['schv_csrf_token'] ?? '')) {
     $GLOBALS['schv_ex_csrf'] = ['error' => 'Invalid CSRF token.'];
     return;
   }
-  $GLOBALS['schv_ex_csrf'] = $validator->validate($_POST)->getResult();
+  $GLOBALS['schv_ex_csrf'] = schv_validator(['message' => v::stringType()->notEmpty()])->validate($_POST)->getResult();
 });
 
 add_shortcode('schv_example_csrf', function (): string {
   $r     = $GLOBALS['schv_ex_csrf'] ?? [];
-  $token = schv_validator([])->createToken();
+  $token = schv_csrf()->createToken();
   ob_start(); ?>
   <div style="font-family:sans-serif;max-width:500px">
     <h2>Example: CSRF Token</h2>

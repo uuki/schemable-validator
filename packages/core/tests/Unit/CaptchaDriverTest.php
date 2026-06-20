@@ -4,10 +4,10 @@ namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use SchemableValidator\SV;
-use SchemableValidator\Validation\Captcha\HCaptchaDriver;
-use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
-use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
-use SchemableValidator\Validation\Captcha\TurnstileDriver;
+use SchemableValidator\Adapters\Captcha\HCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\NullCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Captcha\TurnstileDriver;
 
 /**
  * Tests for CaptchaDriver implementations and validateCaptcha() integration.

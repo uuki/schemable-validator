@@ -4,12 +4,12 @@ namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Respect\Validation\Validator as v;
-use SchemableValidator\SchemaBuilder;
+use SchemableValidator\Adapters\Respect\RespectAdapter;
+use SchemableValidator\Orchestration\SchemaBuilder;
+use SchemableValidator\Orchestration\Validator;
 use SchemableValidator\SV;
 use SchemableValidator\Schema\RuleMapper;
 use SchemableValidator\Schema\RuleMapping;
-use SchemableValidator\Validation\Adapters\RespectAdapter;
-use SchemableValidator\Validator;
 
 class SchemaBuilderTest extends TestCase {
   // ── RuleMapping ─────────────────────────────────────────────

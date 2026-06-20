@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Validation\Adapters\OpisAdapter;
+use SchemableValidator\Adapters\Opis\OpisAdapter;
 
 /**
  * OpisAdapter is a respect-free BackendAdapter compiling raw JSON Schema

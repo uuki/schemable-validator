@@ -5,7 +5,7 @@ namespace SchemableValidator\Schema;
 use Respect\Validation\Validator as v;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\Validation\CustomField;
-use SchemableValidator\Validation\RespectExecutableValidator;
+use SchemableValidator\Adapters\Respect\RespectExecutableValidator;
 
 /**
  * (B) escape hatch wrapping an arbitrary Respect/Validation rule (SV::respect,

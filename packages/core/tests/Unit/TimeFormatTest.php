@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Rules\TimeFormat;
+use SchemableValidator\Adapters\Respect\Rules\TimeFormat;
 
 /**
  * format: "time" (RFC 3339 full-time) — mirrored by

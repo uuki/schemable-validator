@@ -2,7 +2,8 @@
 
 namespace SchemableValidator;
 
-use SchemableValidator\Drivers\Respect\RespectRules;
+use SchemableValidator\Adapters\Respect\RespectRules;
+use SchemableValidator\Orchestration\SchemaBuilder;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\ArraySchema;
 use SchemableValidator\Schema\BooleanSchema;

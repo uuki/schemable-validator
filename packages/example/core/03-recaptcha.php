@@ -9,7 +9,7 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use SchemableValidator\SV;
-use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
 
 $schema = SV::object([
   'name' => SV::string()->min(1),

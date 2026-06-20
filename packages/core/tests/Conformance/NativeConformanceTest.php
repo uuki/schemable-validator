@@ -3,7 +3,7 @@
 namespace SchemableValidator\Tests\Conformance;
 
 use PHPUnit\Framework\TestCase;
-use SchemableValidator\Validation\Adapters\NativeAdapter;
+use SchemableValidator\Adapters\Native\NativeAdapter;
 use SchemableValidator\Validation\JsonLogicEval;
 use SchemableValidator\Validation\Transform;
 

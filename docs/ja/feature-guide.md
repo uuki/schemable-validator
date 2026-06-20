@@ -12,7 +12,7 @@
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Validator;
+use SchemableValidator\Orchestration\Validator;
 
 $validator = new Validator($schema);
 ```
@@ -150,7 +150,7 @@ $schema = SV::object([
 ::: tip
 住所検証など、独自ルールの定義に類する高度な利用については [Custom Validation](/ja/custom-validation) を参照してください。依存なしの一回限りのルールには `SV::custom(callable)` をエスケープハッチとして使えます。
 
-注意: `creditCard` および `postalCode` ルールは **@deprecated** であり、`Drivers\Respect\RespectRules` に移動されました。
+注意: `creditCard` および `postalCode` ルールは **@deprecated** であり、`Adapters\Respect\RespectRules` に移動されました。
 :::
 
 ### メソッドチェーン
@@ -287,7 +287,7 @@ $is_valid = $validator->checkToken($_POST['schv_csrf_token'] ?? '');
 組み込みの実装として `ReCaptchaV3Driver`、`HCaptchaDriver`、`TurnstileDriver` の 3 つが提供されています。
 
 ```php
-use SchemableValidator\Validation\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
 
 $validator = $schema->toValidator([], [
   'captchaDriver' => new ReCaptchaV3Driver('YOUR_SECRET'),
@@ -310,8 +310,8 @@ $result = $validator
 プロバイダを切り替えるにはドライバを差し替えます。
 
 ```php
-use SchemableValidator\Validation\Captcha\HCaptchaDriver;
-use SchemableValidator\Validation\Captcha\TurnstileDriver;
+use SchemableValidator\Adapters\Captcha\HCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\TurnstileDriver;
 
 // hCaptcha
 'captchaDriver' => new HCaptchaDriver('YOUR_SECRET')
@@ -323,7 +323,7 @@ use SchemableValidator\Validation\Captcha\TurnstileDriver;
 テスト・ローカル開発では `NullCaptchaDriver` を使うとネットワーク通信を一切行いません。
 
 ```php
-use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
+use SchemableValidator\Adapters\Captcha\NullCaptchaDriver;
 
 'captchaDriver' => new NullCaptchaDriver() // 常に通る。false を渡すと常に弾く
 ```
@@ -347,7 +347,7 @@ use SchemableValidator\Validation\Captcha\NullCaptchaDriver;
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Controllers\FormController;
+use SchemableValidator\Infrastructure\FormController;
 
 $form = new FormController();
 ```
@@ -367,7 +367,7 @@ $form = schv_form();
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Controllers\FormController;
+use SchemableValidator\Infrastructure\FormController;
 
 // Step 1: 検証 → 保存 → リダイレクト
 $result = $validator->validate($_POST)->getResult();
@@ -441,7 +441,7 @@ schv_form()->clear();
 ::: code-group
 
 ```php [Core]
-use SchemableValidator\Template;
+use SchemableValidator\Orchestration\Template;
 
 $template = new Template([
   'aliases'   => [
