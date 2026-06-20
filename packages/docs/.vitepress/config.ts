@@ -146,6 +146,11 @@ export default defineConfig({
   srcDir: '../../docs',
   outDir: './.vitepress/dist',
 
+  vite: {
+    build: { target: 'esnext' },
+    optimizeDeps: { esbuildOptions: { target: 'esnext' } },
+  },
+
   locales: {
     root: {
       label: 'English',

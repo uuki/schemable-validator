@@ -14,7 +14,7 @@
 | WordPress REST | `schv_register_schema('/contact', $schema)` — スキーマを GET エンドポイントとして公開 |
 | 変換不可フィールド | `SV::file()` / `SV::respect()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
 
-## クイックスタート
+## 基本的な使い方
 
 ```php
 use SchemableValidator\SV;

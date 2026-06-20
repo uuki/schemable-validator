@@ -14,7 +14,7 @@
 | WordPress REST | `schv_register_schema('/contact', $schema)` — exposes schema as a GET endpoint |
 | Unmapped fields | `SV::file()` / `SV::respect()` are tracked in `x-unmapped-fields`, validated server-side only |
 
-## Quick start
+## Basic usage
 
 ```php
 use SchemableValidator\SV;
