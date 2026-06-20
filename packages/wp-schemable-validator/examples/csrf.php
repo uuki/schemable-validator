@@ -16,25 +16,37 @@ add_action('template_redirect', function () {
 add_shortcode('schv_example_csrf', function (): string {
   $r     = $GLOBALS['schv_ex_csrf'] ?? [];
   $token = schv_csrf()->createToken();
+
+  $submitted = !empty($r) && empty($r['error']);
+  $err       = ($submitted && !$r['message']['is_valid']) ? $r['message']['errors'] : '';
+  $success   = $submitted && $r['message']['is_valid'];
+
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:500px">
+  <div class="schv-wrap">
     <h2>Example: CSRF Token</h2>
-    <p style="font-size:0.85em;color:#666">Token: <code><?php echo esc_html($token); ?></code></p>
+    <p class="schv-desc">Token: <code><?php echo esc_html($token); ?></code></p>
+
     <?php if (!empty($r['error'])): ?>
-      <p style="color:red"><?php echo esc_html($r['error']); ?></p>
-    <?php elseif (!empty($r['message'])): ?>
-      <p style="color:<?php echo $r['message']['is_valid'] ? 'green' : 'red'; ?>">
-        message: <?php echo $r['message']['is_valid'] ? '✓ valid' : esc_html($r['message']['errors']); ?>
-      </p>
+      <div class="schv-global-error"><?php echo esc_html($r['error']); ?></div>
+    <?php elseif ($success): ?>
+      <div class="schv-success">✓ CSRF token verified. Message is valid.</div>
     <?php endif; ?>
-    <form method="post">
+
+    <form method="post" novalidate>
       <input type="hidden" name="schv_action" value="csrf">
       <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
-      <p>
-        <label>Message<br>
-        <input type="text" name="message" value="<?php echo esc_attr($r['message']['value'] ?? ''); ?>" style="width:100%"></label>
-      </p>
-      <button type="submit">Submit</button>
+
+      <div class="schv-field">
+        <label class="schv-label" for="schv-message">Message<span class="schv-req" aria-hidden="true">*</span></label>
+        <input type="text" id="schv-message" name="message"
+          value="<?php echo esc_attr($r['message']['value'] ?? ''); ?>"
+          class="schv-input<?php echo $err ? ' is-error' : ''; ?>">
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
+
+      <div class="schv-actions">
+        <button type="submit" class="schv-btn">Submit</button>
+      </div>
     </form>
   </div>
   <?php return ob_get_clean();

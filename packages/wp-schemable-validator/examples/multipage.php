@@ -34,28 +34,47 @@ add_action('template_redirect', function () {
 add_shortcode('schv_example_form_input', function (): string {
   $r     = $GLOBALS['schv_ex_input'] ?? [];
   $token = schv_csrf()->createToken('form_input');
+
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:500px">
+  <div class="schv-wrap">
     <h2>Step 1: Input</h2>
+    <p class="schv-legend"><span class="schv-req" aria-hidden="true">*</span> Required</p>
+
     <?php if (!empty($GLOBALS['schv_ex_input_error'])): ?>
-      <p style="color:red"><?php echo esc_html($GLOBALS['schv_ex_input_error']); ?></p>
+      <div class="schv-global-error"><?php echo esc_html($GLOBALS['schv_ex_input_error']); ?></div>
     <?php endif; ?>
-    <form method="post">
+
+    <form method="post" novalidate>
       <input type="hidden" name="schv_action" value="form_input">
       <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
-      <?php foreach (['name', 'email'] as $f): ?>
-        <p>
-          <label><?php echo esc_html($f); ?><br>
-          <input type="text" name="<?php echo esc_attr($f); ?>" value="<?php echo esc_attr($r[$f]['value'] ?? ''); ?>" style="width:100%"></label>
-          <?php if (!empty($r[$f]['errors'])): ?><span style="color:red;font-size:.85em"><?php echo esc_html($r[$f]['errors']); ?></span><?php endif; ?>
-        </p>
+
+      <?php foreach (['name', 'email'] as $f):
+        $err = (isset($r[$f]) && !$r[$f]['is_valid']) ? $r[$f]['errors'] : '';
+      ?>
+        <div class="schv-field">
+          <label class="schv-label" for="schv-<?php echo esc_attr($f); ?>">
+            <?php echo esc_html(ucfirst($f)); ?><span class="schv-req" aria-hidden="true">*</span>
+          </label>
+          <input type="text" id="schv-<?php echo esc_attr($f); ?>" name="<?php echo esc_attr($f); ?>"
+            value="<?php echo esc_attr($r[$f]['value'] ?? ''); ?>"
+            class="schv-input<?php echo $err ? ' is-error' : ''; ?>">
+          <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+        </div>
       <?php endforeach; ?>
-      <p>
-        <label>body<br>
-        <textarea name="body" style="width:100%"><?php echo esc_textarea($r['body']['value'] ?? ''); ?></textarea></label>
-        <?php if (!empty($r['body']['errors'])): ?><span style="color:red;font-size:.85em"><?php echo esc_html($r['body']['errors']); ?></span><?php endif; ?>
-      </p>
-      <button type="submit">Next →</button>
+
+      <?php $err = (isset($r['body']) && !$r['body']['is_valid']) ? $r['body']['errors'] : ''; ?>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-body">
+          Body<span class="schv-req" aria-hidden="true">*</span>
+        </label>
+        <textarea id="schv-body" name="body" rows="4"
+          class="schv-textarea<?php echo $err ? ' is-error' : ''; ?>"><?php echo esc_textarea($r['body']['value'] ?? ''); ?></textarea>
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
+
+      <div class="schv-actions">
+        <button type="submit" class="schv-btn">Next →</button>
+      </div>
     </form>
   </div>
   <?php return ob_get_clean();
@@ -81,23 +100,27 @@ add_shortcode('schv_example_form_confirm', function (): string {
     return '<p>No data. <a href="' . esc_url(home_url('/schv-form-input/')) . '">Start over</a>.</p>';
   }
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:500px">
+  <div class="schv-wrap">
     <h2>Step 2: Confirm</h2>
-    <dl>
+
+    <?php if (!empty($GLOBALS['schv_ex_confirm_error'])): ?>
+      <div class="schv-global-error"><?php echo esc_html($GLOBALS['schv_ex_confirm_error']); ?></div>
+    <?php endif; ?>
+
+    <dl class="schv-dl" style="margin:0 0 1.25rem">
       <?php foreach ($data as $field => $state): ?>
-        <dt style="font-weight:bold"><?php echo esc_html($field); ?></dt>
-        <dd style="margin-left:1em;white-space:pre-wrap"><?php echo esc_html($state['value']); ?></dd>
+        <dt><?php echo esc_html($field); ?></dt>
+        <dd><?php echo esc_html($state['value']); ?></dd>
       <?php endforeach; ?>
     </dl>
-    <?php if (!empty($GLOBALS['schv_ex_confirm_error'])): ?>
-      <p style="color:red"><?php echo esc_html($GLOBALS['schv_ex_confirm_error']); ?></p>
-    <?php endif; ?>
+
     <form method="post">
       <input type="hidden" name="schv_action" value="form_confirm">
       <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr(schv_csrf()->createToken('form_confirm')); ?>">
-      <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>">← Back</a>
-      &nbsp;
-      <button type="submit">Submit</button>
+      <div class="schv-actions">
+        <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>" class="schv-back">← Back</a>
+        <button type="submit" class="schv-btn">Submit</button>
+      </div>
     </form>
   </div>
   <?php return ob_get_clean();
@@ -108,10 +131,10 @@ add_shortcode('schv_example_form_confirm', function (): string {
 add_shortcode('schv_example_form_complete', function (): string {
   schv_form()->clear();
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:500px">
+  <div class="schv-wrap">
     <h2>Step 3: Complete</h2>
-    <p>✓ Thank you! Your message has been received.</p>
-    <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>">Try again</a>
+    <div class="schv-success">✓ Thank you! Your message has been received.</div>
+    <a href="<?php echo esc_url(home_url('/schv-form-input/')); ?>" class="schv-back">Try again</a>
   </div>
   <?php return ob_get_clean();
 });

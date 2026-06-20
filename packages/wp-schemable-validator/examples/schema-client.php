@@ -36,17 +36,29 @@ add_shortcode('schv_example_schema_client', function (): string {
   $r          = $GLOBALS['schv_ex_schema_client'] ?? [];
   $schema_url = schv_schema_url('/schema/contact');
 
+  $type_options = ['general' => 'General', 'support' => 'Support', 'sales' => 'Sales', 'other' => 'Other'];
+
+  // Fields in display order: type first, then name / email / tel / body
+  $text_fields = [
+    'name'  => ['label' => 'Name',    'type' => 'text',  'required' => true],
+    'email' => ['label' => 'Email',   'type' => 'email', 'required' => true],
+    'tel'   => ['label' => 'Tel',     'type' => 'tel',   'required' => false, 'hint' => '09012345678 or 090-1234-5678'],
+  ];
+
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:640px">
+  <div class="schv-wrap schv-wide">
     <h2>Example: SchemaBuilder + Zod</h2>
-    <p style="font-size:.85em;color:#666">
+    <p class="schv-desc">
       PHP で定義した制約を REST 経由で取得し、Zod に変換してフィールド blur 時にリアルタイム検証する例。
       フォーカスを当てる前のフィールドにはエラーを表示しない。
     </p>
+    <p class="schv-legend"><span class="schv-req" aria-hidden="true">*</span> Required</p>
 
-    <details style="margin-bottom:1rem">
-      <summary style="cursor:pointer;font-weight:bold">JSON Schema (<code><?php echo esc_html($schema_url); ?></code>)</summary>
-      <pre style="background:#f5f5f5;padding:1rem;overflow:auto;font-size:.8em;margin-top:.5rem"><?php
+    <details style="margin-bottom:1.1rem">
+      <summary style="cursor:pointer;font-size:.875rem;font-weight:600;color:#374151">
+        JSON Schema (<code><?php echo esc_html($schema_url); ?></code>)
+      </summary>
+      <pre style="background:#f5f5f5;padding:.9rem;overflow:auto;font-size:.78rem;border-radius:4px;margin-top:.5rem;line-height:1.5"><?php
         $json = $GLOBALS['schv_registered_schema_client']->toJson();
         echo esc_html(json_encode(
           json_decode($json),
@@ -55,83 +67,72 @@ add_shortcode('schv_example_schema_client', function (): string {
       ?></pre>
     </details>
 
-    <?php if ($r): ?>
-      <div style="margin-bottom:1rem;padding:.75rem;background:#f0f4ff;border-left:3px solid #4a6cf7">
-        <strong>Server validation result:</strong>
-        <?php foreach ($r as $key => $state): ?>
-          <div style="color:<?php echo $state['is_valid'] ? 'green' : '#c00'; ?>">
-            <?php echo esc_html($key); ?>:
-            <?php echo $state['is_valid'] ? '✓' : esc_html($state['errors']); ?>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-
     <form id="schv-client-form" method="post" novalidate>
       <input type="hidden" name="schv_action" value="schema-client">
 
       <?php
-      $fields = [
-        'name'  => ['label' => 'Name',    'type' => 'text',  'required' => true],
-        'email' => ['label' => 'Email',   'type' => 'email', 'required' => true],
-        'tel'   => ['label' => 'Tel',     'type' => 'tel',   'required' => false],
-      ];
-      foreach ($fields as $key => $meta):
-        $val     = esc_attr($r[$key]['value'] ?? '');
-        $invalid = isset($r[$key]) && !$r[$key]['is_valid'];
+      // type — first field
+      $type_err = (isset($r['type']) && !$r['type']['is_valid']) ? $r['type']['errors'] : '';
       ?>
-        <p style="margin-bottom:.25rem">
-          <label>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-type">
+          Type<span class="schv-req" aria-hidden="true">*</span>
+        </label>
+        <select id="schv-type" name="type"
+          class="schv-select<?php echo $type_err ? ' is-error' : ''; ?>"
+          data-field="type" aria-required="true">
+          <option value="">— select —</option>
+          <?php foreach ($type_options as $val => $label): ?>
+            <option value="<?php echo esc_attr($val); ?>"<?php selected($r['type']['value'] ?? '', $val); ?>>
+              <?php echo esc_html($label); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <span id="err-type" class="schv-error" role="alert"><?php echo esc_html($type_err); ?></span>
+      </div>
+
+      <?php foreach ($text_fields as $key => $meta):
+        $err = (isset($r[$key]) && !$r[$key]['is_valid']) ? $r[$key]['errors'] : '';
+      ?>
+        <div class="schv-field">
+          <label class="schv-label" for="schv-<?php echo esc_attr($key); ?>">
             <?php echo esc_html($meta['label']); ?>
-            <?php if ($meta['required']): ?><span style="color:#c00" aria-hidden="true">*</span><?php endif; ?>
-            <br>
-            <input type="<?php echo esc_attr($meta['type']); ?>"
-              name="<?php echo esc_attr($key); ?>"
-              value="<?php echo $val; ?>"
-              style="width:100%;box-sizing:border-box"
-              data-field="<?php echo esc_attr($key); ?>"
-              <?php if ($meta['required']): ?>aria-required="true"<?php endif; ?>>
+            <?php if ($meta['required']): ?>
+              <span class="schv-req" aria-hidden="true">*</span>
+            <?php else: ?>
+              <span class="schv-opt">（任意）</span>
+            <?php endif; ?>
+            <?php if (!empty($meta['hint'])): ?>
+              <span class="schv-hint">— <?php echo esc_html($meta['hint']); ?></span>
+            <?php endif; ?>
           </label>
-          <span id="err-<?php echo esc_attr($key); ?>"
-            role="alert"
-            style="color:#c00;font-size:.85em;display:block;min-height:1.2em">
-            <?php echo $invalid ? esc_html($r[$key]['errors']) : ''; ?>
+          <input type="<?php echo esc_attr($meta['type']); ?>"
+            id="schv-<?php echo esc_attr($key); ?>"
+            name="<?php echo esc_attr($key); ?>"
+            value="<?php echo esc_attr($r[$key]['value'] ?? ''); ?>"
+            class="schv-input<?php echo $err ? ' is-error' : ''; ?>"
+            data-field="<?php echo esc_attr($key); ?>"
+            <?php if ($meta['required']): ?>aria-required="true"<?php endif; ?>>
+          <span id="err-<?php echo esc_attr($key); ?>" class="schv-error" role="alert">
+            <?php echo esc_html($err); ?>
           </span>
-        </p>
+        </div>
       <?php endforeach; ?>
 
-      <p style="margin-bottom:.25rem">
-        <label>
-          Type <span style="color:#c00" aria-hidden="true">*</span><br>
-          <select name="type" style="width:100%;box-sizing:border-box" data-field="type" aria-required="true">
-            <option value="">— select —</option>
-            <?php foreach (['general' => 'General', 'support' => 'Support', 'sales' => 'Sales', 'other' => 'Other'] as $val => $label): ?>
-              <option value="<?php echo esc_attr($val); ?>"
-                <?php selected($r['type']['value'] ?? '', $val); ?>>
-                <?php echo esc_html($label); ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
+      <?php $body_err = (isset($r['body']) && !$r['body']['is_valid']) ? $r['body']['errors'] : ''; ?>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-body">
+          Message<span class="schv-req" aria-hidden="true">*</span>
         </label>
-        <span id="err-type" role="alert" style="color:#c00;font-size:.85em;display:block;min-height:1.2em"></span>
-      </p>
+        <textarea id="schv-body" name="body" rows="4"
+          class="schv-textarea<?php echo $body_err ? ' is-error' : ''; ?>"
+          data-field="body" aria-required="true"><?php echo esc_textarea($r['body']['value'] ?? ''); ?></textarea>
+        <span id="err-body" class="schv-error" role="alert"><?php echo esc_html($body_err); ?></span>
+      </div>
 
-      <p style="margin-bottom:.25rem">
-        <label>
-          Message <span style="color:#c00" aria-hidden="true">*</span><br>
-          <textarea name="body" rows="4"
-            style="width:100%;box-sizing:border-box"
-            data-field="body"
-            aria-required="true"><?php echo esc_textarea($r['body']['value'] ?? ''); ?></textarea>
-        </label>
-        <span id="err-body" role="alert" style="color:#c00;font-size:.85em;display:block;min-height:1.2em">
-          <?php echo (isset($r['body']) && !$r['body']['is_valid']) ? esc_html($r['body']['errors']) : ''; ?>
-        </span>
-      </p>
-
-      <p style="margin-top:1rem">
-        <button type="submit">送信 (client + server)</button>
-      </p>
+      <div class="schv-actions">
+        <button type="submit" class="schv-btn">送信 (client + server)</button>
+      </div>
     </form>
   </div>
 
@@ -200,9 +201,9 @@ add_shortcode('schv_example_schema_client', function (): string {
     // A field is "dirty" once it has received and lost focus at least once.
     // Errors are only shown for dirty fields so the form starts clean.
 
-    const dirty   = new Set()
-    const form    = document.getElementById('schv-client-form')
-    let zodSchema = null
+    const dirty    = new Set()
+    const form     = document.getElementById('schv-client-form')
+    let zodSchema  = null
     let jsonSchema = null
 
     async function ensureSchema() {
@@ -217,8 +218,8 @@ add_shortcode('schv_example_schema_client', function (): string {
     function setFieldError(name, message) {
       const errEl   = document.getElementById(`err-${name}`)
       const inputEl = form.querySelector(`[data-field="${name}"]`)
-      if (errEl)   errEl.textContent       = message ?? ''
-      if (inputEl) inputEl.style.outlineColor = message ? '#c00' : ''
+      if (errEl)   errEl.textContent = message ?? ''
+      if (inputEl) inputEl.classList.toggle('is-error', !!message)
     }
 
     function validateField(name, value) {

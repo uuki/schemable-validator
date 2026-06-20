@@ -80,7 +80,7 @@ if (defined('WP_ENVIRONMENT_TYPE') && WP_ENVIRONMENT_TYPE === 'local') {
   }
 
   require_once __DIR__ . '/examples/loader.php';
-  if (!is_admin() && !get_option('schv_setup_done')) {
+  if (!is_admin()) {
     require_once __DIR__ . '/setup.php';
   }
 }

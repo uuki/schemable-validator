@@ -12,23 +12,35 @@ add_action('template_redirect', function () {
 });
 
 add_shortcode('schv_example_files', function (): string {
-  $r = $GLOBALS['schv_ex_files'] ?? [];
+  $r     = $GLOBALS['schv_ex_files'] ?? [];
   $state = $r['attachment'][0] ?? null;
+  $err   = ($state && !$state['is_valid']) ? $state['errors'] : '';
+
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:500px">
+  <div class="schv-wrap">
     <h2>Example: File Validation</h2>
-    <?php if ($state): ?>
-      <p style="color:<?php echo $state['is_valid'] ? 'green' : 'red'; ?>">
-        attachment: <?php echo $state['is_valid'] ? '✓ valid' : esc_html($state['errors']); ?>
-      </p>
+    <p class="schv-desc">Accepts JPEG and PNG only. Max 5 MB.</p>
+
+    <?php if ($state && $state['is_valid']): ?>
+      <div class="schv-success">✓ File is valid.</div>
     <?php endif; ?>
-    <form method="post" enctype="multipart/form-data">
+
+    <form method="post" enctype="multipart/form-data" novalidate>
       <input type="hidden" name="schv_action" value="files">
-      <p>
-        <label>Attachment (jpg / png)<br>
-        <input type="file" name="attachment"></label>
-      </p>
-      <button type="submit">Upload</button>
+
+      <div class="schv-field">
+        <label class="schv-label" for="schv-attachment">
+          Attachment<span class="schv-req" aria-hidden="true">*</span>
+          <span class="schv-hint">— JPEG / PNG</span>
+        </label>
+        <input type="file" id="schv-attachment" name="attachment"
+          class="schv-input<?php echo $err ? ' is-error' : ''; ?>" accept="image/jpeg,image/png">
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
+
+      <div class="schv-actions">
+        <button type="submit" class="schv-btn">Upload</button>
+      </div>
     </form>
   </div>
   <?php return ob_get_clean();

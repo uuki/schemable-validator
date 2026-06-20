@@ -43,65 +43,91 @@ add_shortcode('schv_example_merge_schema', function (): string {
   $r     = $GLOBALS['schv_ex_merge'] ?? [];
   $token = schv_csrf()->createToken('merge-schema');
 
-  $gui      = schv_stored_schema('merge-demo')->toJsonSchema();
-  $hasGui   = !empty($gui['properties']) && !($gui['properties'] instanceof \stdClass);
+  $gui    = schv_stored_schema('merge-demo')->toJsonSchema();
+  $hasGui = !empty($gui['properties']) && !($gui['properties'] instanceof \stdClass);
+
+  $all_valid = !empty($r) && empty($r['_error'])
+    && array_reduce($r, fn($c, $s) => $c && $s['is_valid'], true);
 
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:600px">
+  <div class="schv-wrap">
     <h2><?php echo esc_html__('Example: Merge Schema', 'schemable-validator'); ?></h2>
-    <p style="font-size:.85em;color:#666">
+    <p class="schv-desc">
       <?php echo esc_html__('GUI-defined fields (name, email, type) are merged with code-defined logic (conditional company_name).', 'schemable-validator'); ?>
     </p>
+    <p class="schv-legend"><span class="schv-req" aria-hidden="true">*</span> Required</p>
 
     <?php if (!$hasGui): ?>
-      <div style="padding:.75rem;background:#fff3cd;border-left:3px solid #ffc107;margin-bottom:1rem">
+      <div class="schv-notice">
         <strong><?php echo esc_html__('Setup required:', 'schemable-validator'); ?></strong>
         <?php echo esc_html__('Create a schema "merge-demo" in the Schema Editor with fields: name (string, required), email (string, email, required), type (enum: personal/company, required).', 'schemable-validator'); ?>
       </div>
     <?php endif; ?>
 
     <?php if (!empty($r['_error'])): ?>
-      <p style="color:red"><?php echo esc_html($r['_error']); ?></p>
-    <?php elseif ($r): ?>
-      <?php foreach ($r as $field => $state): ?>
-        <p style="color:<?php echo $state['is_valid'] ? 'green' : 'red'; ?>">
-          <strong><?php echo esc_html($field); ?></strong>:
-          <?php echo $state['is_valid'] ? '✓ valid' : esc_html($state['errors']); ?>
-        </p>
-      <?php endforeach; ?>
+      <div class="schv-global-error"><?php echo esc_html($r['_error']); ?></div>
+    <?php elseif ($all_valid): ?>
+      <div class="schv-success">✓ All fields are valid.</div>
     <?php endif; ?>
 
     <form method="post" novalidate>
       <input type="hidden" name="schv_action" value="merge-schema">
       <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
 
-      <p><label>name<br>
-        <input type="text" name="name" value="<?php echo esc_attr($r['name']['value'] ?? ''); ?>" style="width:100%">
-      </label></p>
-
-      <p><label>email<br>
-        <input type="email" name="email" value="<?php echo esc_attr($r['email']['value'] ?? ''); ?>" style="width:100%">
-      </label></p>
-
-      <p><label>type<br>
-        <select name="type" style="width:100%">
+      <?php
+      // type is first so the conditional company_name field below makes immediate sense
+      $err = (isset($r['type']) && !$r['type']['is_valid']) ? $r['type']['errors'] : '';
+      ?>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-type">
+          <?php echo esc_html__('type', 'schemable-validator'); ?><span class="schv-req" aria-hidden="true">*</span>
+        </label>
+        <select id="schv-type" name="type" class="schv-select<?php echo $err ? ' is-error' : ''; ?>">
           <option value="">— select —</option>
-          <option value="personal" <?php selected($r['type']['value'] ?? '', 'personal'); ?>>Personal</option>
-          <option value="company" <?php selected($r['type']['value'] ?? '', 'company'); ?>>Company</option>
+          <option value="personal"<?php selected($r['type']['value'] ?? '', 'personal'); ?>>Personal</option>
+          <option value="company"<?php selected($r['type']['value'] ?? '', 'company'); ?>>Company</option>
         </select>
-      </label></p>
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
 
-      <p><label>company_name <span style="font-size:.8em;color:#666">(<?php echo esc_html__('required when type = company', 'schemable-validator'); ?>)</span><br>
-        <input type="text" name="company_name" value="<?php echo esc_attr($r['company_name']['value'] ?? ''); ?>" style="width:100%">
-      </label></p>
+      <?php foreach (['name' => 'text', 'email' => 'email'] as $key => $inputType):
+        $err = (isset($r[$key]) && !$r[$key]['is_valid']) ? $r[$key]['errors'] : '';
+      ?>
+        <div class="schv-field">
+          <label class="schv-label" for="schv-<?php echo esc_attr($key); ?>">
+            <?php echo esc_html($key); ?><span class="schv-req" aria-hidden="true">*</span>
+          </label>
+          <input type="<?php echo esc_attr($inputType); ?>"
+            id="schv-<?php echo esc_attr($key); ?>" name="<?php echo esc_attr($key); ?>"
+            value="<?php echo esc_attr($r[$key]['value'] ?? ''); ?>"
+            class="schv-input<?php echo $err ? ' is-error' : ''; ?>">
+          <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+        </div>
+      <?php endforeach; ?>
 
-      <button type="submit"><?php echo esc_html__('Validate', 'schemable-validator'); ?></button>
+      <?php $err = (isset($r['company_name']) && !$r['company_name']['is_valid']) ? $r['company_name']['errors'] : ''; ?>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-company-name">
+          company_name
+          <span class="schv-hint">— <?php echo esc_html__('required when type = company', 'schemable-validator'); ?></span>
+        </label>
+        <input type="text" id="schv-company-name" name="company_name"
+          value="<?php echo esc_attr($r['company_name']['value'] ?? ''); ?>"
+          class="schv-input<?php echo $err ? ' is-error' : ''; ?>">
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
+
+      <div class="schv-actions">
+        <button type="submit" class="schv-btn"><?php echo esc_html__('Validate', 'schemable-validator'); ?></button>
+      </div>
     </form>
 
     <?php if ($hasGui): ?>
-      <details style="margin-top:1rem">
-        <summary style="cursor:pointer;font-weight:600"><?php echo esc_html__('Stored JSON Schema (merge-demo)', 'schemable-validator'); ?></summary>
-        <pre style="background:#f5f5f5;padding:1rem;overflow:auto;margin-top:.5rem;font-size:.8em"><?php
+      <details style="margin-top:1.5rem">
+        <summary style="cursor:pointer;font-size:.875rem;font-weight:600;color:#374151">
+          <?php echo esc_html__('Stored JSON Schema (merge-demo)', 'schemable-validator'); ?>
+        </summary>
+        <pre style="background:#f5f5f5;padding:.9rem;overflow:auto;margin-top:.5rem;font-size:.78rem;border-radius:4px;line-height:1.5"><?php
           echo esc_html(json_encode($gui, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         ?></pre>
       </details>

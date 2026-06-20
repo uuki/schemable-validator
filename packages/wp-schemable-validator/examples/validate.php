@@ -31,42 +31,70 @@ add_action('template_redirect', function () {
 add_shortcode('schv_example_validate', function (): string {
   $r     = $GLOBALS['schv_ex_validate'] ?? [];
   $token = schv_csrf()->createToken('validate');
+
+  $all_valid = !empty($r) && empty($r['_error'])
+    && array_reduce($r, fn($c, $s) => $c && $s['is_valid'], true);
+
+  $type_options = [
+    'general' => 'General Inquiry',
+    'support' => 'Support',
+    'sales'   => 'Sales',
+    'other'   => 'Other',
+  ];
+
   ob_start(); ?>
-  <div style="font-family:sans-serif;max-width:500px">
+  <div class="schv-wrap">
     <h2>Example: Validate</h2>
+    <p class="schv-legend"><span class="schv-req" aria-hidden="true">*</span> Required</p>
+
     <?php if (!empty($r['_error'])): ?>
-      <p style="color:red"><?php echo esc_html($r['_error']); ?></p>
-    <?php elseif ($r): ?>
-      <?php foreach ($r as $field => $state): ?>
-        <p style="color:<?php echo $state['is_valid'] ? 'green' : 'red'; ?>">
-          <strong><?php echo esc_html($field); ?></strong>:
-          <?php echo $state['is_valid'] ? '✓ valid' : esc_html($state['errors']); ?>
-        </p>
-      <?php endforeach; ?>
+      <div class="schv-global-error"><?php echo esc_html($r['_error']); ?></div>
+    <?php elseif ($all_valid): ?>
+      <div class="schv-success">✓ All fields are valid.</div>
     <?php endif; ?>
+
     <form method="post" novalidate>
       <input type="hidden" name="schv_action" value="validate">
       <input type="hidden" name="schv_csrf_token" value="<?php echo esc_attr($token); ?>">
-      <?php foreach (['name', 'email'] as $f): ?>
-        <p>
-          <label><?php echo esc_html($f); ?><br>
-          <input type="text" name="<?php echo esc_attr($f); ?>" value="<?php echo esc_attr($r[$f]['value'] ?? ''); ?>" style="width:100%"></label>
-        </p>
+
+      <?php foreach (['name', 'email'] as $f):
+        $err = (isset($r[$f]) && !$r[$f]['is_valid']) ? $r[$f]['errors'] : ''; ?>
+        <div class="schv-field">
+          <label class="schv-label" for="schv-<?php echo esc_attr($f); ?>">
+            <?php echo esc_html(ucfirst($f)); ?><span class="schv-req" aria-hidden="true">*</span>
+          </label>
+          <input type="text" id="schv-<?php echo esc_attr($f); ?>" name="<?php echo esc_attr($f); ?>"
+            value="<?php echo esc_attr($r[$f]['value'] ?? ''); ?>"
+            class="schv-input<?php echo $err ? ' is-error' : ''; ?>">
+          <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+        </div>
       <?php endforeach; ?>
-      <p>
-        <label>type<br>
-        <select name="type" style="width:100%">
+
+      <?php $err = (isset($r['type']) && !$r['type']['is_valid']) ? $r['type']['errors'] : ''; ?>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-type">Type<span class="schv-req" aria-hidden="true">*</span></label>
+        <select id="schv-type" name="type" class="schv-select<?php echo $err ? ' is-error' : ''; ?>">
           <option value="">— select —</option>
-          <?php foreach (['general' => 'General Inquiry', 'support' => 'Support', 'sales' => 'Sales', 'other' => 'Other'] as $val => $label): ?>
-            <option value="<?php echo esc_attr($val); ?>"<?php selected($r['type']['value'] ?? '', $val); ?>><?php echo esc_html($label); ?></option>
+          <?php foreach ($type_options as $val => $label): ?>
+            <option value="<?php echo esc_attr($val); ?>"<?php selected($r['type']['value'] ?? '', $val); ?>>
+              <?php echo esc_html($label); ?>
+            </option>
           <?php endforeach; ?>
-        </select></label>
-      </p>
-      <p>
-        <label>body<br>
-        <textarea name="body" style="width:100%"><?php echo esc_textarea($r['body']['value'] ?? ''); ?></textarea></label>
-      </p>
-      <button type="submit">Validate</button>
+        </select>
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
+
+      <?php $err = (isset($r['body']) && !$r['body']['is_valid']) ? $r['body']['errors'] : ''; ?>
+      <div class="schv-field">
+        <label class="schv-label" for="schv-body">Body<span class="schv-req" aria-hidden="true">*</span></label>
+        <textarea id="schv-body" name="body" rows="4"
+          class="schv-textarea<?php echo $err ? ' is-error' : ''; ?>"><?php echo esc_textarea($r['body']['value'] ?? ''); ?></textarea>
+        <span class="schv-error" role="alert"><?php echo esc_html($err); ?></span>
+      </div>
+
+      <div class="schv-actions">
+        <button type="submit" class="schv-btn">Validate</button>
+      </div>
     </form>
   </div>
   <?php return ob_get_clean();
