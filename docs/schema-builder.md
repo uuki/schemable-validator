@@ -222,6 +222,56 @@ Declares custom field names via the `x-custom-fields` extension key.
 $schema->customFields(array $names): self
 ```
 
+### `mergeJsonSchema()`
+
+Merges an external JSON Schema with the builder's fields.
+The external schema supplies primitive fields (defined via the [Schema Editor](/feature-guide#schema-editor) or any JSON Schema source), while the builder supplies fields that require code: file uploads, custom validators, cross-field conditions, and driver injection.
+
+```php
+$schema->mergeJsonSchema(array $jsonSchema): self
+```
+
+When both sources define the same field name, the builder's definition takes precedence.
+
+```php
+use SchemableValidator\SV;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
+
+// GUI-defined schema (e.g. from StoredSchemaProvider)
+$gui = [
+  'type'       => 'object',
+  'properties' => [
+    'name'  => ['type' => 'string', 'minLength' => 1, 'maxLength' => 100],
+    'email' => ['type' => 'string', 'format' => 'email'],
+    'type'  => ['type' => 'string', 'enum' => ['personal', 'company']],
+  ],
+  'required' => ['name', 'email', 'type'],
+];
+
+// Code adds what the GUI cannot express
+$result = SV::object([
+  'avatar' => SV::file(['image/jpeg', 'image/png'], ['maxWidth' => 4096]),
+])->mergeJsonSchema($gui)
+  ->when('type', SV::equal('company'), ['company_name'])
+  ->toValidator([
+    'imageDriver'   => new NativeImageDriver(),
+    'captchaDriver' => new ReCaptchaV3Driver('SECRET'),
+  ])
+  ->validate($_POST)
+  ->validateFiles($_FILES)
+  ->validateCaptcha()
+  ->getResult();
+```
+
+::: tip WordPress
+Use `schv_stored_schema($slug)` to load a schema created via the Schema Editor:
+```php
+$gui = schv_stored_schema('contact')->toJsonSchema();
+$result = SV::object([...])->mergeJsonSchema($gui)->toValidator()->validate($_POST)->getResult();
+```
+:::
+
 ---
 
 ## `toValidator()` Output Example

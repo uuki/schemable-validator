@@ -222,6 +222,56 @@ $uiSchema = $schema->toUiSchema(); // array
 $schema->customFields(array $names): self
 ```
 
+### `mergeJsonSchema()`
+
+外部の JSON Schema をビルダーのフィールドとマージします。
+外部スキーマが[スキーマエディタ](/ja/feature-guide#スキーマエディタ)等で定義したプリミティブフィールドを供給し、ビルダー側はコードでしか表現できないフィールド（ファイルアップロード、カスタムバリデーション、条件付き必須、ドライバ注入）を供給します。
+
+```php
+$schema->mergeJsonSchema(array $jsonSchema): self
+```
+
+同名のフィールドが両方に存在する場合、ビルダー側の定義が優先されます。
+
+```php
+use SchemableValidator\SV;
+use SchemableValidator\Adapters\Captcha\ReCaptchaV3Driver;
+use SchemableValidator\Adapters\Native\NativeImageDriver;
+
+// GUI で定義されたスキーマ（StoredSchemaProvider 等から取得）
+$gui = [
+  'type'       => 'object',
+  'properties' => [
+    'name'  => ['type' => 'string', 'minLength' => 1, 'maxLength' => 100],
+    'email' => ['type' => 'string', 'format' => 'email'],
+    'type'  => ['type' => 'string', 'enum' => ['personal', 'company']],
+  ],
+  'required' => ['name', 'email', 'type'],
+];
+
+// GUI では表現できないものをコードで追加
+$result = SV::object([
+  'avatar' => SV::file(['image/jpeg', 'image/png'], ['maxWidth' => 4096]),
+])->mergeJsonSchema($gui)
+  ->when('type', SV::equal('company'), ['company_name'])
+  ->toValidator([
+    'imageDriver'   => new NativeImageDriver(),
+    'captchaDriver' => new ReCaptchaV3Driver('SECRET'),
+  ])
+  ->validate($_POST)
+  ->validateFiles($_FILES)
+  ->validateCaptcha()
+  ->getResult();
+```
+
+::: tip WordPress
+スキーマエディタで作成したスキーマは `schv_stored_schema($slug)` で読み込めます。
+```php
+$gui = schv_stored_schema('contact')->toJsonSchema();
+$result = SV::object([...])->mergeJsonSchema($gui)->toValidator()->validate($_POST)->getResult();
+```
+:::
+
 ---
 
 ## `toValidator()` の出力例

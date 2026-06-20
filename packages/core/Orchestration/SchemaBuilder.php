@@ -28,6 +28,9 @@ final class SchemaBuilder implements SchemaProviderInterface {
   /** @var string[] */
   private $customFields = [];
 
+  /** @var array<string, mixed>|null External JSON Schema to merge (e.g. from StoredSchemaProvider). */
+  private ?array $mergedJsonSchema = null;
+
   private ?MessageDict $messageDict = null;
 
   /** @param array<string, AbstractFieldSchema> $fields */
@@ -79,6 +82,25 @@ final class SchemaBuilder implements SchemaProviderInterface {
    */
   public function customFields(array $names): self {
     $this->customFields = array_values($names);
+    return $this;
+  }
+
+  /**
+   * Merge an external JSON Schema (e.g. from StoredSchemaProvider / GUI editor)
+   * with this builder's fields.
+   *
+   * The external schema supplies primitive fields that the GUI can express.
+   * The builder supplies fields that require code: file uploads, custom
+   * validators, cross-field conditions, and driver injection.
+   *
+   * On conflict (same field name in both), the builder's definition wins.
+   *
+   * @param array<string, mixed> $jsonSchema  A JSON Schema 2020-12 object
+   *                                          with at least `properties`.
+   * @return $this
+   */
+  public function mergeJsonSchema(array $jsonSchema): self {
+    $this->mergedJsonSchema = $jsonSchema;
     return $this;
   }
 
@@ -156,6 +178,15 @@ final class SchemaBuilder implements SchemaProviderInterface {
       if ($field->isRequired()) {
         $required[] = $name;
       }
+    }
+
+    // Merge external JSON Schema (GUI-defined fields) under builder fields.
+    if ($this->mergedJsonSchema !== null) {
+      $extProps    = (array) ($this->mergedJsonSchema['properties'] ?? []);
+      $extRequired = $this->mergedJsonSchema['required'] ?? [];
+      // External properties go first; builder properties override on conflict.
+      $properties = array_merge($extProps, $properties);
+      $required   = array_values(array_unique(array_merge($extRequired, $required)));
     }
 
     $metaSchema = !empty($options['metaSchema']);

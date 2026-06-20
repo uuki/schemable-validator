@@ -873,4 +873,83 @@ class SchemaBuilderTest extends TestCase {
     // custom_check not in result — server-side only
     $this->assertArrayNotHasKey('custom_check', $result);
   }
+
+  // ── mergeJsonSchema ─────────────────────────────────────────
+
+  public function test_mergeJsonSchema_combines_properties(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'name'  => ['type' => 'string', 'minLength' => 1],
+        'email' => ['type' => 'string', 'format' => 'email'],
+      ],
+      'required' => ['name', 'email'],
+    ];
+
+    $schema = SV::object([
+      'avatar' => SV::file(['image/jpeg']),
+    ])->mergeJsonSchema($external);
+
+    $js = $schema->toJsonSchema();
+
+    $this->assertArrayHasKey('name', $js['properties']);
+    $this->assertArrayHasKey('email', $js['properties']);
+    $this->assertContains('name', $js['required']);
+    $this->assertContains('email', $js['required']);
+    $this->assertContains('avatar', $js['x-unmapped-fields']);
+  }
+
+  public function test_mergeJsonSchema_builder_overrides_external(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'name' => ['type' => 'string', 'maxLength' => 50],
+      ],
+      'required' => ['name'],
+    ];
+
+    $js = SV::object([
+      'name' => SV::string()->min(1)->max(100),
+    ])->mergeJsonSchema($external)->toJsonSchema();
+
+    $this->assertSame(100, $js['properties']['name']['maxLength']);
+  }
+
+  public function test_mergeJsonSchema_validation_works(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'email' => ['type' => 'string', 'format' => 'email'],
+      ],
+      'required' => ['email'],
+    ];
+
+    $result = SV::object([])
+      ->mergeJsonSchema($external)
+      ->toValidator()
+      ->validate(['email' => 'not-email'])
+      ->getResult();
+
+    $this->assertFalse($result['email']['is_valid']);
+  }
+
+  public function test_mergeJsonSchema_with_when(): void {
+    $external = [
+      'type'       => 'object',
+      'properties' => [
+        'type'         => ['type' => 'string', 'enum' => ['personal', 'company']],
+        'company_name' => ['type' => 'string', 'minLength' => 1],
+      ],
+      'required' => ['type'],
+    ];
+
+    $result = SV::object([])
+      ->mergeJsonSchema($external)
+      ->when('type', SV::equal('company'), ['company_name'])
+      ->toValidator()
+      ->validate(['type' => 'company', 'company_name' => ''])
+      ->getResult();
+
+    $this->assertFalse($result['company_name']['is_valid']);
+  }
 }
