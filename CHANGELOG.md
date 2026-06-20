@@ -3,6 +3,13 @@
 
 ### Bug Fixes
 
+* **wp-playground:** redesign example form UI and navigation layout ([42aa30a](https://github.com/uuki/schemable-validator/commit/42aa30ad16dde297db4831e26f61504e628e1d5e))
+
+## [0.20.1](https://github.com/uuki/schemable-validator/compare/v0.20.0...v0.20.1) (2026-06-20)
+
+
+### Bug Fixes
+
 * **docs:** align README badges with Packagist package name ([42e4c79](https://github.com/uuki/schemable-validator/commit/42e4c7923e977a43e3befee787b78c6112b5c38c))
 
 # [0.20.0](https://github.com/uuki/schemable-validator/compare/v0.19.0...v0.20.0) (2026-06-20)
