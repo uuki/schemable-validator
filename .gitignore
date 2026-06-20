@@ -22,8 +22,10 @@ library/**/ignore.*.php
 
 # cache
 .phpunit.result.cache
+.last-run.json
 
 # local / build artifacts
+test-results/
 playground/.tmp-sessions
 packages/e2e/test-results
 packages/client/dist/

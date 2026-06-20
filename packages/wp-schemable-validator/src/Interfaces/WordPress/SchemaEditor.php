@@ -3,15 +3,11 @@
 namespace SchemableValidator\Interfaces\WordPress;
 
 /**
- * WordPress admin page for defining validation schemas via GUI.
+ * ACF-like admin page for defining validation schemas via GUI.
  *
- * The editor stores a JSON Schema 2020-12 object in wp_options under
- * the key "schv_schema_{$slug}".  At runtime, pair with StoredSchemaProvider
- * to feed the schema into Validator::fromJsonSchema() or schv_register_schema().
- *
- * Supported field types: string, integer, number, boolean, enum.
- * Each type exposes the constraints available in SchemaBuilder (min/max length,
- * pattern, format, numeric bounds, enum values).
+ * Stores a JSON Schema 2020-12 object in wp_options ("schv_schema_{$slug}").
+ * At runtime, pair with StoredSchemaProvider to feed the schema into
+ * Validator::fromJsonSchema() or schv_register_schema().
  */
 final class SchemaEditor {
   private const OPTION_PREFIX = 'schv_schema_';
@@ -114,7 +110,7 @@ final class SchemaEditor {
   }
 
   private static function buildJsonSchemaFromPost(): array {
-    $fields   = $_POST['schv_fields'] ?? [];
+    $fields = $_POST['schv_fields'] ?? [];
     if (!is_array($fields)) {
       $fields = [];
     }
@@ -132,9 +128,12 @@ final class SchemaEditor {
       $prop = [];
 
       if ($type === 'enum') {
-        $values = array_filter(array_map('trim', explode("\n", $field['enum_values'] ?? '')));
+        $raw = $field['enum_items'] ?? [];
+        $values = is_array($raw)
+          ? array_values(array_filter(array_map('trim', $raw)))
+          : [];
         $prop['type'] = 'string';
-        $prop['enum'] = array_values($values);
+        $prop['enum'] = $values;
       } elseif ($type === 'boolean') {
         $prop['type'] = 'boolean';
       } elseif ($type === 'integer' || $type === 'number') {
@@ -179,6 +178,8 @@ final class SchemaEditor {
     return $schema;
   }
 
+  // ── Render ────────────────────────────────────────────────────
+
   public static function renderPage(): void {
     $slugs       = self::getSlugs();
     $editSlug    = sanitize_key($_GET['slug'] ?? '');
@@ -193,24 +194,26 @@ final class SchemaEditor {
           $type = 'enum';
         }
         $fields[] = [
-          'name'        => $name,
-          'type'        => $type,
-          'required'    => in_array($name, $requiredList, true),
-          'minLength'   => $prop['minLength'] ?? '',
-          'maxLength'   => $prop['maxLength'] ?? '',
-          'format'      => $prop['format'] ?? '',
-          'pattern'     => $prop['pattern'] ?? '',
-          'minimum'     => $prop['minimum'] ?? '',
-          'maximum'     => $prop['maximum'] ?? '',
-          'enum_values' => isset($prop['enum']) ? implode("\n", $prop['enum']) : '',
+          'name'       => $name,
+          'type'       => $type,
+          'required'   => in_array($name, $requiredList, true),
+          'minLength'  => $prop['minLength'] ?? '',
+          'maxLength'  => $prop['maxLength'] ?? '',
+          'format'     => $prop['format'] ?? '',
+          'pattern'    => $prop['pattern'] ?? '',
+          'minimum'    => $prop['minimum'] ?? '',
+          'maximum'    => $prop['maximum'] ?? '',
+          'enum_items' => isset($prop['enum']) ? $prop['enum'] : [],
         ];
       }
     }
 
     $saved   = !empty($_GET['saved']);
     $deleted = !empty($_GET['deleted']);
+
+    self::renderStyles();
     ?>
-    <div class="wrap">
+    <div class="wrap schv-editor">
       <h1><?php echo esc_html__('Schema Editor', 'schemable-validator'); ?></h1>
 
       <?php if ($saved): ?>
@@ -222,8 +225,12 @@ final class SchemaEditor {
 
       <?php if (!empty($slugs)): ?>
         <h2><?php echo esc_html__('Saved schemas', 'schemable-validator'); ?></h2>
-        <table class="widefat fixed striped" style="max-width:600px;margin-bottom:2rem">
-          <thead><tr><th><?php echo esc_html__('Slug', 'schemable-validator'); ?></th><th><?php echo esc_html__('Fields', 'schemable-validator'); ?></th><th></th></tr></thead>
+        <table class="widefat fixed striped" style="max-width:640px;margin-bottom:2rem">
+          <thead><tr>
+            <th><?php echo esc_html__('Slug', 'schemable-validator'); ?></th>
+            <th><?php echo esc_html__('Fields', 'schemable-validator'); ?></th>
+            <th style="width:80px"></th>
+          </tr></thead>
           <tbody>
           <?php foreach ($slugs as $s):
             $sch = get_option(self::OPTION_PREFIX . $s, []);
@@ -231,17 +238,13 @@ final class SchemaEditor {
           ?>
             <tr>
               <td><a href="<?php echo esc_url(admin_url('admin.php?page=schv-schema-editor&slug=' . urlencode($s))); ?>"><?php echo esc_html($s); ?></a></td>
-              <td><?php
-                /* translators: %d: number of fields in a schema */
-                echo esc_html(sprintf(_n('%d field', '%d fields', $cnt, 'schemable-validator'), $cnt));
-              ?></td>
+              <td><?php echo esc_html(sprintf(_n('%d field', '%d fields', $cnt, 'schemable-validator'), $cnt)); ?></td>
               <td>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline">
                   <?php wp_nonce_field('schv_delete_schema'); ?>
                   <input type="hidden" name="action" value="schv_delete_schema">
                   <input type="hidden" name="schv_slug" value="<?php echo esc_attr($s); ?>">
                   <button type="submit" class="button button-link-delete" onclick="return confirm(<?php
-                    /* translators: %s: schema slug */
                     echo esc_attr(wp_json_encode(sprintf(__("Delete schema '%s'?", 'schemable-validator'), $s)));
                   ?>)"><?php echo esc_html__('Delete', 'schemable-validator'); ?></button>
                 </form>
@@ -254,7 +257,6 @@ final class SchemaEditor {
 
       <h2><?php
         if ($editSlug !== '') {
-          /* translators: %s: schema slug being edited */
           echo esc_html(sprintf(__('Edit: %s', 'schemable-validator'), $editSlug));
         } else {
           echo esc_html__('New schema', 'schemable-validator');
@@ -291,8 +293,8 @@ final class SchemaEditor {
           <?php endif; ?>
         </div>
 
-        <p>
-          <button type="button" class="button" id="schv-add-field"><?php echo esc_html__('Add field', 'schemable-validator'); ?></button>
+        <p style="margin-top:12px">
+          <button type="button" class="button button-primary" id="schv-add-field">+ <?php echo esc_html__('Add field', 'schemable-validator'); ?></button>
         </p>
 
         <?php submit_button(esc_html__('Save schema', 'schemable-validator')); ?>
@@ -300,24 +302,22 @@ final class SchemaEditor {
 
       <?php if ($editSlug !== '' && is_array($editSchema)): ?>
         <h3><?php echo esc_html__('Usage', 'schemable-validator'); ?></h3>
-        <pre style="background:#f5f5f5;padding:1rem;overflow:auto;max-width:700px"><code><?php
+        <pre class="schv-code-block"><code><?php
           echo esc_html(
-            "// functions.php or plugin code\n"
-            . "use SchemableValidator\\Interfaces\\WordPress\\StoredSchemaProvider;\n"
+            "use SchemableValidator\\Interfaces\\WordPress\\StoredSchemaProvider;\n"
             . "use SchemableValidator\\Orchestration\\Validator;\n\n"
-            . "// REST endpoint (client-side consumption)\n"
+            . "// REST endpoint\n"
             . "schv_register_schema('/{$editSlug}', new StoredSchemaProvider('{$editSlug}'));\n\n"
             . "// Server-side validation\n"
             . "\$provider = new StoredSchemaProvider('{$editSlug}');\n"
             . "\$result   = Validator::fromJsonSchema(\$provider->toJsonSchema())\n"
-            . "    ->validate(\$_POST)\n"
-            . "    ->getResult();\n"
+            . "    ->validate(\$_POST)->getResult();\n"
           );
         ?></code></pre>
 
         <details style="margin-top:1rem">
           <summary style="cursor:pointer;font-weight:600"><?php echo esc_html__('Stored JSON Schema', 'schemable-validator'); ?></summary>
-          <pre style="background:#f5f5f5;padding:1rem;overflow:auto;max-width:700px;margin-top:.5rem"><?php
+          <pre class="schv-code-block" style="margin-top:.5rem"><?php
             echo esc_html(json_encode($editSchema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
           ?></pre>
         </details>
@@ -328,52 +328,18 @@ final class SchemaEditor {
       <?php self::renderFieldRow('__INDEX__', [
         'name' => '', 'type' => 'string', 'required' => false,
         'minLength' => '', 'maxLength' => '', 'format' => '', 'pattern' => '',
-        'minimum' => '', 'maximum' => '', 'enum_values' => '',
+        'minimum' => '', 'maximum' => '', 'enum_items' => [],
       ]); ?>
     </template>
 
-    <script>
-    (function() {
-      var container = document.getElementById('schv-fields-container');
-      var addBtn    = document.getElementById('schv-add-field');
-      var template  = document.getElementById('schv-field-template');
-      var counter   = container.querySelectorAll('.schv-field-row').length;
+    <template id="schv-enum-item-template">
+      <div class="schv-enum-item">
+        <input type="text" name="__ENUM_NAME__" value="" placeholder="<?php echo esc_attr__('Value', 'schemable-validator'); ?>" class="regular-text" style="width:240px">
+        <button type="button" class="button schv-enum-remove" title="<?php echo esc_attr__('Remove', 'schemable-validator'); ?>">&times;</button>
+      </div>
+    </template>
 
-      addBtn.addEventListener('click', function() {
-        var noFields = document.getElementById('schv-no-fields');
-        if (noFields) noFields.remove();
-
-        var html = template.innerHTML.replace(/__INDEX__/g, String(counter));
-        var div  = document.createElement('div');
-        div.innerHTML = html;
-        var row = div.firstElementChild;
-        container.appendChild(row);
-        bindRow(row);
-        counter++;
-      });
-
-      function bindRow(row) {
-        row.querySelector('.schv-remove-field').addEventListener('click', function() {
-          row.remove();
-        });
-        var typeSelect = row.querySelector('.schv-type-select');
-        typeSelect.addEventListener('change', function() {
-          toggleConstraints(row, this.value);
-        });
-        toggleConstraints(row, typeSelect.value);
-      }
-
-      function toggleConstraints(row, type) {
-        row.querySelector('.schv-string-opts').style.display  = type === 'string'  ? '' : 'none';
-        row.querySelector('.schv-numeric-opts').style.display  = (type === 'integer' || type === 'number') ? '' : 'none';
-        row.querySelector('.schv-enum-opts').style.display     = type === 'enum'    ? '' : 'none';
-      }
-
-      container.querySelectorAll('.schv-field-row').forEach(function(row) {
-        bindRow(row);
-      });
-    })();
-    </script>
+    <?php self::renderScript(); ?>
     <?php
   }
 
@@ -382,60 +348,314 @@ final class SchemaEditor {
    * @param array      $field
    */
   private static function renderFieldRow($index, array $field): void {
-    $prefix = "schv_fields[{$index}]";
-    $fieldTypes = self::fieldTypes();
-    $stringFormats = self::stringFormats();
+    $prefix      = "schv_fields[{$index}]";
+    $fieldTypes  = self::fieldTypes();
+    $formats     = self::stringFormats();
+    $displayName = $field['name'] !== '' ? $field['name'] : __('(new field)', 'schemable-validator');
+    $typeBadge   = $fieldTypes[$field['type']] ?? $field['type'];
     ?>
-    <div class="schv-field-row" style="border:1px solid #ccd0d4;padding:12px;margin-bottom:8px;background:#fff">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <input type="text" name="<?php echo esc_attr($prefix); ?>[name]"
-          value="<?php echo esc_attr($field['name']); ?>"
-          placeholder="<?php echo esc_attr__('Field name', 'schemable-validator'); ?>" class="regular-text" required
-          style="flex:1">
-
-        <select name="<?php echo esc_attr($prefix); ?>[type]" class="schv-type-select">
-          <?php foreach ($fieldTypes as $val => $label): ?>
-            <option value="<?php echo esc_attr($val); ?>" <?php selected($field['type'], $val); ?>><?php echo esc_html($label); ?></option>
-          <?php endforeach; ?>
-        </select>
-
-        <label style="white-space:nowrap">
-          <input type="checkbox" name="<?php echo esc_attr($prefix); ?>[required]" value="1"
-            <?php checked(!empty($field['required'])); ?>>
-          <?php echo esc_html__('Required', 'schemable-validator'); ?>
-        </label>
-
-        <button type="button" class="button schv-remove-field" title="<?php echo esc_attr__('Remove', 'schemable-validator'); ?>">&times;</button>
+    <div class="schv-field-row">
+      <div class="schv-field-header" data-schv-toggle>
+        <span class="schv-field-label"><?php echo esc_html($displayName); ?></span>
+        <span class="schv-field-badge"><?php echo esc_html($typeBadge); ?></span>
+        <?php if (!empty($field['required'])): ?>
+          <span class="schv-field-badge schv-badge-required"><?php echo esc_html__('Required', 'schemable-validator'); ?></span>
+        <?php endif; ?>
+        <span class="schv-field-toggle dashicons dashicons-arrow-down-alt2"></span>
       </div>
 
-      <div class="schv-string-opts" style="display:<?php echo $field['type'] === 'string' ? '' : 'none'; ?>">
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <label><?php echo esc_html__('Min length', 'schemable-validator'); ?> <input type="number" name="<?php echo esc_attr($prefix); ?>[minLength]" value="<?php echo esc_attr($field['minLength']); ?>" min="0" style="width:80px"></label>
-          <label><?php echo esc_html__('Max length', 'schemable-validator'); ?> <input type="number" name="<?php echo esc_attr($prefix); ?>[maxLength]" value="<?php echo esc_attr($field['maxLength']); ?>" min="0" style="width:80px"></label>
-          <label><?php echo esc_html__('Format', 'schemable-validator'); ?>
-            <select name="<?php echo esc_attr($prefix); ?>[format]">
-              <?php foreach ($stringFormats as $val => $label): ?>
-                <option value="<?php echo esc_attr($val); ?>" <?php selected($field['format'], $val); ?>><?php echo esc_html($label); ?></option>
-              <?php endforeach; ?>
-            </select>
-          </label>
-          <label><?php echo esc_html__('Pattern', 'schemable-validator'); ?> <input type="text" name="<?php echo esc_attr($prefix); ?>[pattern]" value="<?php echo esc_attr($field['pattern']); ?>" placeholder="^[a-z]+$" style="width:200px"></label>
+      <div class="schv-field-body">
+        <table class="schv-settings-table">
+          <tr>
+            <td class="schv-label"><?php echo esc_html__('Field name', 'schemable-validator'); ?></td>
+            <td>
+              <input type="text" name="<?php echo esc_attr($prefix); ?>[name]"
+                value="<?php echo esc_attr($field['name']); ?>"
+                placeholder="e.g. email" class="regular-text schv-name-input" required>
+            </td>
+          </tr>
+          <tr>
+            <td class="schv-label"><?php echo esc_html__('Field type', 'schemable-validator'); ?></td>
+            <td>
+              <select name="<?php echo esc_attr($prefix); ?>[type]" class="schv-type-select">
+                <?php foreach ($fieldTypes as $val => $label): ?>
+                  <option value="<?php echo esc_attr($val); ?>" <?php selected($field['type'], $val); ?>><?php echo esc_html($label); ?></option>
+                <?php endforeach; ?>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td class="schv-label"><?php echo esc_html__('Required', 'schemable-validator'); ?></td>
+            <td>
+              <label class="schv-toggle-label">
+                <input type="checkbox" name="<?php echo esc_attr($prefix); ?>[required]" value="1"
+                  <?php checked(!empty($field['required'])); ?>>
+                <?php echo esc_html__('This field is required', 'schemable-validator'); ?>
+              </label>
+            </td>
+          </tr>
+        </table>
+
+        <!-- String constraints -->
+        <div class="schv-string-opts schv-constraint-group" style="display:<?php echo $field['type'] === 'string' ? '' : 'none'; ?>">
+          <table class="schv-settings-table">
+            <tr>
+              <td class="schv-label"><?php echo esc_html__('Min length', 'schemable-validator'); ?></td>
+              <td><input type="number" name="<?php echo esc_attr($prefix); ?>[minLength]" value="<?php echo esc_attr($field['minLength']); ?>" min="0" style="width:100px"></td>
+            </tr>
+            <tr>
+              <td class="schv-label"><?php echo esc_html__('Max length', 'schemable-validator'); ?></td>
+              <td><input type="number" name="<?php echo esc_attr($prefix); ?>[maxLength]" value="<?php echo esc_attr($field['maxLength']); ?>" min="0" style="width:100px"></td>
+            </tr>
+            <tr>
+              <td class="schv-label"><?php echo esc_html__('Format', 'schemable-validator'); ?></td>
+              <td>
+                <select name="<?php echo esc_attr($prefix); ?>[format]">
+                  <?php foreach ($formats as $val => $label): ?>
+                    <option value="<?php echo esc_attr($val); ?>" <?php selected($field['format'], $val); ?>><?php echo esc_html($label); ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="schv-label"><?php echo esc_html__('Pattern', 'schemable-validator'); ?></td>
+              <td><input type="text" name="<?php echo esc_attr($prefix); ?>[pattern]" value="<?php echo esc_attr($field['pattern']); ?>" placeholder="^[a-z]+$" class="regular-text"></td>
+            </tr>
+          </table>
         </div>
-      </div>
 
-      <div class="schv-numeric-opts" style="display:<?php echo ($field['type'] === 'integer' || $field['type'] === 'number') ? '' : 'none'; ?>">
-        <div style="display:flex;gap:8px">
-          <label><?php echo esc_html__('Minimum', 'schemable-validator'); ?> <input type="number" name="<?php echo esc_attr($prefix); ?>[minimum]" value="<?php echo esc_attr($field['minimum']); ?>" step="any" style="width:100px"></label>
-          <label><?php echo esc_html__('Maximum', 'schemable-validator'); ?> <input type="number" name="<?php echo esc_attr($prefix); ?>[maximum]" value="<?php echo esc_attr($field['maximum']); ?>" step="any" style="width:100px"></label>
+        <!-- Numeric constraints -->
+        <div class="schv-numeric-opts schv-constraint-group" style="display:<?php echo ($field['type'] === 'integer' || $field['type'] === 'number') ? '' : 'none'; ?>">
+          <table class="schv-settings-table">
+            <tr>
+              <td class="schv-label"><?php echo esc_html__('Minimum', 'schemable-validator'); ?></td>
+              <td><input type="number" name="<?php echo esc_attr($prefix); ?>[minimum]" value="<?php echo esc_attr($field['minimum']); ?>" step="any" style="width:120px"></td>
+            </tr>
+            <tr>
+              <td class="schv-label"><?php echo esc_html__('Maximum', 'schemable-validator'); ?></td>
+              <td><input type="number" name="<?php echo esc_attr($prefix); ?>[maximum]" value="<?php echo esc_attr($field['maximum']); ?>" step="any" style="width:120px"></td>
+            </tr>
+          </table>
         </div>
-      </div>
 
-      <div class="schv-enum-opts" style="display:<?php echo $field['type'] === 'enum' ? '' : 'none'; ?>">
-        <label><?php echo esc_html__('Values (one per line)', 'schemable-validator'); ?><br>
-          <textarea name="<?php echo esc_attr($prefix); ?>[enum_values]" rows="3" cols="30"><?php echo esc_textarea($field['enum_values']); ?></textarea>
-        </label>
+        <!-- Boolean description -->
+        <div class="schv-boolean-opts schv-constraint-group" style="display:<?php echo $field['type'] === 'boolean' ? '' : 'none'; ?>">
+          <p class="description" style="margin:0"><?php echo esc_html__('Accepts true or false. No additional constraints.', 'schemable-validator'); ?></p>
+        </div>
+
+        <!-- Enum repeater -->
+        <div class="schv-enum-opts schv-constraint-group" style="display:<?php echo $field['type'] === 'enum' ? '' : 'none'; ?>">
+          <label class="schv-label" style="display:block;margin-bottom:6px"><?php echo esc_html__('Allowed values', 'schemable-validator'); ?></label>
+          <div class="schv-enum-list">
+            <?php
+            $items = is_array($field['enum_items']) ? $field['enum_items'] : [];
+            foreach ($items as $ei => $val): ?>
+              <div class="schv-enum-item">
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[enum_items][]" value="<?php echo esc_attr($val); ?>" placeholder="<?php echo esc_attr__('Value', 'schemable-validator'); ?>" class="regular-text" style="width:240px">
+                <button type="button" class="button schv-enum-remove" title="<?php echo esc_attr__('Remove', 'schemable-validator'); ?>">&times;</button>
+              </div>
+            <?php endforeach; ?>
+          </div>
+          <button type="button" class="button schv-enum-add" data-prefix="<?php echo esc_attr($prefix); ?>">+ <?php echo esc_html__('Add value', 'schemable-validator'); ?></button>
+        </div>
+
+        <div class="schv-field-actions">
+          <button type="button" class="button button-link-delete schv-remove-field"><?php echo esc_html__('Remove field', 'schemable-validator'); ?></button>
+        </div>
       </div>
     </div>
+    <?php
+  }
+
+  private static function renderStyles(): void {
+    ?>
+    <style>
+      .schv-editor { max-width: 800px; }
+      .schv-code-block { background:#f5f5f5; padding:1rem; overflow:auto; max-width:700px; font-size:.85em; }
+
+      .schv-field-row {
+        border: 1px solid #ccd0d4;
+        background: #fff;
+        margin-bottom: 0;
+        border-bottom: 0;
+      }
+      .schv-field-row:last-child { border-bottom: 1px solid #ccd0d4; }
+
+      .schv-field-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        background: #f9f9f9;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        user-select: none;
+        gap: 6px;
+      }
+      .schv-field-header:hover { background: #f0f0f1; }
+
+      .schv-field-label {
+        font-weight: 600;
+        flex: 1;
+        font-size: 13px;
+      }
+      .schv-field-badge {
+        font-size: 11px;
+        background: #e0e0e0;
+        color: #50575e;
+        padding: 2px 8px;
+        border-radius: 3px;
+        white-space: nowrap;
+      }
+      .schv-badge-required {
+        background: #d63638;
+        color: #fff;
+      }
+      .schv-field-toggle {
+        color: #787c82;
+        transition: transform .15s;
+      }
+      .schv-field-row.schv-collapsed .schv-field-body { display: none; }
+      .schv-field-row.schv-collapsed .schv-field-toggle { transform: rotate(-90deg); }
+
+      .schv-field-body { padding: 12px 12px 0; }
+
+      .schv-settings-table { width: 100%; border-collapse: collapse; }
+      .schv-settings-table td { padding: 6px 0; vertical-align: middle; }
+      .schv-settings-table .schv-label {
+        width: 140px;
+        font-weight: 500;
+        font-size: 13px;
+        color: #1d2327;
+      }
+      .schv-toggle-label { font-size: 13px; color: #50575e; }
+
+      .schv-constraint-group {
+        border-top: 1px solid #f0f0f1;
+        padding-top: 10px;
+        margin-top: 6px;
+      }
+
+      .schv-field-actions {
+        border-top: 1px solid #f0f0f1;
+        padding: 8px 0;
+        margin-top: 8px;
+        text-align: right;
+      }
+
+      .schv-enum-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+      .schv-enum-remove { color: #b32d2e !important; min-width: 28px; }
+      .schv-enum-add { margin-top: 6px; }
+    </style>
+    <?php
+  }
+
+  private static function renderScript(): void {
+    ?>
+    <script>
+    (() => {
+      const container   = document.getElementById('schv-fields-container');
+      const addBtn      = document.getElementById('schv-add-field');
+      const fieldTpl    = document.getElementById('schv-field-template');
+      const enumItemTpl = document.getElementById('schv-enum-item-template');
+      let   counter     = container.querySelectorAll('.schv-field-row').length;
+
+      const PANEL_MAP = {
+        string:  '.schv-string-opts',
+        integer: '.schv-numeric-opts',
+        number:  '.schv-numeric-opts',
+        boolean: '.schv-boolean-opts',
+        enum:    '.schv-enum-opts',
+      };
+
+      const toggleConstraints = (row, type) => {
+        for (const sel of Object.values(PANEL_MAP)) {
+          row.querySelector(sel)?.style.setProperty('display', 'none');
+        }
+        const active = PANEL_MAP[type];
+        if (active) row.querySelector(active)?.style.removeProperty('display');
+      };
+
+      const updateBadges = (row) => {
+        const typeSelect = row.querySelector('.schv-type-select');
+        const typeBadge  = row.querySelector('.schv-field-badge');
+        if (typeBadge) typeBadge.textContent = typeSelect.selectedOptions[0]?.text ?? '';
+
+        const reqCheck = row.querySelector('input[name$="[required]"]');
+        const reqBadge = row.querySelector('.schv-badge-required');
+        if (reqCheck.checked && !reqBadge) {
+          const span = document.createElement('span');
+          span.className = 'schv-field-badge schv-badge-required';
+          span.textContent = <?php echo wp_json_encode(__('Required', 'schemable-validator')); ?>;
+          typeBadge.after(span);
+        } else if (!reqCheck.checked && reqBadge) {
+          reqBadge.remove();
+        }
+      };
+
+      const bindEnumItem = (item) => {
+        item.querySelector('.schv-enum-remove').addEventListener('click', () => item.remove());
+      };
+
+      const bindRow = (row) => {
+        row.querySelector('[data-schv-toggle]').addEventListener('click', () => {
+          row.classList.toggle('schv-collapsed');
+        });
+
+        row.querySelector('.schv-remove-field').addEventListener('click', () => row.remove());
+
+        const typeSelect = row.querySelector('.schv-type-select');
+        typeSelect.addEventListener('change', () => {
+          toggleConstraints(row, typeSelect.value);
+          updateBadges(row);
+        });
+        toggleConstraints(row, typeSelect.value);
+
+        const nameInput = row.querySelector('.schv-name-input');
+        nameInput.addEventListener('input', () => {
+          row.querySelector('.schv-field-label').textContent =
+            nameInput.value || <?php echo wp_json_encode(__('(new field)', 'schemable-validator')); ?>;
+        });
+
+        row.querySelector('input[name$="[required]"]').addEventListener('change', () => updateBadges(row));
+
+        const enumAddBtn = row.querySelector('.schv-enum-add');
+        enumAddBtn?.addEventListener('click', () => {
+          const prefix = enumAddBtn.dataset.prefix;
+          const list   = row.querySelector('.schv-enum-list');
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = enumItemTpl.innerHTML.replaceAll('__ENUM_NAME__', `${prefix}[enum_items][]`);
+          const item = wrapper.firstElementChild;
+          list.appendChild(item);
+          bindEnumItem(item);
+          item.querySelector('input').focus();
+        });
+
+        for (const item of row.querySelectorAll('.schv-enum-item')) {
+          bindEnumItem(item);
+        }
+      };
+
+      addBtn.addEventListener('click', () => {
+        document.getElementById('schv-no-fields')?.remove();
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = fieldTpl.innerHTML.replaceAll('__INDEX__', String(counter));
+        const row = wrapper.firstElementChild;
+        container.appendChild(row);
+        bindRow(row);
+        counter++;
+      });
+
+      for (const row of container.querySelectorAll('.schv-field-row')) {
+        bindRow(row);
+        row.classList.add('schv-collapsed');
+      }
+    })();
+    </script>
     <?php
   }
 }

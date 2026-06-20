@@ -14,7 +14,9 @@ test.describe('Schema Editor (admin)', () => {
     await page.goto('/wp-admin/admin.php?page=schv-schema-editor');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('heading', { name: 'Schema Editor' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'New schema' })).toBeVisible();
+    // "New schema" or "Edit: ..." depending on whether a prior test left state
+    const h2 = page.locator('h2').nth(0);
+    await expect(h2).toBeVisible();
   });
 
   test('can create a schema with fields', async ({ page }) => {
@@ -27,7 +29,7 @@ test.describe('Schema Editor (admin)', () => {
     // Add a string field: name (required, minLength=1, maxLength=100)
     await page.click('#schv-add-field');
     const firstRow = page.locator('.schv-field-row').first();
-    await firstRow.locator('input[placeholder="Field name"]').fill('name');
+    await firstRow.locator('.schv-name-input').fill('name');
     await firstRow.locator('.schv-type-select').selectOption('string');
     await firstRow.locator('input[name$="[required]"]').check();
     await firstRow.locator('input[name$="[minLength]"]').fill('1');
@@ -36,7 +38,7 @@ test.describe('Schema Editor (admin)', () => {
     // Add an email field (required, format=email)
     await page.click('#schv-add-field');
     const secondRow = page.locator('.schv-field-row').nth(1);
-    await secondRow.locator('input[placeholder="Field name"]').fill('email');
+    await secondRow.locator('.schv-name-input').fill('email');
     await secondRow.locator('.schv-type-select').selectOption('string');
     await secondRow.locator('input[name$="[required]"]').check();
     await secondRow.locator('select[name$="[format]"]').selectOption('email');
@@ -44,7 +46,7 @@ test.describe('Schema Editor (admin)', () => {
     // Add an optional integer field: age (min=0, max=150)
     await page.click('#schv-add-field');
     const thirdRow = page.locator('.schv-field-row').nth(2);
-    await thirdRow.locator('input[placeholder="Field name"]').fill('age');
+    await thirdRow.locator('.schv-name-input').fill('age');
     await thirdRow.locator('.schv-type-select').selectOption('integer');
     await thirdRow.locator('input[name$="[minimum]"]').fill('0');
     await thirdRow.locator('input[name$="[maximum]"]').fill('150');
@@ -95,7 +97,7 @@ test.describe('Schema Editor (admin)', () => {
 
     // Verify fields are populated
     const firstRow = page.locator('.schv-field-row').first();
-    await expect(firstRow.locator('input[placeholder="Field name"]')).toHaveValue('name');
+    await expect(firstRow.locator('.schv-name-input')).toHaveValue('name');
 
     // The slug field should be readonly
     await expect(page.locator('#schv_slug')).toHaveAttribute('readonly', '');
@@ -127,7 +129,7 @@ test.describe('Schema Editor (admin)', () => {
 
     await page.click('#schv-add-field');
     const row = page.locator('.schv-field-row').first();
-    await row.locator('input[placeholder="Field name"]').fill('email');
+    await row.locator('.schv-name-input').fill('email');
     await row.locator('.schv-type-select').selectOption('string');
     await row.locator('input[name$="[required]"]').check();
     await row.locator('select[name$="[format]"]').selectOption('email');
@@ -163,9 +165,14 @@ test.describe('Schema Editor (admin)', () => {
 
     await page.click('#schv-add-field');
     const row = page.locator('.schv-field-row').first();
-    await row.locator('input[placeholder="Field name"]').fill('color');
+    await row.locator('.schv-name-input').fill('color');
     await row.locator('.schv-type-select').selectOption('enum');
-    await row.locator('textarea[name$="[enum_values]"]').fill('red\ngreen\nblue');
+    // Add enum values one by one via the repeater
+    for (const val of ['red', 'green', 'blue']) {
+      await row.locator('.schv-enum-add').click();
+      const items = row.locator('.schv-enum-item');
+      await items.last().locator('input').fill(val);
+    }
     await row.locator('input[name$="[required]"]').check();
 
     await page.click('input[type="submit"][value="Save schema"]');
