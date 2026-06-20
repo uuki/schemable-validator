@@ -44,9 +44,20 @@ final class Plugin
 
   public function createMenu(): void
   {
-    add_options_page(
-      'Schemable Validator Settings',
+    add_menu_page(
       'Schemable Validator',
+      'Schemable Validator',
+      'manage_options',
+      'schv-settings',
+      [$this, 'renderPage'],
+      'dashicons-shield',
+      81
+    );
+
+    add_submenu_page(
+      'schv-settings',
+      'Settings',
+      'Settings',
       'manage_options',
       'schv-settings',
       [$this, 'renderPage']
