@@ -146,7 +146,7 @@ const schema = toZodSchema(jsonSchema, {
 ```
 
 **Limitations**
-- `x-unmapped-fields` (SV::file, RespectRules::rule()) are skipped. Add them with `.extend()`.
+- `x-unmapped-fields` (SV::file(), SV::custom(), RespectRules::rule()) are skipped. Add them with `.extend()`.
 - `format: 'hostname'` has no Zod built-in — use `onUnknown`.
 - `x-when` / `if/then` conditionals are not mapped — add via `.superRefine()`.
 

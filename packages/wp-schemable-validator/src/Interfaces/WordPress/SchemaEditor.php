@@ -78,14 +78,7 @@ final class SchemaEditor {
     $jsonSchema = self::buildJsonSchemaFromPost();
     update_option(self::OPTION_PREFIX . $slug, $jsonSchema);
 
-    $dir = get_stylesheet_directory() . '/schv-schemas';
-    if (!is_dir($dir)) {
-        wp_mkdir_p($dir);
-    }
-    file_put_contents(
-        $dir . '/' . $slug . '.json',
-        json_encode($jsonSchema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
-    );
+    $writeOk = self::writeThemeFile($slug, $jsonSchema);
 
     $slugs = self::getSlugs();
     if (!in_array($slug, $slugs, true)) {
@@ -93,7 +86,11 @@ final class SchemaEditor {
       update_option(self::SLUGS_OPTION, $slugs);
     }
 
-    wp_redirect(admin_url('admin.php?page=schv-schema-editor&slug=' . urlencode($slug) . '&saved=1'));
+    $params = 'slug=' . urlencode($slug) . '&saved=1';
+    if (!$writeOk) {
+      $params .= '&theme_write_failed=1';
+    }
+    wp_redirect(admin_url('admin.php?page=schv-schema-editor&' . $params));
     exit;
   }
 
@@ -135,7 +132,7 @@ final class SchemaEditor {
     }
     check_admin_referer('schv_export_' . $slug);
 
-    $schema = get_option(self::OPTION_PREFIX . $slug, []);
+    $schema = (new StoredSchemaProvider($slug))->toJsonSchema();
     $json = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     header('Content-Type: application/json; charset=utf-8');
@@ -174,18 +171,20 @@ final class SchemaEditor {
         update_option(self::SLUGS_OPTION, $slugs);
     }
 
-    // Also write to theme directory
-    $dir = get_stylesheet_directory() . '/schv-schemas';
-    if (!is_dir($dir)) {
-        wp_mkdir_p($dir);
-    }
-    file_put_contents(
-        $dir . '/' . $slug . '.json',
-        json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
-    );
+    self::writeThemeFile($slug, $schema);
 
     wp_redirect(admin_url('admin.php?page=schv-schema-editor&slug=' . urlencode($slug) . '&imported=1'));
     exit;
+  }
+
+  private static function writeThemeFile(string $slug, array $jsonSchema): bool {
+    $dir = get_stylesheet_directory() . '/schv-schemas';
+    if (!is_dir($dir)) {
+      wp_mkdir_p($dir);
+    }
+    $path = $dir . '/' . $slug . '.json';
+    $json = json_encode($jsonSchema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    return file_put_contents($path, $json) !== false;
   }
 
   private static function buildJsonSchemaFromPost(): array {
@@ -305,6 +304,9 @@ final class SchemaEditor {
 
       <?php if ($saved): ?>
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Schema saved.', 'schemable-validator'); ?></p></div>
+      <?php endif; ?>
+      <?php if (!empty($_GET['theme_write_failed'])): ?>
+        <div class="notice notice-warning is-dismissible"><p><?php echo esc_html__('Schema saved to database, but writing to the theme directory failed. Check file permissions.', 'schemable-validator'); ?></p></div>
       <?php endif; ?>
       <?php if ($deleted): ?>
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Schema deleted.', 'schemable-validator'); ?></p></div>

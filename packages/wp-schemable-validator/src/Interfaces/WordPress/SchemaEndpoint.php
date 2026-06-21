@@ -24,6 +24,9 @@ final class SchemaEndpoint {
             'ETag'          => $etag,
           ];
           $headers = apply_filters('schv_schema_cache_headers', $defaultHeaders, $route);
+          if (!is_array($headers)) {
+            $headers = $defaultHeaders;
+          }
 
           $response = new \WP_REST_Response($schema);
           foreach ($headers as $key => $value) {

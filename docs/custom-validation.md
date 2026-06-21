@@ -25,7 +25,7 @@ These are not "string format checks" but rather **validations based on domain-sp
 
 In this plugin, such constraints are wrapped with `SV::custom()` or `RespectRules::rule()` and recorded in the `x-unmapped-fields` extension of the JSON Schema output.
 
-```
+```text
 SV::custom($predicate)                       [PRIMARY - dependency-free]
   │
   ├─ Server side: validated with the callable predicate

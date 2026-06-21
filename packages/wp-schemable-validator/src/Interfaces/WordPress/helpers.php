@@ -58,8 +58,12 @@ if (!function_exists('schv_register_code_fields')) {
    * @param string[] $fieldNames  Field names defined in the code-side SchemaBuilder.
    */
   function schv_register_code_fields(string $schemaSlug, array $fieldNames): void {
-    $all = get_option('schv_code_fields', []);
-    $all[$schemaSlug] = $fieldNames;
+    $slug = sanitize_key($schemaSlug);
+    $all  = get_option('schv_code_fields', []);
+    if (!is_array($all)) {
+      $all = [];
+    }
+    $all[$slug] = array_values(array_filter($fieldNames, 'is_string'));
     update_option('schv_code_fields', $all, false);
   }
 }

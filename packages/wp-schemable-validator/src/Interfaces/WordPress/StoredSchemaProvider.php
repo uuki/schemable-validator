@@ -31,13 +31,13 @@ final class StoredSchemaProvider implements SchemaProviderInterface {
     if (is_readable($path)) {
       $json = file_get_contents($path);
       $decoded = json_decode($json, true);
-      if (is_array($decoded) && !empty($decoded['properties'])) {
+      if (is_array($decoded) && array_key_exists('properties', $decoded)) {
         return $decoded;
       }
     }
 
     $stored = get_option($this->optionKey(), null);
-    if (!is_array($stored) || empty($stored['properties'])) {
+    if (!is_array($stored) || !array_key_exists('properties', $stored)) {
       return ['type' => 'object', 'properties' => (object) [], 'required' => []];
     }
     return $stored;

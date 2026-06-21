@@ -25,7 +25,7 @@ JSON Schema (draft 2020-12) はフィールドの**構造と形式**を記述す
 
 このプラグインでは、こうした制約を `SV::custom()` または `RespectRules::rule()` でラップし、JSON Schema 出力の `x-unmapped-fields` に記録する設計としています。
 
-```
+```text
 SV::custom($predicate)                       [主要 - 依存なし]
   │
   ├─ サーバー側: callable の述語で検証

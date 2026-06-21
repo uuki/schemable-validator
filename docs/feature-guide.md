@@ -431,7 +431,7 @@ In a load-balanced environment without sticky sessions, a user's request may be 
 
 For example, a two-server configuration without session affinity:
 
-```
+```text
 User → Server A  (Step 1: save() writes to Server A's session file)
 User → Server B  (Step 2: get() reads Server B's session file → null)
 ```

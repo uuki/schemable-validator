@@ -190,6 +190,21 @@ final class SchemaBuilder implements SchemaProviderInterface {
     if ($this->mergedJsonSchema !== null) {
       $extProps    = (array) ($this->mergedJsonSchema['properties'] ?? []);
       $extRequired = $this->mergedJsonSchema['required'] ?? [];
+
+      // Strip external properties whose builder-side counterpart is serverOnly.
+      if (!$includeInternal) {
+        $serverOnlyNames = [];
+        foreach ($this->fields as $n => $f) {
+          if ($f->isServerOnly()) {
+            $serverOnlyNames[] = $n;
+          }
+        }
+        foreach ($serverOnlyNames as $n) {
+          unset($extProps[$n]);
+          $extRequired = array_values(array_filter($extRequired, fn($r) => $r !== $n));
+        }
+      }
+
       // External properties go first; builder properties override on conflict.
       $properties = array_merge($extProps, $properties);
       $required   = array_values(array_unique(array_merge($extRequired, $required)));
