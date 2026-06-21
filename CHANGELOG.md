@@ -1,3 +1,51 @@
+# [0.21.0](https://github.com/uuki/schemable-validator/compare/v0.20.0...v0.21.0) (2026-06-21)
+
+
+* feat(core)!: remove deprecated shims, add serverOnly and schema management ([0ae8978](https://github.com/uuki/schemable-validator/commit/0ae8978f5537a9c3e177bdc0e9e1ccf037132288))
+
+
+### Bug Fixes
+
+* address CodeRabbit review findings ([91a38eb](https://github.com/uuki/schemable-validator/commit/91a38ebf3f8e39109fd1e0f4459eb39d5377d878))
+* **wp-playground:** redesign example form UI and navigation layout ([42aa30a](https://github.com/uuki/schemable-validator/commit/42aa30ad16dde297db4831e26f61504e628e1d5e))
+
+
+### BREAKING CHANGES
+
+* Remove deprecated backward-compatibility methods:
+- SV::respect(), SV::postalCode(), SV::creditCard(), SV::iban()
+  → use RespectRules::rule(), RespectRules::postalCode(), etc.
+- Validator::createToken(), Validator::checkToken()
+  → use CsrfGuard directly
+
+Core:
+- Add AbstractFieldSchema::serverOnly() to exclude fields from
+  client-facing JSON Schema while validating server-side as normal
+- SchemaBuilder::toJsonSchema() excludes serverOnly fields by default;
+  toValidator() passes includeServerOnly: true internally
+
+WordPress:
+- SchemaEditor saves schemas to theme dir (schv-schemas/*.json)
+  alongside wp_options; StoredSchemaProvider reads theme file first
+- Add schema export (JSON download) and import (file upload) to
+  SchemaEditor admin page
+- Add merge conflict detection: schv_register_code_fields() stores
+  code-defined field names; SchemaEditor warns on overlap
+- SchemaEndpoint cache: max-age=60, stale-while-revalidate=3600
+  with schv_schema_cache_headers filter for production override
+
+Client:
+- validateObject() warns about x-unmapped-fields requiring server
+  validation; pass acknowledgedServerFields to suppress per-field
+- Zod/Valibot adapters respect acknowledgedServerFields in config
+
+Docs:
+- Coercion Contract v1 rules documented with type conversion table
+- serverOnly() and acknowledgedServerFields usage documented
+- All SV::respect() references updated to RespectRules::rule()
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
 ## [0.20.1](https://github.com/uuki/schemable-validator/compare/v0.20.0...v0.20.1) (2026-06-20)
 
 
