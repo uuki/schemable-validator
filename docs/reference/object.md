@@ -41,7 +41,7 @@ $schema->toJsonSchema(array $options = []): array
 |:--|:--|:--|:--|
 | `metaSchema` | `bool` | `false` | When `true`, includes the `$schema` URI in the output |
 
-- `SV::file()` / `SV::respect()` fields are excluded from `properties` and recorded in `x-unmapped-fields`
+- `SV::file()` / `RespectRules::rule()` fields are excluded from `properties` and recorded in `x-unmapped-fields`
 - Fields without `optional()` are included in the `required` array
 
 **Use case:** When you need to work with the schema as a PHP array, or manually process a REST response.
@@ -91,7 +91,7 @@ echo $schema->toJson();
 ## .toValidator() {#tovalidator}
 
 Generates a **`Validator` instance** from the schema. Default backend is the dependency-free NativeAdapter.  
-Can validate all fields including `SV::file()` / `SV::respect()` / `SV::custom()`.
+Can validate all fields including `SV::file()` / `RespectRules::rule()` / `SV::custom()`.
 
 ```php
 $schema->toValidator(

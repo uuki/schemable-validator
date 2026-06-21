@@ -35,7 +35,7 @@ const result = validateObject(
 
 **Behaviour notes**
 - Empty optional fields are always valid.
-- `x-unmapped-fields` (SV::file, SV::respect) are passed through as `is_valid: true`.
+- `x-unmapped-fields` (SV::file, RespectRules::rule()) are passed through as `is_valid: true`.
 - `x-when` conditional requirements are evaluated automatically.
 - Falls back to `if/then` / `allOf` for schemas without `x-when`.
 

@@ -60,7 +60,7 @@ $schema = SV::object([
 ```
 
 ::: tip Raw Respect schemas
-If you install the optional `respect/validation` package, you can also pass raw Respect rules directly — e.g. `'name' => v::stringType()->length(2, 50)`. Wrap them with `SV::respect(v::...)` when using SchemaBuilder.
+If you install the optional `respect/validation` package, you can also pass raw Respect rules directly — e.g. `'name' => v::stringType()->length(2, 50)`. Wrap them with `RespectRules::rule(v::...)` when using SchemaBuilder.
 :::
 
 Passing and failing examples:
@@ -151,7 +151,7 @@ The `FileExtension` rule class still works but is considered legacy. Prefer `SV:
 ::: tip
 For advanced usage such as defining custom rules for address validation, see [Custom Validation](/custom-validation). You can also use `SV::custom(callable)` as a dependency-free escape hatch for one-off rules.
 
-Note: `creditCard` and `postalCode` rules are **@deprecated** and have been moved to `Adapters\Respect\RespectRules`.
+For `creditCard` and `postalCode` rules, use `RespectRules::creditCard()` and `RespectRules::postalCode()` from `Adapters\Respect\RespectRules`.
 :::
 
 ### Method Chaining

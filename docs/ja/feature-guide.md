@@ -59,7 +59,7 @@ $schema = SV::object([
 ```
 
 ::: tip Respect スキーマの利用
-オプションの `respect/validation` パッケージをインストールすると、Respect ルールも直接使えます（例: `'name' => v::stringType()->length(2, 50)`）。SchemaBuilder 内では `SV::respect(v::...)` でラップしてください。
+オプションの `respect/validation` パッケージをインストールすると、Respect ルールも直接使えます（例: `'name' => v::stringType()->length(2, 50)`）。SchemaBuilder 内では `RespectRules::rule(v::...)` でラップしてください。
 :::
 
 通る例・弾く例:
@@ -150,7 +150,7 @@ $schema = SV::object([
 ::: tip
 住所検証など、独自ルールの定義に類する高度な利用については [Custom Validation](/ja/custom-validation) を参照してください。依存なしの一回限りのルールには `SV::custom(callable)` をエスケープハッチとして使えます。
 
-注意: `creditCard` および `postalCode` ルールは **@deprecated** であり、`Adapters\Respect\RespectRules` に移動されました。
+`creditCard` および `postalCode` ルールは `Adapters\Respect\RespectRules` の `RespectRules::creditCard()` および `RespectRules::postalCode()` を使用してください。
 :::
 
 ### メソッドチェーン

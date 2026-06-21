@@ -146,7 +146,7 @@ const schema = toZodSchema(jsonSchema, {
 ```
 
 **制限事項**
-- `x-unmapped-fields`（SV::file、SV::respect）はスキップされます。`.extend()` で追加してください。
+- `x-unmapped-fields`（SV::file、RespectRules::rule()）はスキップされます。`.extend()` で追加してください。
 - `format: 'hostname'` に Zod のビルトインはありません。`onUnknown` で対応します。
 - `x-when` / `if/then` の条件付き必須はマッピングされません。`.superRefine()` で追加します。
 

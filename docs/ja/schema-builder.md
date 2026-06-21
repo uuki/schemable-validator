@@ -12,7 +12,7 @@
 | サーバーバリデーション | `toValidator()->validate($data)->getResult()` |
 | 条件付き必須 | `->when('type', SV::equal('company'), ['company_name'])` |
 | WordPress REST | `schv_register_schema('/contact', $schema)` — スキーマを GET エンドポイントとして公開 |
-| 変換不可フィールド | `SV::file()` / `SV::respect()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
+| 変換不可フィールド | `SV::file()` / `RespectRules::rule()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
 
 ## 基本的な使い方
 

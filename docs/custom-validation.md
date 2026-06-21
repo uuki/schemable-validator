@@ -6,7 +6,7 @@
 
 This plugin is designed to centrally define **structural constraints** — such as field types, formats, and character limits — on the PHP side, and share them with the client via JSON Schema.
 
-That said, real-world forms sometimes require "principled validation" that is locale- or environment-specific (e.g., verifying that a phone number belongs to a valid numbering plan). Because such constraints are difficult to express in JSON Schema, the plugin provides **`SV::custom(callable)`** as the primary dependency-free escape hatch for injecting arbitrary validation logic. For projects that already use the Respect/Validation library, `SV::respect()` (@deprecated) is also available as an optional alternative.
+That said, real-world forms sometimes require "principled validation" that is locale- or environment-specific (e.g., verifying that a phone number belongs to a valid numbering plan). Because such constraints are difficult to express in JSON Schema, the plugin provides **`SV::custom(callable)`** as the primary dependency-free escape hatch for injecting arbitrary validation logic. For projects that already use the Respect/Validation library, `RespectRules::rule()` is also available as an optional alternative.
 
 ---
 
@@ -26,7 +26,7 @@ These are not "string format checks" but rather **validations based on domain-sp
 In this plugin, such constraints are wrapped with `SV::custom()` or `RespectRules::rule()` and recorded in the `x-unmapped-fields` extension of the JSON Schema output.
 
 ```
-SV::custom($predicate)                        [PRIMARY - dependency-free]
+SV::custom($predicate)                       [PRIMARY - dependency-free]
   │
   ├─ Server side: validated with the callable predicate
   │
@@ -34,7 +34,7 @@ SV::custom($predicate)                        [PRIMARY - dependency-free]
        │
        └─ Client side: add custom validation via @uuki/schemable-validator-client / Zod
 
-RespectRules::rule($rule)                     [requires Respect/Validation]
+RespectRules::rule($rule)                    [requires Respect/Validation]
   │
   ├─ Server side: validated with Respect/Validation
   │
@@ -62,14 +62,14 @@ SV::custom(
 )
 ```
 
-**Alternative: `SV::respect(rule)`** (@deprecated -- requires `respect/validation`)
+**Alternative: `RespectRules::rule(rule)`** (requires `respect/validation`)
 
-`SV::respect()` accepts a Respect/Validation `Validator` instance. Using `v::callback()`, you can inject any logic or external library.
+`RespectRules::rule()` accepts a Respect/Validation `Validator` instance. Using `v::callback()`, you can inject any logic or external library.
 
 ```php
 use Respect\Validation\Validator as v;
 
-SV::respect(
+RespectRules::rule(
   v::callback(function (mixed $value): bool {
     // Write any validation logic here
     return someExternalLibrary::validate($value);
@@ -114,8 +114,8 @@ const schema = buildZodSchema(jsonSchema).extend({
 |:--|:--|:--|:--|
 | Phone number (E.164 / per-country) | `giggsey/libphonenumber-for-php` | `libphonenumber-js` | UNMAPPABLE |
 | IBAN / bank account number | `globalcitizen/php-iban` | `ibantools` | UNMAPPABLE |
-| Credit card (Luhn) | @deprecated -- moved to `RespectRules`. Use `SV::custom()` with a Luhn library instead | Custom Luhn implementation | UNMAPPABLE |
-| Postal code (per-country) | @deprecated -- moved to `RespectRules`. Use `SV::custom()` with a postal code library instead | `postal-codes-js` | Approximable with `pattern` |
+| Credit card (Luhn) | `RespectRules::creditCard()` | Custom Luhn implementation | UNMAPPABLE |
+| Postal code (per-country) | `RespectRules::postalCode()` | `postal-codes-js` | Approximable with `pattern` |
 | Password strength | Custom callback | `zxcvbn` | UNMAPPABLE |
 
 ---
@@ -174,7 +174,7 @@ $schema = SV::object([
 ]);
 ```
 
-#### Alternative: Using SV::respect() (@deprecated)
+#### Alternative: Using RespectRules::rule()
 
 ```php
 use Respect\Validation\Validator as v;
@@ -202,7 +202,7 @@ function makePhoneRule(string $region = null): \Respect\Validation\Validator {
 $schema = SV::object([
   'name'  => SV::string()->min(1)->max(100),
   'email' => SV::string()->email(),
-  'tel'   => SV::respect(makePhoneRule('JP'))->optional(),
+  'tel'   => RespectRules::rule(makePhoneRule('JP'))->optional(),
 ]);
 ```
 

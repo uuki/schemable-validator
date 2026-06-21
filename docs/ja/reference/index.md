@@ -17,10 +17,10 @@
 | [`SV::enum(values)`](./scalar) | `"string"` + `enum` | 選択肢から1つを選ぶ |
 | [`SV::array(items)`](./array) | `"array"` | 配列。各要素のスキーマを指定できる |
 | [`SV::file(accept)`](./extended) | -（JSON Schema 非対応） | ファイルアップロード |
-| [`SV::respect(rule)`](./extended) | -（JSON Schema 非対応） | Respect/Validation ルールの直接指定 |
-| [`SV::postalCode(country)`](./extended#postalcode) | -（JSON Schema 非対応） | 国別郵便番号 |
-| [`SV::creditCard()`](./extended#creditcard) | -（JSON Schema 非対応） | クレジットカード番号（Luhn） |
-| [`SV::iban()`](./extended#iban) | -（JSON Schema 非対応） | IBAN |
+| [`RespectRules::rule()`](./extended) | -（JSON Schema 非対応） | Respect/Validation ルールの直接指定 |
+| [`RespectRules::postalCode()`](./extended#postalcode) | -（JSON Schema 非対応） | 国別郵便番号 |
+| [`RespectRules::creditCard()`](./extended#creditcard) | -（JSON Schema 非対応） | クレジットカード番号（Luhn） |
+| [`RespectRules::iban()`](./extended#iban) | -（JSON Schema 非対応） | IBAN |
 
 ## 文字列制約
 

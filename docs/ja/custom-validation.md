@@ -6,7 +6,7 @@
 
 このプラグインは、フィールドの型・形式・文字数といった**構造的な制約**を PHP 側で一元定義し、JSON Schema を通じてクライアントと共有することを目的としています。
 
-一方で、実際のフォームにはロケール・環境に固有の「原理的な検証」（電話番号の番号体系検証など）が必要になる場面もあります。こうした制約は JSON Schema では表現が難しいため、**`SV::custom(callable)`** を依存なしの主要エスケープハッチとして用意しています。Respect/Validation ライブラリを既に使用しているプロジェクト向けに `SV::respect()`（@deprecated）もオプションとして利用可能です。
+一方で、実際のフォームにはロケール・環境に固有の「原理的な検証」（電話番号の番号体系検証など）が必要になる場面もあります。こうした制約は JSON Schema では表現が難しいため、**`SV::custom(callable)`** を依存なしの主要エスケープハッチとして用意しています。Respect/Validation ライブラリを既に使用しているプロジェクト向けに `RespectRules::rule()` もオプションとして利用可能です。
 
 ---
 
@@ -23,10 +23,10 @@ JSON Schema (draft 2020-12) はフィールドの**構造と形式**を記述す
 
 これらは「文字列の形式チェック」ではなく、**ドメイン固有のルールや外部データベースに基づいた検証**であり、正規表現や JSON Schema のキーワードで近似することはできても、完全な表現は原理的に不可能です。
 
-このプラグインでは、こうした制約を `SV::custom()` または `SV::respect()` でラップし、JSON Schema 出力の `x-unmapped-fields` に記録する設計としています。
+このプラグインでは、こうした制約を `SV::custom()` または `RespectRules::rule()` でラップし、JSON Schema 出力の `x-unmapped-fields` に記録する設計としています。
 
 ```
-SV::custom($predicate)                        [主要 - 依存なし]
+SV::custom($predicate)                       [主要 - 依存なし]
   │
   ├─ サーバー側: callable の述語で検証
   │
@@ -34,7 +34,7 @@ SV::custom($predicate)                        [主要 - 依存なし]
        │
        └─ クライアント側: @uuki/schemable-validator-client / Zod で独自に追加検証
 
-SV::respect($rule)                            [@deprecated - Respect/Validation が必要]
+RespectRules::rule($rule)                    [Respect/Validation が必要]
   │
   ├─ サーバー側: Respect/Validation でそのまま検証
   │
@@ -62,14 +62,14 @@ SV::custom(
 )
 ```
 
-**代替: `SV::respect(rule)`**（@deprecated -- `respect/validation` が必要）
+**代替: `RespectRules::rule(rule)`**（`respect/validation` が必要）
 
-`SV::respect()` は Respect/Validation の `Validator` インスタンスを受け取る。`v::callback()` を使えば任意のロジック・外部ライブラリを注入できる。
+`RespectRules::rule()` は Respect/Validation の `Validator` インスタンスを受け取る。`v::callback()` を使えば任意のロジック・外部ライブラリを注入できる。
 
 ```php
 use Respect\Validation\Validator as v;
 
-SV::respect(
+RespectRules::rule(
   v::callback(function (mixed $value): bool {
     // ここに任意の検証ロジックを書く
     return someExternalLibrary::validate($value);
@@ -114,8 +114,8 @@ const schema = buildZodSchema(jsonSchema).extend({
 |:--|:--|:--|:--|
 | 電話番号 (E.164 / 国別) | `giggsey/libphonenumber-for-php` | `libphonenumber-js` | UNMAPPABLE |
 | IBAN / 口座番号 | `globalcitizen/php-iban` | `ibantools` | UNMAPPABLE |
-| クレジットカード (Luhn) | @deprecated -- `RespectRules` に移動。代わりに `SV::custom()` + Luhn ライブラリを使用 | 独自 Luhn 実装 | UNMAPPABLE |
-| 郵便番号 (国別) | @deprecated -- `RespectRules` に移動。代わりに `SV::custom()` + 郵便番号ライブラリを使用 | `postal-codes-js` | `pattern` で近似可 |
+| クレジットカード (Luhn) | `RespectRules::creditCard()` | 独自 Luhn 実装 | UNMAPPABLE |
+| 郵便番号 (国別) | `RespectRules::postalCode()` | `postal-codes-js` | `pattern` で近似可 |
 | パスワード強度 | カスタム callback | `zxcvbn` | UNMAPPABLE |
 
 ---
@@ -174,7 +174,7 @@ $schema = SV::object([
 ]);
 ```
 
-#### 代替: SV::respect() を使う (@deprecated)
+#### 代替: RespectRules::rule() を使う
 
 ```php
 use Respect\Validation\Validator as v;
@@ -202,7 +202,7 @@ function makePhoneRule(string $region = null): \Respect\Validation\Validator {
 $schema = SV::object([
   'name'  => SV::string()->min(1)->max(100),
   'email' => SV::string()->email(),
-  'tel'   => SV::respect(makePhoneRule('JP'))->optional(),
+  'tel'   => RespectRules::rule(makePhoneRule('JP'))->optional(),
 ]);
 ```
 

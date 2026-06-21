@@ -12,7 +12,7 @@
 | Server validation | `toValidator()->validate($data)->getResult()` |
 | Conditional required | `->when('type', SV::equal('company'), ['company_name'])` |
 | WordPress REST | `schv_register_schema('/contact', $schema)` — exposes schema as a GET endpoint |
-| Unmapped fields | `SV::file()` / `SV::respect()` are tracked in `x-unmapped-fields`, validated server-side only |
+| Unmapped fields | `SV::file()` / `RespectRules::rule()` are tracked in `x-unmapped-fields`, validated server-side only |
 
 ## Basic usage
 

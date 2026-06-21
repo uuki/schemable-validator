@@ -17,10 +17,10 @@ Each expression maps to a JSON Schema draft 2020-12 keyword and is applied to bo
 | [`SV::enum(values)`](./scalar) | `"string"` + `enum` | Select one from a set of choices |
 | [`SV::array(items)`](./array) | `"array"` | Array. Accepts a schema for each element |
 | [`SV::file(accept)`](./extended) | - (not JSON Schema) | File upload |
-| [`SV::respect(rule)`](./extended) | - (not JSON Schema) | Direct Respect/Validation rule |
-| [`SV::postalCode(country)`](./extended#postalcode) | - (not JSON Schema) | Country-specific postal code |
-| [`SV::creditCard()`](./extended#creditcard) | - (not JSON Schema) | Credit card number (Luhn) |
-| [`SV::iban()`](./extended#iban) | - (not JSON Schema) | IBAN |
+| [`RespectRules::rule()`](./extended) | - (not JSON Schema) | Direct Respect/Validation rule |
+| [`RespectRules::postalCode()`](./extended#postalcode) | - (not JSON Schema) | Country-specific postal code |
+| [`RespectRules::creditCard()`](./extended#creditcard) | - (not JSON Schema) | Credit card number (Luhn) |
+| [`RespectRules::iban()`](./extended#iban) | - (not JSON Schema) | IBAN |
 
 ## String Constraints
 

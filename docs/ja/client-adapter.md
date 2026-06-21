@@ -279,7 +279,7 @@ import { sv } from '@uuki/schemable-validator-client/zod'
 import type { ZodRefiner } from '@uuki/schemable-validator-client/zod'
 import { z } from 'zod'
 
-// PHP: 'confirm' => SV::respect(v::equals($data['password']))
+// PHP: 'confirm' => RespectRules::rule(v::equals($data['password']))
 const checkConfirm: ZodRefiner = (data, ctx) => {
   if (data.confirm !== data.password) {
     ctx.addIssue({

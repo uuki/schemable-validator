@@ -28,7 +28,7 @@ type ObjectSchema = {
   type: 'object'
   properties: Record<string, PropertySchema>
   required?: readonly string[]
-  'x-unmapped-fields'?: readonly string[]   // SV::file / SV::respect フィールド
+  'x-unmapped-fields'?: readonly string[]   // SV::file / RespectRules::rule() フィールド
   'x-when'?: readonly WhenCondition[]       // SchemaBuilder::when() の条件
   if?: ConditionalSchema['if']
   then?: ConditionalSchema['then']
