@@ -424,6 +424,28 @@ schv_form()->clear();
 
 :::
 
+::: warning セッションアフィニティが必要です
+`FormController` は PHP のネイティブセッション（`$_SESSION`）にデータを保存します。
+ロードバランサー下で sticky session が保証されない環境では、ステップ間でリクエストが別のサーバーに振られ、確認画面で `get()` が `null` を返す場合があります。
+
+たとえば、セッションアフィニティのない 2 台構成では次のような状態になります。
+
+```
+ユーザー → サーバー A（Step 1: save() が A のセッションファイルに書き込む）
+ユーザー → サーバー B（Step 2: get() が B のセッションファイルを読む → null）
+```
+
+回避するには、共有セッションバックエンドを設定してください。
+
+```php
+// php.ini または実行時設定
+ini_set('session.save_handler', 'redis');
+ini_set('session.save_path', 'tcp://redis-host:6379');
+```
+
+あるいは、`FormController` を使わず、暗号化したフォームデータを hidden field で引き回すトークン方式に置き換える方法もあります。この方式ではサーバー側のセッション状態に依存しません。
+:::
+
 ---
 
 ## Template

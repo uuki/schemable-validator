@@ -55,6 +55,15 @@ Modifiers:
 | `.nullable()` | Converts `"type"` to an array such as `["string", "null"]` |
 | `.serverOnly()` | Excluded from client-facing JSON Schema output entirely. Validated server-side as normal |
 
+::: warning Pattern validation limits
+`.pattern()` and Schema Editor pattern fields are evaluated with `preg_match()` (PHP) and `RegExp` (JS).
+To guard against ReDoS, inputs longer than **500 characters** skip pattern validation and are treated as valid.
+If your field accepts long text (e.g. a textarea), rely on `.min()` / `.max()` for length constraints rather than a pattern.
+
+Schema Editor allows administrators to enter arbitrary regular expressions.
+PHP's `pcre.backtrack_limit` (default 1,000,000) prevents infinite backtracking; when the limit is hit, pattern validation is skipped for that field.
+:::
+
 ---
 
 ## Example 1: Contact Form

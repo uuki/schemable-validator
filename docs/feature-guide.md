@@ -425,6 +425,28 @@ schv_form()->clear();
 
 :::
 
+::: warning Session affinity required
+`FormController` stores data in PHP's native session (`$_SESSION`).
+In a load-balanced environment without sticky sessions, a user's request may be routed to a different server between steps, causing `get()` to return `null` on the confirmation page.
+
+For example, a two-server configuration without session affinity:
+
+```
+User → Server A  (Step 1: save() writes to Server A's session file)
+User → Server B  (Step 2: get() reads Server B's session file → null)
+```
+
+To avoid this, configure a shared session backend:
+
+```php
+// php.ini or runtime configuration
+ini_set('session.save_handler', 'redis');
+ini_set('session.save_path', 'tcp://redis-host:6379');
+```
+
+Alternatively, replace `FormController` with a token-based approach that passes encrypted form data through hidden fields and does not depend on server-side session state.
+:::
+
 ---
 
 ## Template
