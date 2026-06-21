@@ -65,7 +65,7 @@ final class RuleCatalog {
       'unique'     => ['status' => self::STATUS_UNMAPPABLE, 'respect' => 'unique'],   // uniqueItems applies to arrays, not scalars
 
       // ═══════════════════════════════════════════════════════
-      // TODO  — useful rule; not yet implemented (use SV::respect() escape hatch)
+      // TODO  — useful rule; not yet implemented (use RespectRules::rule() escape hatch)
       //         Proposed JSON Schema mapping noted in comment.
       // ═══════════════════════════════════════════════════════
       'alnum'      => ['status' => self::STATUS_TODO, 'respect' => 'alnum'],      // { pattern: "^[a-zA-Z0-9]+$" }

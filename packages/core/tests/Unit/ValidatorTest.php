@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use SchemableValidator\SV;
 use SchemableValidator\Adapters\Respect\RespectAdapter;
 use SchemableValidator\Orchestration\Validator;
+use SchemableValidator\Security\CsrfGuard;
 
 class ValidatorTest extends TestCase
 {
@@ -103,15 +104,15 @@ class ValidatorTest extends TestCase
     $this->assertIsArray($validator->getResult());
   }
 
-  // ── CSRF token ───────────────────────────────────────────
+  // ── CsrfGuard ────────────────────────────────────────────
 
   /**
    * @runInSeparateProcess
    */
-  public function test_createToken_returns_64_char_hex_string(): void
+  public function test_csrf_guard_creates_token(): void
   {
-    $validator = new Validator([]);
-    $token = $validator->createToken();
+    $guard = new CsrfGuard();
+    $token = $guard->createToken();
 
     $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $token);
   }
@@ -119,32 +120,32 @@ class ValidatorTest extends TestCase
   /**
    * @runInSeparateProcess
    */
-  public function test_checkToken_returns_true_for_matching_token(): void
+  public function test_csrf_guard_validates_correct_token(): void
   {
-    $validator = new Validator([]);
-    $token = $validator->createToken();
+    $guard = new CsrfGuard();
+    $token = $guard->createToken();
 
-    $this->assertTrue($validator->checkToken($token));
+    $this->assertTrue($guard->checkToken($token));
   }
 
   /**
    * @runInSeparateProcess
    */
-  public function test_checkToken_returns_false_for_wrong_token(): void
+  public function test_csrf_guard_rejects_wrong_token(): void
   {
-    $validator = new Validator([]);
-    $validator->createToken();
+    $guard = new CsrfGuard();
+    $guard->createToken();
 
-    $this->assertFalse($validator->checkToken('wrong_token'));
+    $this->assertFalse($guard->checkToken('wrong_token'));
   }
 
   /**
    * @runInSeparateProcess
    */
-  public function test_token_persisted_in_session(): void
+  public function test_csrf_guard_persists_token_in_session(): void
   {
-    $validator = new Validator([]);
-    $token = $validator->createToken();
+    $guard = new CsrfGuard();
+    $token = $guard->createToken();
 
     $this->assertSame($token, $_SESSION['schv_csrf_tokens']['default']['token']);
     $this->assertGreaterThan(time(), $_SESSION['schv_csrf_tokens']['default']['exp']);
@@ -153,43 +154,43 @@ class ValidatorTest extends TestCase
   /**
    * @runInSeparateProcess
    */
-  public function test_token_scoped_per_form(): void
+  public function test_csrf_guard_scopes_tokens_per_form(): void
   {
-    $v = new Validator([]);
-    $t1 = $v->createToken('form_a');
-    $t2 = $v->createToken('form_b');
+    $guard = new CsrfGuard();
+    $t1 = $guard->createToken('form_a');
+    $t2 = $guard->createToken('form_b');
 
-    $this->assertTrue($v->checkToken($t1, 'form_a'));
-    $this->assertTrue($v->checkToken($t2, 'form_b'));
+    $this->assertTrue($guard->checkToken($t1, 'form_a'));
+    $this->assertTrue($guard->checkToken($t2, 'form_b'));
     // Cross-scope check must fail
-    $this->assertFalse($v->checkToken($t1, 'form_b'));
-    $this->assertFalse($v->checkToken($t2, 'form_a'));
+    $this->assertFalse($guard->checkToken($t1, 'form_b'));
+    $this->assertFalse($guard->checkToken($t2, 'form_a'));
   }
 
   /**
    * @runInSeparateProcess
    */
-  public function test_expired_token_returns_false(): void
+  public function test_csrf_guard_rejects_expired_token(): void
   {
-    $v     = new Validator([]);
-    $token = $v->createToken('expire_test');
+    $guard = new CsrfGuard();
+    $token = $guard->createToken('expire_test');
     // Force expiry
     $_SESSION['schv_csrf_tokens']['expire_test']['exp'] = time() - 1;
 
-    $this->assertFalse($v->checkToken($token, 'expire_test'));
+    $this->assertFalse($guard->checkToken($token, 'expire_test'));
     $this->assertArrayNotHasKey('expire_test', $_SESSION['schv_csrf_tokens']);
   }
 
   /**
    * @runInSeparateProcess
    */
-  public function test_checkToken_is_single_use(): void {
-    $v     = new Validator([]);
-    $token = $v->createToken('single_use_test');
+  public function test_csrf_guard_token_is_single_use(): void {
+    $guard = new CsrfGuard();
+    $token = $guard->createToken('single_use_test');
 
-    $this->assertTrue($v->checkToken($token, 'single_use_test'));
+    $this->assertTrue($guard->checkToken($token, 'single_use_test'));
     // Second call with the same token must fail: it was consumed on first use.
-    $this->assertFalse($v->checkToken($token, 'single_use_test'));
+    $this->assertFalse($guard->checkToken($token, 'single_use_test'));
   }
 
   // ── chaining ─────────────────────────────────────────────

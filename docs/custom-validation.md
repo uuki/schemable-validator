@@ -23,7 +23,7 @@ For example, the following constraints cannot be represented with keywords like 
 
 These are not "string format checks" but rather **validations based on domain-specific rules or external databases**. While a regular expression or a JSON Schema keyword can approximate them, a complete representation is fundamentally impossible.
 
-In this plugin, such constraints are wrapped with `SV::custom()` or `SV::respect()` and recorded in the `x-unmapped-fields` extension of the JSON Schema output.
+In this plugin, such constraints are wrapped with `SV::custom()` or `RespectRules::rule()` and recorded in the `x-unmapped-fields` extension of the JSON Schema output.
 
 ```
 SV::custom($predicate)                        [PRIMARY - dependency-free]
@@ -34,7 +34,7 @@ SV::custom($predicate)                        [PRIMARY - dependency-free]
        │
        └─ Client side: add custom validation via @uuki/schemable-validator-client / Zod
 
-SV::respect($rule)                            [@deprecated - requires Respect/Validation]
+RespectRules::rule($rule)                     [requires Respect/Validation]
   │
   ├─ Server side: validated with Respect/Validation
   │

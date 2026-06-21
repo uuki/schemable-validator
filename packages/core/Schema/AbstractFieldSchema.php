@@ -9,6 +9,9 @@ abstract class AbstractFieldSchema {
   /** @var bool */
   protected $nullable = false;
 
+  /** @var bool */
+  protected $serverOnly = false;
+
   /** @var string|null */
   private $label = null;
 
@@ -73,6 +76,20 @@ abstract class AbstractFieldSchema {
 
   public function isRequired(): bool {
     return $this->required;
+  }
+
+  /**
+   * Exclude this field from the JSON Schema output sent to clients.
+   * The field is still validated server-side as normal.
+   * @return $this
+   */
+  public function serverOnly() {
+    $this->serverOnly = true;
+    return $this;
+  }
+
+  public function isServerOnly(): bool {
+    return $this->serverOnly;
   }
 
   public function isMappable(): bool {

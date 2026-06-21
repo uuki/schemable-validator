@@ -113,11 +113,23 @@ const evaluateConditional = (
   }
 }
 
+// ── Options ───────────────────────────────────────────────────────────────────
+
+export type ValidateOptions = {
+  /**
+   * Field names the caller acknowledges are server-only (file uploads,
+   * custom logic, etc.). Acknowledged fields suppress the console warning
+   * about requiring server-side validation.
+   */
+  readonly acknowledgedServerFields?: readonly string[]
+}
+
 // ── Object validation ─────────────────────────────────────────────────────────
 
 export const validateObject = (
   data: Readonly<Record<string, string | readonly string[]>>,
   schema: ObjectSchema,
+  options?: ValidateOptions,
 ): ValidationResult => {
   const required = schema.required ?? []
   const unmapped = schema['x-unmapped-fields'] ?? []
@@ -135,6 +147,15 @@ export const validateObject = (
   }
 
   // Unmapped fields cannot be validated client-side — pass through as valid.
+  const ack = new Set(options?.acknowledgedServerFields ?? [])
+  const unacknowledged = unmapped.filter(name => !ack.has(name))
+  if (unacknowledged.length > 0) {
+    console.warn(
+      `[schemable] Fields ${JSON.stringify(unacknowledged)} require server-side validation `
+      + '(file upload, custom logic). Client-side results for these fields are always valid. '
+      + 'Pass { acknowledgedServerFields: [...] } to suppress this warning.'
+    )
+  }
   for (const name of unmapped) {
     const val = data[name] ?? ''
     result[name] = { value: val as string, is_valid: true, errors: null }

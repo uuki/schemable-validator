@@ -43,6 +43,8 @@ final class SchemaEditor {
     add_action('admin_menu', [self::class, 'addMenuPage']);
     add_action('admin_post_schv_save_schema', [self::class, 'handleSave']);
     add_action('admin_post_schv_delete_schema', [self::class, 'handleDelete']);
+    add_action('admin_post_schv_export_schema', [self::class, 'handleExport']);
+    add_action('admin_post_schv_import_schema', [self::class, 'handleImport']);
   }
 
   public static function addMenuPage(): void {
@@ -76,6 +78,15 @@ final class SchemaEditor {
     $jsonSchema = self::buildJsonSchemaFromPost();
     update_option(self::OPTION_PREFIX . $slug, $jsonSchema);
 
+    $dir = get_stylesheet_directory() . '/schv-schemas';
+    if (!is_dir($dir)) {
+        wp_mkdir_p($dir);
+    }
+    file_put_contents(
+        $dir . '/' . $slug . '.json',
+        json_encode($jsonSchema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+    );
+
     $slugs = self::getSlugs();
     if (!in_array($slug, $slugs, true)) {
       $slugs[] = $slug;
@@ -99,6 +110,11 @@ final class SchemaEditor {
 
     delete_option(self::OPTION_PREFIX . $slug);
 
+    $themeFile = get_stylesheet_directory() . '/schv-schemas/' . $slug . '.json';
+    if (file_exists($themeFile)) {
+        wp_delete_file($themeFile);
+    }
+
     $slugs = self::getSlugs();
     $slugs = array_values(array_filter($slugs, function (string $s) use ($slug): bool {
       return $s !== $slug;
@@ -106,6 +122,69 @@ final class SchemaEditor {
     update_option(self::SLUGS_OPTION, $slugs);
 
     wp_redirect(admin_url('admin.php?page=schv-schema-editor&deleted=1'));
+    exit;
+  }
+
+  public static function handleExport(): void {
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('Unauthorized', 'schemable-validator'));
+    }
+    $slug = sanitize_key($_GET['slug'] ?? '');
+    if ($slug === '') {
+        wp_die(esc_html__('Schema slug is required', 'schemable-validator'));
+    }
+    check_admin_referer('schv_export_' . $slug);
+
+    $schema = get_option(self::OPTION_PREFIX . $slug, []);
+    $json = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    header('Content-Type: application/json; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $slug . '.json"');
+    header('Content-Length: ' . strlen($json));
+    echo $json;
+    exit;
+  }
+
+  public static function handleImport(): void {
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('Unauthorized', 'schemable-validator'));
+    }
+    check_admin_referer('schv_import_schema');
+
+    if (empty($_FILES['schv_import_file']['tmp_name'])) {
+        wp_die(esc_html__('No file uploaded', 'schemable-validator'));
+    }
+
+    $json = file_get_contents($_FILES['schv_import_file']['tmp_name']);
+    $schema = json_decode($json, true);
+    if (!is_array($schema) || !isset($schema['properties'])) {
+        wp_die(esc_html__('Invalid schema file', 'schemable-validator'));
+    }
+
+    $slug = sanitize_key($_POST['schv_import_slug'] ?? '');
+    if ($slug === '') {
+        wp_die(esc_html__('Schema slug is required', 'schemable-validator'));
+    }
+
+    update_option(self::OPTION_PREFIX . $slug, $schema);
+
+    $slugs = self::getSlugs();
+    if (!in_array($slug, $slugs, true)) {
+        $slugs[] = $slug;
+        update_option(self::SLUGS_OPTION, $slugs);
+    }
+
+    // Also write to theme directory
+    $dir = get_stylesheet_directory() . '/schv-schemas';
+    if (!is_dir($dir)) {
+        wp_mkdir_p($dir);
+    }
+    file_put_contents(
+        $dir . '/' . $slug . '.json',
+        json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+    );
+
+    wp_redirect(admin_url('admin.php?page=schv-schema-editor&slug=' . urlencode($slug) . '&imported=1'));
     exit;
   }
 
@@ -210,6 +289,14 @@ final class SchemaEditor {
 
     $saved   = !empty($_GET['saved']);
     $deleted = !empty($_GET['deleted']);
+    $imported = !empty($_GET['imported']);
+
+    $codeFields = get_option('schv_code_fields', []);
+    $conflicts  = [];
+    if (isset($codeFields[$editSlug]) && !empty($fields)) {
+        $guiFieldNames = array_column($fields, 'name');
+        $conflicts = array_intersect($codeFields[$editSlug], $guiFieldNames);
+    }
 
     self::renderStyles();
     ?>
@@ -221,6 +308,17 @@ final class SchemaEditor {
       <?php endif; ?>
       <?php if ($deleted): ?>
         <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Schema deleted.', 'schemable-validator'); ?></p></div>
+      <?php endif; ?>
+      <?php if ($imported): ?>
+        <div class="notice notice-success is-dismissible"><p><?php echo esc_html__('Schema imported.', 'schemable-validator'); ?></p></div>
+      <?php endif; ?>
+      <?php if (!empty($conflicts)): ?>
+        <div class="notice notice-warning">
+          <p>
+            <?php echo esc_html__('The following fields are also defined in code via SchemaBuilder. On merge, the code-side definition takes precedence:', 'schemable-validator'); ?>
+            <strong><?php echo esc_html(implode(', ', $conflicts)); ?></strong>
+          </p>
+        </div>
       <?php endif; ?>
 
       <?php if (!empty($slugs)): ?>
@@ -240,6 +338,10 @@ final class SchemaEditor {
               <td><a href="<?php echo esc_url(admin_url('admin.php?page=schv-schema-editor&slug=' . urlencode($s))); ?>"><?php echo esc_html($s); ?></a></td>
               <td><?php echo esc_html(sprintf(_n('%d field', '%d fields', $cnt, 'schemable-validator'), $cnt)); ?></td>
               <td>
+                <a href="<?php echo esc_url(wp_nonce_url(
+                    admin_url('admin-post.php?action=schv_export_schema&slug=' . urlencode($s)),
+                    'schv_export_' . $s
+                )); ?>" class="button" style="margin-right:4px"><?php echo esc_html__('Export', 'schemable-validator'); ?></a>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline">
                   <?php wp_nonce_field('schv_delete_schema'); ?>
                   <input type="hidden" name="action" value="schv_delete_schema">
@@ -254,6 +356,23 @@ final class SchemaEditor {
           </tbody>
         </table>
       <?php endif; ?>
+
+      <h3><?php echo esc_html__('Import schema', 'schemable-validator'); ?></h3>
+      <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data" style="margin-bottom:2rem">
+        <?php wp_nonce_field('schv_import_schema'); ?>
+        <input type="hidden" name="action" value="schv_import_schema">
+        <table class="form-table" style="max-width:640px">
+          <tr>
+            <th><label for="schv_import_slug"><?php echo esc_html__('Schema slug', 'schemable-validator'); ?></label></th>
+            <td><input type="text" id="schv_import_slug" name="schv_import_slug" pattern="[a-z0-9\-]+" required placeholder="e.g. contact" class="regular-text"></td>
+          </tr>
+          <tr>
+            <th><label for="schv_import_file"><?php echo esc_html__('JSON file', 'schemable-validator'); ?></label></th>
+            <td><input type="file" id="schv_import_file" name="schv_import_file" accept=".json" required></td>
+          </tr>
+        </table>
+        <?php submit_button(esc_html__('Import', 'schemable-validator'), 'secondary'); ?>
+      </form>
 
       <h2><?php
         if ($editSlug !== '') {

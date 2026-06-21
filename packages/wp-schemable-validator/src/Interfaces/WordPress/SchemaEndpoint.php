@@ -19,10 +19,16 @@ final class SchemaEndpoint {
           $schema = $provider->toJsonSchema();
           $etag   = '"' . md5(serialize($schema)) . '"';
 
-          // Schema is derived purely from PHP code — safe to cache aggressively.
+          $defaultHeaders = [
+            'Cache-Control' => 'public, max-age=60, stale-while-revalidate=3600',
+            'ETag'          => $etag,
+          ];
+          $headers = apply_filters('schv_schema_cache_headers', $defaultHeaders, $route);
+
           $response = new \WP_REST_Response($schema);
-          $response->header('Cache-Control', 'public, max-age=3600');
-          $response->header('ETag', $etag);
+          foreach ($headers as $key => $value) {
+            $response->header($key, $value);
+          }
 
           // Conditional GET: return 304 if client already has current version.
           $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH'])

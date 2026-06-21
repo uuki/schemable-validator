@@ -8,7 +8,7 @@ use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Validation\CustomField;
 
 /**
- * (B) escape hatch wrapping an arbitrary Respect/Validation rule (SV::respect,
+ * (B) escape hatch wrapping an arbitrary Respect/Validation rule (RespectRules::rule,
  * and the postalCode/creditCard/iban presets). Implements CustomField, so the
  * core executes it through evaluate() without knowing it is Respect-backed.
  *

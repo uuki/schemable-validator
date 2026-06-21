@@ -119,7 +119,7 @@ final class SchemaBuilder implements SchemaProviderInterface {
    *                       'captchaDriver' => CaptchaDriver        (default: null — captcha unavailable)
    */
   public function toValidator(array $config = []): Validator {
-    $jsonSchema     = $this->toJsonSchema();
+    $jsonSchema     = $this->toJsonSchema(['includeServerOnly' => true]);
     $customFields   = [];
     $transforms     = [];
     $fileConfigs    = [];
@@ -159,17 +159,23 @@ final class SchemaBuilder implements SchemaProviderInterface {
    * Export the schema as a JSON Schema (draft 2020-12) array.
    * Fields where isMappable() === false are excluded and listed in x-unmapped-fields.
    *
-   * @param array{metaSchema?: bool} $options
+   * @param array{metaSchema?: bool, includeServerOnly?: bool} $options
    *   metaSchema: when true, $schema points to the schemable meta-schema URI
    *     (IDE completion + no unknown-property warnings for x-*). Default false
    *     (standard draft 2020-12 URI).
+   *   includeServerOnly: when true, fields marked serverOnly() are included.
+   *     Default false (excluded from client-facing output).
    */
   public function toJsonSchema(array $options = []): array {
-    $properties = [];
-    $required   = [];
-    $unmapped   = [];
+    $properties      = [];
+    $required        = [];
+    $unmapped        = [];
+    $includeInternal = !empty($options['includeServerOnly']);
 
     foreach ($this->fields as $name => $field) {
+      if ($field->isServerOnly() && !$includeInternal) {
+        continue;
+      }
       if (!$field->isMappable()) {
         $unmapped[] = $name;
         continue;

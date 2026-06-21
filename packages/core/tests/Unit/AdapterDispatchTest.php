@@ -7,6 +7,7 @@ use Respect\Validation\Validator as v;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\SV;
 use SchemableValidator\Adapters\Native\NativeAdapter;
+use SchemableValidator\Adapters\Respect\RespectRules;
 use SchemableValidator\Adapters\Opis\OpisAdapter;
 use SchemableValidator\Adapters\Respect\RespectAdapter;
 
@@ -89,7 +90,7 @@ final class AdapterDispatchTest extends TestCase {
     // form, so it runs on Respect directly even when the mappable engine is Native.
     $sb = SV::object([
       'name'        => SV::string()->min(1),
-      'postal_code' => SV::respect(v::digit()->length(3, 3)),
+      'postal_code' => RespectRules::rule(v::digit()->length(3, 3)),
     ]);
     $r = $sb->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['name' => 'Alice', 'postal_code' => 'xx'])->getResult();
@@ -100,7 +101,7 @@ final class AdapterDispatchTest extends TestCase {
 
   public function test_raw_respect_escape_hatch_passes_valid_value(): void {
     $sb = SV::object([
-      'postal_code' => SV::respect(v::digit()->length(3, 3)),
+      'postal_code' => RespectRules::rule(v::digit()->length(3, 3)),
     ]);
     $r = $sb->toValidator(['adapter' => new NativeAdapter()])
       ->validate(['postal_code' => '123'])->getResult();

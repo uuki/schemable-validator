@@ -55,6 +55,12 @@ export interface SvConfigBase<TOnUnknown> {
    * any unsupported fields. Useful during development. Default: false.
    */
   check?: boolean
+  /**
+   * Field names the caller acknowledges are server-only (file uploads,
+   * custom logic). Acknowledged fields are excluded from the
+   * "x-custom-fields declared but no .refine() registered" warning.
+   */
+  acknowledgedServerFields?: readonly string[]
 }
 
 // ── Abstract base builder ─────────────────────────────────────────────────────

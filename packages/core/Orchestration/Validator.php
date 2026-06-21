@@ -10,7 +10,6 @@ if (!defined('SV_VENDOR_DIR')) {
 use SchemableValidator\Adapters\Native\NativeAdapter;
 use SchemableValidator\Adapters\Native\NativeFileValidator;
 use SchemableValidator\I18n\MessageDict;
-use SchemableValidator\Security\CsrfGuard;
 use SchemableValidator\Validation\BackendAdapter;
 use SchemableValidator\Validation\CaptchaDriver;
 use SchemableValidator\Validation\FileValidationDriver;
@@ -33,7 +32,7 @@ final class Validator {
   private array $jsonSchema;
 
   /**
-   * (B) escape-hatch fields (SV::custom / SV::respect), executed via
+   * (B) escape-hatch fields (SV::custom / RespectRules::rule), executed via
    * CustomField::evaluate() — engine-agnostic, no IR representation.
    * @var array<string, \SchemableValidator\Validation\CustomField>
    */
@@ -93,7 +92,6 @@ final class Validator {
     $this->adapter       = $config['adapter'] ?? new NativeAdapter();
     $this->state = [
       'result'        => [],
-      'token'         => null,
       'captcha_token' => null,
     ];
   }
@@ -160,7 +158,7 @@ final class Validator {
     foreach ($this->adapter->compile($this->jsonSchema, $this->dict)->validate($data) as $name => $fieldState) {
       $this->state['result'][$name] = $fieldState;
     }
-    // (B) escape hatches (SV::custom / SV::respect) — engine-agnostic evaluate().
+    // (B) escape hatches (SV::custom / RespectRules::rule) — engine-agnostic evaluate().
     foreach ($this->customFields as $name => $customField) {
       $this->state['result'][$name] = $customField->evaluate($name, $data[$name] ?? null, $this->dict);
     }
@@ -290,28 +288,6 @@ final class Validator {
 
   public function getResult(): array {
     return $this->state['result'];
-  }
-
-  /**
-   * @deprecated Use CsrfGuard directly: (new CsrfGuard())->createToken($form).
-   *   Kept for back-compat; delegates to CsrfGuard.
-   *
-   * @param string $form Unique identifier for the form (e.g. 'contact', 'login').
-   */
-  public function createToken(string $form = 'default'): string {
-    $token = (new CsrfGuard())->createToken($form);
-    $this->state['token'] = $token;
-    return $token;
-  }
-
-  /**
-   * @deprecated Use CsrfGuard directly: (new CsrfGuard())->checkToken($token, $form).
-   *   Kept for back-compat; delegates to CsrfGuard.
-   *
-   * @param string $form Must match the $form used in createToken().
-   */
-  public function checkToken(string $token, string $form = 'default'): bool {
-    return (new CsrfGuard())->checkToken($token, $form);
   }
 
   private function createState(): array {
