@@ -187,8 +187,26 @@ $result = $schema->toValidator()->validate($_POST)->validateFiles($_FILES)->getR
 echo $schema->toJson();
 ```
 
+### Hiding fields from client output
+
+Fields marked `.serverOnly()` are validated server-side as normal but excluded from the JSON Schema output sent to clients.
+They do not appear in `properties`, `required`, or `x-unmapped-fields`.
+
+```php
+$schema = SV::object([
+  'email'       => SV::string()->email(),
+  'risk_score'  => SV::integer()->min(0)->max(100)->serverOnly(),
+]);
+
+echo $schema->toJson();
+// risk_score is absent — invisible to clients
+
+$schema->toValidator()->validate($data)->getResult();
+// validates both email and risk_score
+```
+
 ::: tip
-For the full field type reference, `.nullable()`, `.optional()`, conditional required (`.when()`), `x-unmapped-fields`, and WordPress REST endpoint registration, see [SchemaBuilder](./schema-builder.md).
+For the full field type reference, `.nullable()`, `.optional()`, `.serverOnly()`, conditional required (`.when()`), `x-unmapped-fields`, and WordPress REST endpoint registration, see [SchemaBuilder](./schema-builder.md).
 :::
 
 ---

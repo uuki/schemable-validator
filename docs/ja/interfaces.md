@@ -49,6 +49,45 @@ $template = schv_template([
 
 ---
 
+### スキーマエディタ
+
+スキーマエディタは、PHP を書かずにバリデーションスキーマを定義できる管理画面です。
+スキーマは以下の 2 箇所に保存されます。
+
+- **テーマディレクトリ**（`{有効テーマ}/schv-schemas/{slug}.json`）— git で管理できます
+- **wp_options**（`schv_schema_{slug}`）— 後方互換のフォールバックです
+
+`StoredSchemaProvider` はテーマファイルを優先して読み込み、存在しなければ `wp_options` にフォールバックします。
+
+#### エクスポートとインポート
+
+保存済みスキーマごとに **Export** ボタンがあり、JSON ファイルをダウンロードできます。
+**Import** フォームでは `.json` ファイルとスラッグを指定してアップロードすると、テーマディレクトリと `wp_options` の両方に書き込まれます。
+
+#### マージ衝突の検出
+
+`schv_register_code_fields()` でコード側のフィールド名を登録しておくと、スキーマエディタが GUI 定義との重複をワーニングとして表示します。
+マージ時はコード側の定義が優先されます。
+
+```php
+// "contact" スキーマに対して、コード側で定義しているフィールドを登録します。
+// GUI でこれらのフィールドが定義されている場合、スキーマエディタが警告を表示します。
+schv_register_code_fields('contact', ['company_name', 'attachment']);
+```
+
+#### スキーマエンドポイントのキャッシュ制御
+
+`schv_register_schema()` は JSON Schema を REST で配信する際に `Cache-Control: public, max-age=60, stale-while-revalidate=3600` と ETag を付与します。
+本番環境でデプロイ直後に即座に反映したい場合は、`schv_schema_cache_headers` フィルターでヘッダーを上書きできます。
+
+```php
+add_filter('schv_schema_cache_headers', function ($headers) {
+    return ['Cache-Control' => 'no-cache, must-revalidate', 'ETag' => $headers['ETag']];
+});
+```
+
+---
+
 ## WordPress ヘルパー関数
 
 プラグインが有効化されると以下のグローバル関数が使えるようになります。
@@ -59,6 +98,9 @@ $template = schv_template([
 | `schv_message_dict()` | `MessageDict` | `schv_message_dict` フィルター経由でサイト全体の辞書を返す |
 | `schv_template(array $options = [])` | `Template` | Template インスタンスを生成 |
 | `schv_form()` | `FormController` | FormController インスタンスを生成 |
+| `schv_stored_schema(string $slug)` | `StoredSchemaProvider` | テーマディレクトリまたは `wp_options` からスキーマを読み込む |
+| `schv_register_schema(string $route, SchemaProviderInterface $provider)` | `void` | JSON Schema を配信する REST エンドポイントを登録 |
+| `schv_register_code_fields(string $slug, string[] $fields)` | `void` | マージ衝突検出のためコード側フィールド名を登録 |
 
 ---
 

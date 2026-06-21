@@ -186,8 +186,26 @@ $result = $schema->toValidator()->validate($_POST)->validateFiles($_FILES)->getR
 echo $schema->toJson();
 ```
 
+### クライアント出力からフィールドを除外する
+
+`.serverOnly()` を付けたフィールドは、サーバー側では通常どおり検証されますが、クライアントに送信される JSON Schema 出力からは除外されます。
+`properties`、`required`、`x-unmapped-fields` のいずれにも含まれません。
+
+```php
+$schema = SV::object([
+  'email'       => SV::string()->email(),
+  'risk_score'  => SV::integer()->min(0)->max(100)->serverOnly(),
+]);
+
+echo $schema->toJson();
+// risk_score は含まれません — クライアントからは見えません
+
+$schema->toValidator()->validate($data)->getResult();
+// email と risk_score の両方を検証します
+```
+
 ::: tip
-フィールド型リファレンス、`.nullable()`、`.optional()`、条件付き必須（`.when()`）、`x-unmapped-fields`、WordPress REST エンドポイント登録については [SchemaBuilder](./schema-builder.md) を参照してください。
+フィールド型リファレンス、`.nullable()`、`.optional()`、`.serverOnly()`、条件付き必須（`.when()`）、`x-unmapped-fields`、WordPress REST エンドポイント登録については [SchemaBuilder](./schema-builder.md) を参照してください。
 :::
 
 ---

@@ -241,9 +241,36 @@ const schema = sv(jsonSchema)
 
 :::
 
-### Cross-field constraints (`SV::respect`)
+### Acknowledging server-only fields
 
-`SV::respect()` wraps arbitrary Respect/Validation rules that have no JSON Schema mapping. Implement their client-side equivalent as a pure function and inject it with `.refine()`:
+`validateObject()` emits a console warning when `x-unmapped-fields` contains field names not yet acknowledged by the caller.
+Pass `acknowledgedServerFields` to suppress the warning for fields you expect to validate only on the server:
+
+```ts
+import { validateObject } from '@uuki/schemable-validator-client'
+
+const result = validateObject(formData, schema, {
+  acknowledgedServerFields: ['avatar', 'custom_check'],
+})
+```
+
+The same option is available in the `createSv()` factory config for the Zod and Valibot adapters:
+
+```ts
+import { createSv } from '@uuki/schemable-validator-client/zod'
+
+const sv = createSv({
+  check: true,
+  acknowledgedServerFields: ['avatar'],
+})
+```
+
+Fields listed in `acknowledgedServerFields` are excluded from the `x-custom-fields` warning during `build()`.
+When a new server-only field is added on the PHP side, the warning resurfaces until it is acknowledged — this prevents silent omissions.
+
+### Cross-field constraints (`RespectRules::rule`)
+
+`RespectRules::rule()` wraps arbitrary Respect/Validation rules that have no JSON Schema mapping. Implement their client-side equivalent as a pure function and inject it with `.refine()`:
 
 :::code-group
 
@@ -513,7 +540,7 @@ function validateWithCustomRules(data: Record<string, string>) {
 ## Rule coverage
 
 Coverage is measured against the 19 mappable rules in `RuleMapper.php`.  
-(`SV::file()` / `SV::respect()` are excluded by the PHP side via `x-unmapped-fields` and are never passed to the adapter.)
+(`SV::file()` / `RespectRules::rule()` are excluded by the PHP side via `x-unmapped-fields` and are never passed to the adapter.)
 
 | PHP rule | JSON Schema field | Zod | Valibot |
 |---|---|:---:|:---:|
