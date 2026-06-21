@@ -84,7 +84,7 @@ final class RuleMapper {
         if (in_array($rule, RuleCatalog::todo(), true)) {
           throw new \RuntimeException(
             "Rule '{$rule}' is catalogued as TODO in RuleCatalog but not yet implemented. " .
-            "Use SV::respect(v::{$rule}(...)) as an escape hatch, or add the case to RuleMapper."
+            "Use RespectRules::rule(v::{$rule}(...)) as an escape hatch, or add the case to RuleMapper."
           );
         }
         throw new \InvalidArgumentException(

@@ -7,10 +7,11 @@ use PHPUnit\Framework\TestCase;
 use SchemableValidator\I18n\MessageDict;
 use SchemableValidator\SV;
 use SchemableValidator\Adapters\Native\NativeAdapter;
+use SchemableValidator\Adapters\Respect\RespectRules;
 
 /**
  * SV::custom() is a dependency-free (B) escape hatch executed via
- * CustomField::evaluate() — no engine involved. SV::respect() is the
+ * CustomField::evaluate() — no engine involved. RespectRules::rule() is the
  * Respect-backed CustomField; both run through the same engine-agnostic path.
  */
 final class CustomFieldTest extends TestCase {
@@ -54,14 +55,14 @@ final class CustomFieldTest extends TestCase {
     $this->assertFalse($r['code']['is_valid']);
   }
 
-  // ── SV::respect() still works through the CustomField path ──
+  // ── RespectRules::rule() still works through the CustomField path ──
 
   public function test_respect_escape_hatch_validates(): void {
-    $r = SV::object(['pc' => SV::respect(v::digit()->length(3, 3))])
+    $r = SV::object(['pc' => RespectRules::rule(v::digit()->length(3, 3))])
       ->toValidator()->validate(['pc' => '123'])->getResult();
     $this->assertTrue($r['pc']['is_valid']);
 
-    $r2 = SV::object(['pc' => SV::respect(v::digit()->length(3, 3))])
+    $r2 = SV::object(['pc' => RespectRules::rule(v::digit()->length(3, 3))])
       ->toValidator()->validate(['pc' => 'xx'])->getResult();
     $this->assertFalse($r2['pc']['is_valid']);
   }

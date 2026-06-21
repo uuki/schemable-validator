@@ -59,7 +59,7 @@ $schema = SV::object([
 ```
 
 ::: tip Respect スキーマの利用
-オプションの `respect/validation` パッケージをインストールすると、Respect ルールも直接使えます（例: `'name' => v::stringType()->length(2, 50)`）。SchemaBuilder 内では `SV::respect(v::...)` でラップしてください。
+オプションの `respect/validation` パッケージをインストールすると、Respect ルールも直接使えます（例: `'name' => v::stringType()->length(2, 50)`）。SchemaBuilder 内では `RespectRules::rule(v::...)` でラップしてください。
 :::
 
 通る例・弾く例:
@@ -150,7 +150,7 @@ $schema = SV::object([
 ::: tip
 住所検証など、独自ルールの定義に類する高度な利用については [Custom Validation](/ja/custom-validation) を参照してください。依存なしの一回限りのルールには `SV::custom(callable)` をエスケープハッチとして使えます。
 
-注意: `creditCard` および `postalCode` ルールは **@deprecated** であり、`Adapters\Respect\RespectRules` に移動されました。
+`creditCard` および `postalCode` ルールは `Adapters\Respect\RespectRules` の `RespectRules::creditCard()` および `RespectRules::postalCode()` を使用してください。
 :::
 
 ### メソッドチェーン
@@ -186,8 +186,26 @@ $result = $schema->toValidator()->validate($_POST)->validateFiles($_FILES)->getR
 echo $schema->toJson();
 ```
 
+### クライアント出力からフィールドを除外する
+
+`.serverOnly()` を付けたフィールドは、サーバー側では通常どおり検証されますが、クライアントに送信される JSON Schema 出力からは除外されます。
+`properties`、`required`、`x-unmapped-fields` のいずれにも含まれません。
+
+```php
+$schema = SV::object([
+  'email'       => SV::string()->email(),
+  'risk_score'  => SV::integer()->min(0)->max(100)->serverOnly(),
+]);
+
+echo $schema->toJson();
+// risk_score は含まれません — クライアントからは見えません
+
+$schema->toValidator()->validate($data)->getResult();
+// email と risk_score の両方を検証します
+```
+
 ::: tip
-フィールド型リファレンス、`.nullable()`、`.optional()`、条件付き必須（`.when()`）、`x-unmapped-fields`、WordPress REST エンドポイント登録については [SchemaBuilder](./schema-builder.md) を参照してください。
+フィールド型リファレンス、`.nullable()`、`.optional()`、`.serverOnly()`、条件付き必須（`.when()`）、`x-unmapped-fields`、WordPress REST エンドポイント登録については [SchemaBuilder](./schema-builder.md) を参照してください。
 :::
 
 ---
@@ -404,6 +422,28 @@ $data = schv_form()->get();
 schv_form()->clear();
 ```
 
+:::
+
+::: warning セッションアフィニティが必要です
+`FormController` は PHP のネイティブセッション（`$_SESSION`）にデータを保存します。
+ロードバランサー下で sticky session が保証されない環境では、ステップ間でリクエストが別のサーバーに振られ、確認画面で `get()` が `null` を返す場合があります。
+
+たとえば、セッションアフィニティのない 2 台構成では次のような状態になります。
+
+```text
+ユーザー → サーバー A（Step 1: save() が A のセッションファイルに書き込む）
+ユーザー → サーバー B（Step 2: get() が B のセッションファイルを読む → null）
+```
+
+回避するには、共有セッションバックエンドを設定してください。
+
+```php
+// php.ini または実行時設定
+ini_set('session.save_handler', 'redis');
+ini_set('session.save_path', 'tcp://redis-host:6379');
+```
+
+あるいは、`FormController` を使わず、暗号化したフォームデータを hidden field で引き回すトークン方式に置き換える方法もあります。この方式ではサーバー側のセッション状態に依存しません。
 :::
 
 ---

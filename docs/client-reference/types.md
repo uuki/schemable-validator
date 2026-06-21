@@ -32,7 +32,7 @@ type ObjectSchema = {
   type: 'object'
   properties: Readonly<Record<string, PropertySchema>>
   required?: readonly string[]
-  'x-unmapped-fields'?: readonly string[]   // SV::file / SV::respect fields
+  'x-unmapped-fields'?: readonly string[]   // SV::file / RespectRules::rule() fields
   'x-custom-fields'?:   readonly string[]   // SchemaBuilder::customFields() — BE-only logic
   'x-when'?: readonly WhenEntry[]           // SchemaBuilder::when() conditions (JSONLogic)
   if?: ConditionalSchema['if']

@@ -12,7 +12,7 @@
 | サーバーバリデーション | `toValidator()->validate($data)->getResult()` |
 | 条件付き必須 | `->when('type', SV::equal('company'), ['company_name'])` |
 | WordPress REST | `schv_register_schema('/contact', $schema)` — スキーマを GET エンドポイントとして公開 |
-| 変換不可フィールド | `SV::file()` / `SV::respect()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
+| 変換不可フィールド | `SV::file()` / `RespectRules::rule()` は `x-unmapped-fields` に記録され、サーバーサイドのみ検証 |
 
 ## 基本的な使い方
 
@@ -45,7 +45,6 @@ echo $schema->toJson();
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
 | `SV::file(['image/jpeg'])` | - | JSON Schema 変換不可。`x-unmapped-fields` に記録される |
-| `SV::respect(v::...)` | - | **@deprecated** — 代わりに `SV::custom()` または `RespectRules::rule()` を使用。JSON Schema 変換不可。`x-unmapped-fields` に記録される |
 | `SV::custom(callable, message)` | - | 依存なしのエスケープハッチ。`CustomFieldSchema` を返す。`x-unmapped-fields` に記録される |
 
 修飾子:
@@ -54,6 +53,16 @@ echo $schema->toJson();
 |:--|:--|
 | `.optional()` | `required` 配列から除外 |
 | `.nullable()` | `"type"` を `["string", "null"]` のように配列化 |
+| `.serverOnly()` | クライアント向け JSON Schema 出力から完全に除外。サーバー側では通常どおり検証される |
+
+::: warning パターン検証の制限
+`.pattern()` およびスキーマエディタのパターンフィールドは `preg_match()`（PHP）と `RegExp`（JS）で評価されます。
+ReDoS 対策として、**500 文字**を超える入力はパターン検証をスキップし、valid として扱われます。
+長文を受け付けるフィールド（textarea など）では、パターンではなく `.min()` / `.max()` で長さを制約してください。
+
+スキーマエディタでは管理者が任意の正規表現を入力できます。
+PHP の `pcre.backtrack_limit`（デフォルト 1,000,000）が無限バックトラッキングを防止します。上限に達した場合、そのフィールドのパターン検証はスキップされます。
+:::
 
 ---
 

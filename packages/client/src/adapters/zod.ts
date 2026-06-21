@@ -143,7 +143,8 @@ class ZodSchemaBuilder extends SchemaBuilderBase<OnUnknown, z.ZodTypeAny, ZodRef
       if (unsupported.length) {
         console.warn('[schemable] sv.build(): unsupported fields detected:', unsupported)
       }
-      const customFields = this.json['x-custom-fields'] ?? []
+      const ack = new Set(this.config.acknowledgedServerFields ?? [])
+      const customFields = (this.json['x-custom-fields'] ?? []).filter((f: string) => !ack.has(f))
       if (customFields.length > 0 && this.syncRefiners.length === 0 && this.asyncRefiners.length === 0) {
         console.warn('[schemable] sv.build(): x-custom-fields declared but no .refine()/.refineAsync() registered:', customFields)
       }

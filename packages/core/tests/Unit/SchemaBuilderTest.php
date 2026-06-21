@@ -5,6 +5,7 @@ namespace SchemableValidator\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use Respect\Validation\Validator as v;
 use SchemableValidator\Adapters\Respect\RespectAdapter;
+use SchemableValidator\Adapters\Respect\RespectRules;
 use SchemableValidator\Orchestration\SchemaBuilder;
 use SchemableValidator\Orchestration\Validator;
 use SchemableValidator\SV;
@@ -221,11 +222,11 @@ class SchemaBuilderTest extends TestCase {
   // ── RawRespectSchema ────────────────────────────────────────
 
   public function test_rawRespectSchema_is_not_mappable(): void {
-    $this->assertFalse(SV::respect(v::email())->isMappable());
+    $this->assertFalse(RespectRules::rule(v::email())->isMappable());
   }
 
   public function test_rawRespectSchema_toRespect_delegates(): void {
-    $r = SV::respect(v::email())->toRespect();
+    $r = RespectRules::rule(v::email())->toRespect();
     $this->assertTrue($r->validate('a@b.com'));
   }
 
@@ -384,34 +385,34 @@ class SchemaBuilderTest extends TestCase {
   // ── SV facade — new wrappers ────────────────────────────────
 
   public function test_postalCode_is_not_mappable(): void {
-    $field = SV::postalCode('JP');
+    $field = RespectRules::postalCode('JP');
     $this->assertFalse($field->isMappable());
     $this->assertSame([], $field->toJsonSchema());
   }
 
   public function test_postalCode_toRespect_validates(): void {
-    $r = SV::postalCode('JP')->toRespect();
+    $r = RespectRules::postalCode('JP')->toRespect();
     $this->assertTrue($r->validate('101-0021'));
     $this->assertFalse($r->validate('not-a-postal'));
   }
 
   public function test_creditCard_is_not_mappable(): void {
-    $this->assertFalse(SV::creditCard()->isMappable());
+    $this->assertFalse(RespectRules::creditCard()->isMappable());
   }
 
   public function test_creditCard_toRespect_validates(): void {
-    $r = SV::creditCard()->toRespect();
+    $r = RespectRules::creditCard()->toRespect();
     // Luhn-valid test number (Visa)
     $this->assertTrue($r->validate('4111111111111111'));
     $this->assertFalse($r->validate('1234567890123456'));
   }
 
   public function test_iban_is_not_mappable(): void {
-    $this->assertFalse(SV::iban()->isMappable());
+    $this->assertFalse(RespectRules::iban()->isMappable());
   }
 
   public function test_iban_toRespect_validates(): void {
-    $r = SV::iban()->toRespect();
+    $r = RespectRules::iban()->toRespect();
     $this->assertTrue($r->validate('GB82WEST12345698765432'));
     $this->assertFalse($r->validate('NOTANIBAN'));
   }

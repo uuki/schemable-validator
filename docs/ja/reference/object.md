@@ -41,7 +41,7 @@ $schema->toJsonSchema(array $options = []): array
 |:--|:--|:--|:--|
 | `metaSchema` | `bool` | `false` | `true` の場合、出力に `$schema` URI を含める |
 
-- `SV::file()` / `SV::respect()` フィールドは `properties` から除外され、`x-unmapped-fields` に記録されます
+- `SV::file()` / `RespectRules::rule()` フィールドは `properties` から除外され、`x-unmapped-fields` に記録されます
 - `optional()` が付いていないフィールドは `required` 配列に含まれます
 
 **用途:** PHP 側でスキーマを配列として操作したい場合や、REST レスポンスを手動加工する場合。
@@ -91,7 +91,7 @@ echo $schema->toJson();
 ## .toValidator() {#tovalidator}
 
 スキーマから **`Validator` インスタンス**を生成する。デフォルトバックエンドは依存なしの NativeAdapter。  
-`SV::file()` / `SV::respect()` / `SV::custom()` を含むすべてのフィールドを検証できる。
+`SV::file()` / `RespectRules::rule()` / `SV::custom()` を含むすべてのフィールドを検証できる。
 
 ```php
 $schema->toValidator(

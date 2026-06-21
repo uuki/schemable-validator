@@ -309,11 +309,46 @@ It ports the FE `constraint.ts`/`validator.ts` behaviour to PHP with no third-pa
 The conformance suite verifies it against all `conformance/*.json` fixtures (`tests/Conformance/NativeConformanceTest.php`).
 
 **RespectAdapter** must be passed explicitly.
-The Respect escape hatches (`SV::respect` / `RespectRules`) and raw `v` schemas also use it internally, regardless of which adapter is set for mappable fields.
+The Respect escape hatches (`RespectRules::rule()` etc.) and raw `v` schemas also use it internally, regardless of which adapter is set for mappable fields.
 Requires the optional `respect/validation` package.
 
 **OpisAdapter** applies strict JSON Schema semantics without coercion.
 A form string like `"42"` fails `type: integer`, where `NativeAdapter` and `RespectAdapter` would accept it.
+
+---
+
+## Coercion Contract v1
+
+HTML forms submit all values as strings.
+`NativeAdapter` and `RespectAdapter` accept these form strings and coerce them to the declared type before constraint evaluation.
+`OpisAdapter` does not coerce and expects pre-parsed values (e.g. from `json_decode`).
+
+| Declared type | Input string | Coerced to | Valid? |
+|:--|:--|:--|:--|
+| `integer` | `"42"` | `42` | yes |
+| `integer` | `"3.14"` | — | no (decimal) |
+| `integer` | `"0xFF"` | — | no (hex) |
+| `integer` | `"abc"` | — | no |
+| `number` | `"3.14"` | `3.14` | yes |
+| `number` | `" 42 "` | `42` | yes (whitespace trimmed) |
+| `boolean` | `"true"` / `"1"` | `true` | yes |
+| `boolean` | `"false"` / `"0"` / `""` | `false` | yes |
+| `boolean` | `"yes"` | — | no |
+| `enum` | `"a"` | `"a"` | yes (string comparison) |
+
+`SV::enum()` values are always compared as strings.
+Pass string values to `SV::enum()` to avoid type ambiguity:
+
+```php
+// Correct
+SV::enum(['0', '1', '2'])
+
+// Avoid — mixed types cause silent mismatches
+SV::enum([0, 1, 2])
+```
+
+`optional()` fields accept empty strings as "not provided" regardless of type.
+An empty string skips all constraint checks and is considered valid.
 
 ---
 
@@ -322,7 +357,7 @@ A form string like `"42"` fails `type: integer`, where `NativeAdapter` and `Resp
 The default configuration (NativeAdapter, NativeFileValidator, and `SV::custom`) requires no external packages.
 Both engine packages are listed as composer `suggest` and are only loaded when explicitly installed:
 
-- `respect/validation`: enables `RespectAdapter`, the Respect escape hatches (`RespectRules`, `SV::respect`, `postalCode`, `creditCard`, `iban`), and raw `v` schemas.
+- `respect/validation`: enables `RespectAdapter` and the Respect escape hatches (`RespectRules::rule()`, `RespectRules::postalCode()`, `RespectRules::creditCard()`, `RespectRules::iban()`).
   Respect's factory is initialised lazily and is never loaded when using the Native default.
 
   ```

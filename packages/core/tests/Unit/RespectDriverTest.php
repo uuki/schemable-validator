@@ -10,8 +10,7 @@ use SchemableValidator\SV;
 
 /**
  * The Respect driver (RespectRules) is the canonical, namespaced home for
- * Respect-backed (B) escape hatches. SV::respect/postalCode/... are kept as
- * deprecated delegations for back-compat.
+ * Respect-backed (B) escape hatches.
  */
 final class RespectDriverTest extends TestCase {
 
@@ -34,10 +33,4 @@ final class RespectDriverTest extends TestCase {
     $this->assertInstanceOf(RawRespectSchema::class, RespectRules::creditCard());
   }
 
-  public function test_deprecated_sv_shims_still_delegate(): void {
-    // Back-compat: SV::* produce the same field type as the driver.
-    $this->assertInstanceOf(RawRespectSchema::class, SV::respect(v::email()));
-    $this->assertInstanceOf(RawRespectSchema::class, SV::postalCode('JP'));
-    $this->assertInstanceOf(RawRespectSchema::class, SV::iban());
-  }
 }

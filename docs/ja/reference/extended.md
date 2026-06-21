@@ -1,7 +1,7 @@
-# SV::file() / SV::custom() / SV::respect() - JSON Schema 非対応型
+# SV::file() / SV::custom() / RespectRules - JSON Schema 非対応型
 
 これらの型はサーバー側検証を行いますが、JSON Schema に変換できません。
-`SV::file()` は NativeFileValidator を使用します（依存なし）。`SV::custom()` は任意の callable を受け取ります（依存なし）。`SV::respect()` はオプションの Respect/Validation ライブラリを使用します。
+`SV::file()` は NativeFileValidator を使用します（依存なし）。`SV::custom()` は任意の callable を受け取ります（依存なし）。`RespectRules::rule()` はオプションの Respect/Validation ライブラリを使用します。
 `toJsonSchema()` の出力では `properties` に含まれず、`x-unmapped-fields` にフィールド名が記録されます。
 
 クライアントの `validateObject` はこれらのフィールドを自動的にスキップし、サーバー側に委譲します。
@@ -133,14 +133,12 @@ $schema = SV::object([
 
 ---
 
-## SV::postalCode(countryCode) {#postalcode}
+## RespectRules::postalCode(countryCode) {#postalcode}
 
-> **@deprecated** -- `RespectRules` に移動。代わりに `SV::custom()` + 郵便番号検証ライブラリを使用してください。
-
-国別の**郵便番号**を検証する。Respect/Validation の `postalCode()` ルールをラップしたショートハンド。
+国別の**郵便番号**を検証する。Respect/Validation の `postalCode()` ルールを使用する。
 
 ```php
-SV::postalCode(string $countryCode)
+RespectRules::postalCode(string $countryCode)
 ```
 
 | パラメータ | 型 | 説明 |
@@ -150,22 +148,18 @@ SV::postalCode(string $countryCode)
 JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
 
 ```php
-SV::postalCode('JP')->optional()  // 日本の郵便番号（任意入力）
-SV::postalCode('US')              // 米国の ZIP コード
+RespectRules::postalCode('JP')->optional()  // 日本の郵便番号（任意入力）
+RespectRules::postalCode('US')              // 米国の ZIP コード
 ```
-
-`SV::respect(v::postalCode('JP'))` の糖衣構文です。
 
 ---
 
-## SV::creditCard(...brands) {#creditcard}
-
-> **@deprecated** -- `RespectRules` に移動。代わりに `SV::custom()` + Luhn アルゴリズムライブラリを使用してください。
+## RespectRules::creditCard(...brands) {#creditcard}
 
 **クレジットカード番号**を Luhn アルゴリズムで検証します。
 
 ```php
-SV::creditCard(string ...$brands)
+RespectRules::creditCard(string ...$brands)
 ```
 
 | パラメータ | 型 | 説明 |
@@ -175,38 +169,34 @@ SV::creditCard(string ...$brands)
 JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
 
 ```php
-SV::creditCard()                    // 全ブランド
-SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard のみ
+RespectRules::creditCard()                    // 全ブランド
+RespectRules::creditCard('Visa', 'Mastercard') // Visa / Mastercard のみ
 ```
 
 ---
 
-## SV::iban() {#iban}
-
-> **@deprecated** -- `RespectRules` に移動。代わりに `SV::custom()` + IBAN 検証ライブラリを使用してください。
+## RespectRules::iban() {#iban}
 
 **IBAN**（国際銀行口座番号）を検証する。
 
 ```php
-SV::iban()
+RespectRules::iban()
 ```
 
 JSON Schema では表現できないため `x-unmapped-fields` に記録されます。
 
 ```php
-SV::iban()->optional()
+RespectRules::iban()->optional()
 ```
 
 ---
 
-## SV::respect(rule) {#respect}
+## RespectRules::rule(rule) {#respect}
 
-> **@deprecated** -- 依存なしの代替として `SV::custom(callable, message)` を使用してください。このメソッドにはオプションの `respect/validation` パッケージが必要です。
-
-Respect/Validation のルールを直接指定するエスケープハッチです。組み込み型では表現できない制約に使います。
+Respect/Validation のルールを直接指定するエスケープハッチです。組み込み型では表現できない制約に使います。オプションの `respect/validation` パッケージが必要です。
 
 ```php
-SV::respect(Respect\Validation\Validator $rule)
+RespectRules::rule(Respect\Validation\Validator $rule)
 ```
 
 | パラメータ | 型 | 説明 |
@@ -219,10 +209,10 @@ SV::respect(Respect\Validation\Validator $rule)
 use Respect\Validation\Validator as v;
 
 // Respect 組み込みのクレジットカード検証
-SV::respect(v::creditCard())
+RespectRules::rule(v::creditCard())
 
 // callback でカスタムロジックを注入
-SV::respect(v::callback(function ($value) {
+RespectRules::rule(v::callback(function ($value) {
   return strlen($value) === 8 && ctype_digit($value);
 }))->optional()
 ```
@@ -236,7 +226,7 @@ use libphonenumber\NumberParseException;
 $phoneUtil = PhoneNumberUtil::getInstance();
 
 $schema = SV::object([
-  'tel' => SV::respect(
+  'tel' => RespectRules::rule(
     v::callback(function ($value) use ($phoneUtil) {
       try {
         $number = $phoneUtil->parse($value, 'JP');

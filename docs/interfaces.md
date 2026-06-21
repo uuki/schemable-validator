@@ -49,6 +49,45 @@ $template = schv_template([
 
 ---
 
+### Schema Editor
+
+The Schema Editor admin page lets site operators define validation schemas without writing PHP.
+Schemas are stored in two locations:
+
+- **Theme directory** (`{active_theme}/schv-schemas/{slug}.json`) — version-controllable with git
+- **wp_options** (`schv_schema_{slug}`) — backward-compatible fallback
+
+`StoredSchemaProvider` reads the theme file first and falls back to `wp_options`.
+
+#### Export and import
+
+Each saved schema has an **Export** button that downloads the JSON file.
+An **Import** form accepts a `.json` file and a target slug, writing to both the theme directory and `wp_options`.
+
+#### Merge conflict detection
+
+When a schema slug has code-defined fields registered via `schv_register_code_fields()`, the Schema Editor displays a warning listing any field names that overlap with the GUI definition.
+On merge, the code-side definition takes precedence.
+
+```php
+// Register which fields your code defines for the "contact" schema.
+// SchemaEditor will warn if the GUI also defines these fields.
+schv_register_code_fields('contact', ['company_name', 'attachment']);
+```
+
+#### Cache control for schema endpoints
+
+`schv_register_schema()` serves JSON Schema over REST with `Cache-Control: public, max-age=60, stale-while-revalidate=3600` and an ETag.
+To force immediate invalidation in production, override the headers with the `schv_schema_cache_headers` filter:
+
+```php
+add_filter('schv_schema_cache_headers', function ($headers) {
+    return ['Cache-Control' => 'no-cache, must-revalidate', 'ETag' => $headers['ETag']];
+});
+```
+
+---
+
 ## WordPress Helper Functions
 
 The following global functions become available once the plugin is activated.
@@ -59,6 +98,9 @@ The following global functions become available once the plugin is activated.
 | `schv_message_dict()` | `MessageDict` | Returns the site-wide dictionary via the `schv_message_dict` filter |
 | `schv_template(array $options = [])` | `Template` | Creates a Template instance |
 | `schv_form()` | `FormController` | Creates a FormController instance |
+| `schv_stored_schema(string $slug)` | `StoredSchemaProvider` | Loads a schema from the theme directory or `wp_options` |
+| `schv_register_schema(string $route, SchemaProviderInterface $provider)` | `void` | Registers a REST endpoint serving JSON Schema |
+| `schv_register_code_fields(string $slug, string[] $fields)` | `void` | Registers code-defined field names for merge conflict detection |
 
 ---
 

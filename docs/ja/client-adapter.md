@@ -241,9 +241,36 @@ const schema = sv(jsonSchema)
 
 :::
 
-### クロスフィールド制約（`SV::respect`）
+### サーバー専用フィールドの acknowledge
 
-`SV::respect()` は JSON Schema マッピングのない任意の Respect/Validation ルールをラップします。純粋な関数として実装し、`.refine()` で注入します。
+`validateObject()` は、`x-unmapped-fields` に含まれるフィールド名のうち呼び出し側が acknowledge していないものについてコンソール警告を出力します。
+サーバーでのみ検証するフィールドを明示することで、警告を抑制できます。
+
+```ts
+import { validateObject } from '@uuki/schemable-validator-client'
+
+const result = validateObject(formData, schema, {
+  acknowledgedServerFields: ['avatar', 'custom_check'],
+})
+```
+
+Zod / Valibot アダプターでも、`createSv()` のファクトリ設定で同じオプションを使用できます。
+
+```ts
+import { createSv } from '@uuki/schemable-validator-client/zod'
+
+const sv = createSv({
+  check: true,
+  acknowledgedServerFields: ['avatar'],
+})
+```
+
+`acknowledgedServerFields` に含まれるフィールドは、`build()` 時の `x-custom-fields` 警告からも除外されます。
+PHP 側でサーバー専用フィールドが追加されると、acknowledge されるまで警告が再び表示されるため、見落としを防ぐことができます。
+
+### クロスフィールド制約（`RespectRules::rule`）
+
+`RespectRules::rule()` は JSON Schema マッピングのない任意の Respect/Validation ルールをラップします。クライアント側の等価ロジックを純粋な関数として実装し、`.refine()` で注入します。
 
 :::code-group
 
@@ -252,7 +279,7 @@ import { sv } from '@uuki/schemable-validator-client/zod'
 import type { ZodRefiner } from '@uuki/schemable-validator-client/zod'
 import { z } from 'zod'
 
-// PHP: 'confirm' => SV::respect(v::equals($data['password']))
+// PHP: 'confirm' => RespectRules::rule(v::equals($data['password']))
 const checkConfirm: ZodRefiner = (data, ctx) => {
   if (data.confirm !== data.password) {
     ctx.addIssue({
@@ -513,7 +540,7 @@ function validateWithCustomRules(data: Record<string, string>) {
 ## ルールカバー率
 
 `RuleMapper.php` の 19 個のマッピング可能なルールを基準にしています。  
-（`SV::file()` / `SV::respect()` は PHP 側で `x-unmapped-fields` に除外され、アダプターには渡されません。）
+（`SV::file()` / `RespectRules::rule()` は PHP 側で `x-unmapped-fields` に除外され、アダプターには渡されません。）
 
 | PHP ルール | JSON Schema フィールド | Zod | Valibot |
 |---|---|:---:|:---:|

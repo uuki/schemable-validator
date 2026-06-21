@@ -60,7 +60,7 @@ $schema = SV::object([
 ```
 
 ::: tip Raw Respect schemas
-If you install the optional `respect/validation` package, you can also pass raw Respect rules directly — e.g. `'name' => v::stringType()->length(2, 50)`. Wrap them with `SV::respect(v::...)` when using SchemaBuilder.
+If you install the optional `respect/validation` package, you can also pass raw Respect rules directly — e.g. `'name' => v::stringType()->length(2, 50)`. Wrap them with `RespectRules::rule(v::...)` when using SchemaBuilder.
 :::
 
 Passing and failing examples:
@@ -151,7 +151,7 @@ The `FileExtension` rule class still works but is considered legacy. Prefer `SV:
 ::: tip
 For advanced usage such as defining custom rules for address validation, see [Custom Validation](/custom-validation). You can also use `SV::custom(callable)` as a dependency-free escape hatch for one-off rules.
 
-Note: `creditCard` and `postalCode` rules are **@deprecated** and have been moved to `Adapters\Respect\RespectRules`.
+For `creditCard` and `postalCode` rules, use `RespectRules::creditCard()` and `RespectRules::postalCode()` from `Adapters\Respect\RespectRules`.
 :::
 
 ### Method Chaining
@@ -187,8 +187,26 @@ $result = $schema->toValidator()->validate($_POST)->validateFiles($_FILES)->getR
 echo $schema->toJson();
 ```
 
+### Hiding fields from client output
+
+Fields marked `.serverOnly()` are validated server-side as normal but excluded from the JSON Schema output sent to clients.
+They do not appear in `properties`, `required`, or `x-unmapped-fields`.
+
+```php
+$schema = SV::object([
+  'email'       => SV::string()->email(),
+  'risk_score'  => SV::integer()->min(0)->max(100)->serverOnly(),
+]);
+
+echo $schema->toJson();
+// risk_score is absent — invisible to clients
+
+$schema->toValidator()->validate($data)->getResult();
+// validates both email and risk_score
+```
+
 ::: tip
-For the full field type reference, `.nullable()`, `.optional()`, conditional required (`.when()`), `x-unmapped-fields`, and WordPress REST endpoint registration, see [SchemaBuilder](./schema-builder.md).
+For the full field type reference, `.nullable()`, `.optional()`, `.serverOnly()`, conditional required (`.when()`), `x-unmapped-fields`, and WordPress REST endpoint registration, see [SchemaBuilder](./schema-builder.md).
 :::
 
 ---
@@ -405,6 +423,28 @@ $data = schv_form()->get();
 schv_form()->clear();
 ```
 
+:::
+
+::: warning Session affinity required
+`FormController` stores data in PHP's native session (`$_SESSION`).
+In a load-balanced environment without sticky sessions, a user's request may be routed to a different server between steps, causing `get()` to return `null` on the confirmation page.
+
+For example, a two-server configuration without session affinity:
+
+```text
+User → Server A  (Step 1: save() writes to Server A's session file)
+User → Server B  (Step 2: get() reads Server B's session file → null)
+```
+
+To avoid this, configure a shared session backend:
+
+```php
+// php.ini or runtime configuration
+ini_set('session.save_handler', 'redis');
+ini_set('session.save_path', 'tcp://redis-host:6379');
+```
+
+Alternatively, replace `FormController` with a token-based approach that passes encrypted form data through hidden fields and does not depend on server-side session state.
 :::
 
 ---

@@ -1,7 +1,7 @@
-# SV::file() / SV::custom() / SV::respect() - Non-JSON Schema Types
+# SV::file() / SV::custom() / RespectRules - Non-JSON Schema Types
 
 These types perform server-side validation but cannot be converted to JSON Schema.
-`SV::file()` uses NativeFileValidator (dependency-free). `SV::custom()` accepts any callable predicate (dependency-free). `SV::respect()` uses the optional Respect/Validation library.
+`SV::file()` uses NativeFileValidator (dependency-free). `SV::custom()` accepts any callable predicate (dependency-free). `RespectRules::rule()` uses the optional Respect/Validation library.
 In `toJsonSchema()` output they are excluded from `properties`, and their field names are recorded in `x-unmapped-fields`.
 
 The client's `validateObject` automatically skips these fields and defers them to the server.
@@ -133,14 +133,12 @@ See [Advanced Usage](/custom-validation) for more details.
 
 ---
 
-## SV::postalCode(countryCode) {#postalcode}
+## RespectRules::postalCode(countryCode) {#postalcode}
 
-> **@deprecated** -- Moved to `RespectRules`. Use `SV::custom()` with a postal code validation library instead.
-
-Validates a **postal code** for a specific country. A shorthand that wraps Respect/Validation's `postalCode()` rule.
+Validates a **postal code** for a specific country. Uses Respect/Validation's `postalCode()` rule.
 
 ```php
-SV::postalCode(string $countryCode)
+RespectRules::postalCode(string $countryCode)
 ```
 
 | Parameter | Type | Description |
@@ -150,22 +148,18 @@ SV::postalCode(string $countryCode)
 Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
 
 ```php
-SV::postalCode('JP')->optional()  // Japanese postal code (optional)
-SV::postalCode('US')              // US ZIP code
+RespectRules::postalCode('JP')->optional()  // Japanese postal code (optional)
+RespectRules::postalCode('US')              // US ZIP code
 ```
-
-This is syntactic sugar for `SV::respect(v::postalCode('JP'))`.
 
 ---
 
-## SV::creditCard(...brands) {#creditcard}
-
-> **@deprecated** -- Moved to `RespectRules`. Use `SV::custom()` with a Luhn algorithm library instead.
+## RespectRules::creditCard(...brands) {#creditcard}
 
 Validates a **credit card number** using the Luhn algorithm.
 
 ```php
-SV::creditCard(string ...$brands)
+RespectRules::creditCard(string ...$brands)
 ```
 
 | Parameter | Type | Description |
@@ -175,38 +169,34 @@ SV::creditCard(string ...$brands)
 Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
 
 ```php
-SV::creditCard()                    // All brands
-SV::creditCard('Visa', 'Mastercard') // Visa / Mastercard only
+RespectRules::creditCard()                    // All brands
+RespectRules::creditCard('Visa', 'Mastercard') // Visa / Mastercard only
 ```
 
 ---
 
-## SV::iban() {#iban}
-
-> **@deprecated** -- Moved to `RespectRules`. Use `SV::custom()` with an IBAN validation library instead.
+## RespectRules::iban() {#iban}
 
 Validates an **IBAN** (International Bank Account Number).
 
 ```php
-SV::iban()
+RespectRules::iban()
 ```
 
 Cannot be expressed in JSON Schema; recorded in `x-unmapped-fields`.
 
 ```php
-SV::iban()->optional()
+RespectRules::iban()->optional()
 ```
 
 ---
 
-## SV::respect(rule) {#respect}
+## RespectRules::rule(rule) {#respect}
 
-> **@deprecated** -- Use `SV::custom(callable, message)` instead for a dependency-free alternative. This method requires the optional `respect/validation` package.
-
-An escape hatch for specifying Respect/Validation rules directly. Use this for constraints that cannot be expressed with the built-in types.
+An escape hatch for specifying Respect/Validation rules directly. Use this for constraints that cannot be expressed with the built-in types. Requires the optional `respect/validation` package.
 
 ```php
-SV::respect(Respect\Validation\Validator $rule)
+RespectRules::rule(Respect\Validation\Validator $rule)
 ```
 
 | Parameter | Type | Description |
@@ -219,10 +209,10 @@ SV::respect(Respect\Validation\Validator $rule)
 use Respect\Validation\Validator as v;
 
 // Built-in Respect credit card validation
-SV::respect(v::creditCard())
+RespectRules::rule(v::creditCard())
 
 // Inject custom logic via callback
-SV::respect(v::callback(function ($value) {
+RespectRules::rule(v::callback(function ($value) {
   return strlen($value) === 8 && ctype_digit($value);
 }))->optional()
 ```
@@ -236,7 +226,7 @@ use libphonenumber\NumberParseException;
 $phoneUtil = PhoneNumberUtil::getInstance();
 
 $schema = SV::object([
-  'tel' => SV::respect(
+  'tel' => RespectRules::rule(
     v::callback(function ($value) use ($phoneUtil) {
       try {
         $number = $phoneUtil->parse($value, 'JP');

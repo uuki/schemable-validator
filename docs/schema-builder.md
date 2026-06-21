@@ -12,7 +12,7 @@
 | Server validation | `toValidator()->validate($data)->getResult()` |
 | Conditional required | `->when('type', SV::equal('company'), ['company_name'])` |
 | WordPress REST | `schv_register_schema('/contact', $schema)` — exposes schema as a GET endpoint |
-| Unmapped fields | `SV::file()` / `SV::respect()` are tracked in `x-unmapped-fields`, validated server-side only |
+| Unmapped fields | `SV::file()` / `RespectRules::rule()` are tracked in `x-unmapped-fields`, validated server-side only |
 
 ## Basic usage
 
@@ -45,7 +45,6 @@ echo $schema->toJson();
 | `SV::boolean()` | `"boolean"` | |
 | `SV::enum(['a','b'])` | `"string"` + `enum` | |
 | `SV::file(['image/jpeg'])` | - | Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
-| `SV::respect(v::...)` | - | **@deprecated** — use `SV::custom()` or `RespectRules::rule()` instead. Cannot be converted to JSON Schema. Recorded in `x-unmapped-fields` |
 | `SV::custom(callable, message)` | - | Dependency-free escape hatch. Returns `CustomFieldSchema`. Recorded in `x-unmapped-fields` |
 
 Modifiers:
@@ -54,6 +53,16 @@ Modifiers:
 |:--|:--|
 | `.optional()` | Excluded from the `required` array |
 | `.nullable()` | Converts `"type"` to an array such as `["string", "null"]` |
+| `.serverOnly()` | Excluded from client-facing JSON Schema output entirely. Validated server-side as normal |
+
+::: warning Pattern validation limits
+`.pattern()` and Schema Editor pattern fields are evaluated with `preg_match()` (PHP) and `RegExp` (JS).
+To guard against ReDoS, inputs longer than **500 characters** skip pattern validation and are treated as valid.
+If your field accepts long text (e.g. a textarea), rely on `.min()` / `.max()` for length constraints rather than a pattern.
+
+Schema Editor allows administrators to enter arbitrary regular expressions.
+PHP's `pcre.backtrack_limit` (default 1,000,000) prevents infinite backtracking; when the limit is hit, pattern validation is skipped for that field.
+:::
 
 ---
 
@@ -169,6 +178,38 @@ Output:
 Fields that cannot be converted to JSON Schema (file uploads, custom callables, etc.)
 are recorded by name only under the `x-unmapped-fields` extension key.
 Validation is performed via the BackendAdapter (NativeAdapter by default) through `toValidator()`.
+
+The TypeScript client passes these fields through as valid.
+When `x-unmapped-fields` is present, `validateObject()` emits a console warning listing the field names.
+To suppress the warning for fields you expect to be server-only, pass `acknowledgedServerFields`:
+
+```typescript
+import { validateObject } from '@uuki/schemable-validator-client'
+
+const result = validateObject(formData, schema, {
+  acknowledgedServerFields: ['avatar', 'custom_check'],
+})
+```
+
+## About `.serverOnly()`
+
+Fields marked `.serverOnly()` are excluded from the JSON Schema output entirely.
+They do not appear in `properties`, `required`, or `x-unmapped-fields`.
+Server-side validation via `toValidator()` includes them as normal.
+
+```php
+$schema = SV::object([
+  'email'       => SV::string()->email(),
+  'risk_score'  => SV::integer()->min(0)->max(100)->serverOnly(),
+]);
+
+$schema->toJson();
+// → {"properties": {"email": ...}, "required": ["email"]}
+// risk_score is absent — invisible to clients
+
+$schema->toValidator()->validate($data);
+// → validates both email and risk_score
+```
 
 ```php
 // Use as JSON Schema

@@ -2,7 +2,6 @@
 
 namespace SchemableValidator;
 
-use SchemableValidator\Adapters\Respect\RespectRules;
 use SchemableValidator\Orchestration\SchemaBuilder;
 use SchemableValidator\Schema\AbstractFieldSchema;
 use SchemableValidator\Schema\ArraySchema;
@@ -13,7 +12,6 @@ use SchemableValidator\Schema\FieldRef;
 use SchemableValidator\Schema\FileSchema;
 use SchemableValidator\Schema\IntegerSchema;
 use SchemableValidator\Schema\NumberSchema;
-use SchemableValidator\Adapters\Respect\RawRespectSchema;
 use SchemableValidator\Schema\StringSchema;
 use SchemableValidator\Schema\WhenExpr;
 
@@ -62,34 +60,6 @@ final class SV {
    */
   public static function custom(callable $predicate, string $message = 'is invalid'): CustomFieldSchema {
     return new CustomFieldSchema($predicate, $message);
-  }
-
-  /**
-   * @deprecated Use the optional Respect driver: RespectRules::rule($rule).
-   *   Kept for back-compat; delegates to the driver. The dependency-free
-   *   alternative is SV::custom(callable). See docs/backend-adapters.md.
-   *
-   * @param object $rule  A Respect\Validation\Validator instance. Type hint
-   *                      omitted so loading this file does not require the
-   *                      respect/validation package.
-   */
-  public static function respect(object $rule): RawRespectSchema {
-    return RespectRules::rule($rule);
-  }
-
-  /** @deprecated Use RespectRules::postalCode($countryCode) (optional Respect driver). */
-  public static function postalCode(string $countryCode): RawRespectSchema {
-    return RespectRules::postalCode($countryCode);
-  }
-
-  /** @deprecated Use RespectRules::creditCard(...$brands) (optional Respect driver). */
-  public static function creditCard(string ...$brands): RawRespectSchema {
-    return RespectRules::creditCard(...$brands);
-  }
-
-  /** @deprecated Use RespectRules::iban() (optional Respect driver). */
-  public static function iban(): RawRespectSchema {
-    return RespectRules::iban();
   }
 
   // ── Conditional expression builders ──────────────────────────

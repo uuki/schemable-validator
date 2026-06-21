@@ -28,4 +28,4 @@ export type { FieldState, Constraint } from './constraint.js'
 
 // Validator
 export { validateObject, isAllValid, extractErrors } from './validator.js'
-export type { FieldResult, ValidationResult } from './validator.js'
+export type { FieldResult, ValidationResult, ValidateOptions } from './validator.js'

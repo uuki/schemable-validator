@@ -4,15 +4,17 @@
  */
 
 use Respect\Validation\Validator as v;
+use SchemableValidator\Security\CsrfGuard;
 
 function my_handle_csrf_form(): void {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['my_csrf_submit'])) {
     return;
   }
 
+  $csrf = new CsrfGuard();
   $validator = schv_validator(['message' => v::stringType()->notEmpty()]);
 
-  if (!$validator->checkToken($_POST['csrf_token'] ?? '')) {
+  if (!$csrf->checkToken($_POST['csrf_token'] ?? '')) {
     wp_die('Invalid CSRF token.', 'Security Error', ['response' => 403]);
   }
 
@@ -25,8 +27,8 @@ add_action('template_redirect', 'my_handle_csrf_form');
 
 function my_render_csrf_form(): string {
   global $my_csrf_result;
-  $validator = schv_validator([]);
-  $token     = $validator->createToken();
+  $csrf  = new CsrfGuard();
+  $token = $csrf->createToken();
   ob_start();
   ?>
   <form method="post">

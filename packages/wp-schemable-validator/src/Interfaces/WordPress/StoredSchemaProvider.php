@@ -5,7 +5,8 @@ namespace SchemableValidator\Interfaces\WordPress;
 use SchemableValidator\Contracts\SchemaProviderInterface;
 
 /**
- * Serves a JSON Schema stored in wp_options.
+ * Serves a JSON Schema stored in the active theme (schv-schemas/{slug}.json)
+ * with fallback to wp_options.
  *
  * Pair with SchemaEditor (admin UI) to let site operators define
  * validation schemas without writing PHP.
@@ -21,9 +22,22 @@ final class StoredSchemaProvider implements SchemaProviderInterface {
     return 'schv_schema_' . $this->slug;
   }
 
+  public function themeFilePath(): string {
+    return get_stylesheet_directory() . '/schv-schemas/' . $this->slug . '.json';
+  }
+
   public function toJsonSchema(): array {
+    $path = $this->themeFilePath();
+    if (is_readable($path)) {
+      $json = file_get_contents($path);
+      $decoded = json_decode($json, true);
+      if (is_array($decoded) && array_key_exists('properties', $decoded)) {
+        return $decoded;
+      }
+    }
+
     $stored = get_option($this->optionKey(), null);
-    if (!is_array($stored) || empty($stored['properties'])) {
+    if (!is_array($stored) || !array_key_exists('properties', $stored)) {
       return ['type' => 'object', 'properties' => (object) [], 'required' => []];
     }
     return $stored;

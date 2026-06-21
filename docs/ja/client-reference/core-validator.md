@@ -35,7 +35,7 @@ const result = validateObject(
 
 **動作の注意点**
 - 空の任意フィールドは常に有効です。
-- `x-unmapped-fields`（SV::file、SV::respect）は `is_valid: true` として通過します。
+- `x-unmapped-fields`（SV::file()、SV::custom()、RespectRules::rule()）は `is_valid: true` として通過します。
 - `x-when` の条件付き必須は自動的に評価されます。
 - `x-when` がないスキーマでは `if/then` / `allOf` にフォールバックします。
 
