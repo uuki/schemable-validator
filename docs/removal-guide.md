@@ -1,36 +1,166 @@
 # Removal Guide
 
-This guide explains how to remove the **SchemaBuilder / Validator core** from the schemable-validator plugin and migrate to each stack's native libraries.
+This guide explains how to remove schemable-validator and migrate to standalone validation.
 
-**Scope:** The `SV::` facade, `SchemaBuilder`, and `Validator` classes (including client packages). WordPress helpers, `Template`, CSRF, and reCAPTCHA are out of scope.
-
-> **Default engine note**  
-> The default validation engine is now `NativeAdapter` (dependency-free). If you are using the default configuration, you have no Respect/Validation dependency to remove -- this guide applies only to projects that explicitly use `RespectAdapter`.
-
-> **Version assumption**  
-> The PHP side targets Respect/Validation **2.x**. If this plugin's dependency is bumped to 3.x in the future, a separate Respect/Validation 3.x migration guide will be added.
+**Scope:** The `SV::` facade, `SchemaBuilder`, `Validator`, the TypeScript client package, and the WordPress plugin.
+WordPress helpers (`schv_csrf()`, `schv_template()`, `schv_form()`) and CAPTCHA drivers are out of scope.
 
 ---
 
 ## Table of Contents
 
-1. [PHP - Migrating SchemaBuilder to Respect/Validation 2.x](#1-php--migrating-schemabuilder-to-respectvalidation-2x)
-   - [Type mapping quick reference](#11-type-mapping-quick-reference)
-   - [Using Validator directly](#12-using-validator-directly)
-   - [Handling optional / nullable](#13-handling-optional--nullable)
-   - [Replacing when() conditional branching](#14-replacing-when-conditional-branching)
-   - [Validation result format changes](#15-validation-result-format-changes)
-2. [Client - Migrating TypeScript/JavaScript to Zod](#2-client--migrating-typescriptjavascript-to-zod)
-   - [Type mapping quick reference](#21-type-mapping-quick-reference)
-   - [validateObject → Zod safeParse](#22-validateobject--zod-safeparse)
-   - [Replacing when() with Zod](#23-replacing-when-with-zod)
-   - [Other libraries](#24-other-libraries)
+1. [Removal steps](#1-removal-steps)
+2. [PHP - Plain PHP validation (no library)](#2-php--plain-php-validation-no-library)
+3. [PHP - Migrating to Respect/Validation 2.x](#3-php--migrating-to-respectvalidation-2x)
+4. [Client - Defining validation rules independently](#4-client--defining-validation-rules-independently)
+5. [Client - Migrating to Zod](#5-client--migrating-to-zod)
 
 ---
 
-## 1. PHP - Migrating SchemaBuilder to Respect/Validation 2.x
+## 1. Removal steps
 
-### 1.1 Type mapping quick reference
+### 1.1 Backend
+
+1. **List all call sites.**
+   Search for `SV::`, `SchemaBuilder`, `Validator::fromJsonSchema`, `schv_register_schema`, `schv_stored_schema`, `->toValidator()`, and `->toJsonSchema()`.
+   Each call site is a validation boundary that needs a replacement.
+
+2. **Replace each call site** with either plain PHP validation (section 2) or a library of your choice (section 3).
+   Work one form at a time: replace the schema definition, the `validate()` call, and the result consumption.
+
+3. **Remove the package.**
+
+   ```shell
+   composer remove uuki/schemable-validator
+   ```
+
+4. **Remove WordPress plugin registration** (if applicable).
+   Deactivate the plugin in WP Admin, then delete `packages/wp-schemable-validator/` or its deploy target.
+   Remove any `schv_register_schema()` calls, Schema Editor stored schemas (`wp_options` keys prefixed `schv_schema_`), and the `schv-schemas/` directory in the active theme.
+
+5. **Remove CSRF shims** (if applicable).
+   If your code uses `schv_csrf()`, replace with WordPress nonces (`wp_create_nonce` / `wp_verify_nonce`) or a standalone CSRF library.
+
+### 1.2 Client
+
+Removing the PHP package also removes the JSON Schema REST endpoint (`/wp-json/schv/v1/schema/*`).
+Any client code that fetches a schema from that endpoint and converts it to Zod or Valibot stops working.
+
+Client-side validation rules were derived from the PHP schema at runtime.
+After removal, the two stacks have no shared schema source.
+Each validation rule must be defined independently in the client codebase.
+
+1. **Search for `@uuki/schemable-validator-client` imports** and `schv/v1/schema` fetch URLs.
+
+2. **Define the same rules in client code** using Zod, Valibot, or another library (section 5).
+   The type mapping tables in section 5 show the correspondence.
+
+3. **Remove the client package.**
+
+   ```shell
+   npm uninstall @uuki/schemable-validator-client
+   ```
+
+4. **Establish a maintenance rule.**
+   Any future change to a server-side validation rule (adding a field, changing a constraint) must be manually reflected in the client schema.
+   Without the shared JSON Schema, this synchronisation is the developer's responsibility.
+
+---
+
+## 2. PHP - Plain PHP validation (no library)
+
+When no third-party validation library is needed, replace `SV::object([...])->toValidator()->validate()` with a validation function that uses PHP built-in functions.
+
+### 2.1 General pattern
+
+```php
+function validateFields(array $rules, array $data): array {
+    $result = [];
+    foreach ($rules as $field => $rule) {
+        $value  = $data[$field] ?? '';
+        $errors = $rule($value);
+        $result[$field] = [
+            'value'    => $value,
+            'is_valid' => $errors === [],
+            'errors'   => $errors === [] ? null : implode(', ', $errors),
+        ];
+    }
+    return $result;
+}
+```
+
+Each `$rule` is a closure that returns an array of error messages (empty array on success).
+
+### 2.2 Translating SV constraints
+
+```php
+$rules = [
+    'name' => function ($v) {
+        if ($v === '') return ['name is required'];
+        if (mb_strlen($v) < 2)   return ['name must be at least 2 characters'];
+        if (mb_strlen($v) > 50)  return ['name must be at most 50 characters'];
+        return [];
+    },
+    'email' => function ($v) {
+        if ($v === '') return ['email is required'];
+        if (filter_var($v, FILTER_VALIDATE_EMAIL) === false) return ['invalid email'];
+        return [];
+    },
+    'tel' => function ($v) {
+        // optional field — empty is valid
+        if ($v === '') return [];
+        if (!preg_match('/^(0\d{9,10}|0\d{1,4}-\d{1,4}-\d{3,4})$/u', $v)) {
+            return ['invalid phone number format'];
+        }
+        return [];
+    },
+    'type' => function ($v) {
+        if (!in_array($v, ['general', 'support', 'sales', 'other'], true)) {
+            return ['invalid type'];
+        }
+        return [];
+    },
+    'body' => function ($v) {
+        if ($v === '') return ['body is required'];
+        if (mb_strlen($v) < 10) return ['body must be at least 10 characters'];
+        return [];
+    },
+];
+
+$result = validateFields($rules, $_POST);
+```
+
+### 2.3 Conditional requirements (when)
+
+Handle conditional requirements as a post-processing step, just as in the Respect/Validation migration path (section 3.4).
+
+### 2.4 File validation
+
+`SV::file()` wraps MIME type and size checks.
+Replace with `finfo_file()` for MIME detection and `$_FILES[...]['size']` for size limits.
+
+```php
+$finfo = new finfo(FILEINFO_MIME_TYPE);
+$mime  = $finfo->file($_FILES['avatar']['tmp_name']);
+if (!in_array($mime, ['image/jpeg', 'image/png'], true)) {
+    $result['avatar'] = ['value' => '', 'is_valid' => false, 'errors' => 'JPEG or PNG required'];
+}
+```
+
+---
+
+## 3. PHP - Migrating to Respect/Validation 2.x
+
+> **Default engine note**
+> The default validation engine is `NativeAdapter` (dependency-free).
+> If you are using the default configuration, you have no Respect/Validation dependency to remove.
+> This section applies only to projects that explicitly use `RespectAdapter`.
+
+> **Version assumption**
+> The PHP side targets Respect/Validation **2.x**.
+> If this plugin's dependency is bumped to 3.x in the future, a separate migration guide will be added.
+
+### 3.1 Type mapping quick reference
 
 | SV API | Respect/Validation 2.x | Note |
 |:--|:--|:--|
@@ -58,12 +188,12 @@ This guide explains how to remove the **SchemaBuilder / Validator core** from th
 | `SV::string()->domain()` | `v::domain()` | |
 | `SV::enum(['a', 'b'])` | `v::in(['a', 'b'])` | |
 | `SV::array(SV::string())` | `v::each(v::stringType())` | |
-| `SV::respect(v::...)` | Use `v::...` directly | |
-| `SV::postalCode('JP')` | `v::postalCode('JP')` | @deprecated |
-| `SV::creditCard()` | `v::creditCard()` | @deprecated |
-| `SV::iban()` | `v::iban()` | @deprecated |
+| `RespectRules::rule(v::...)` | Use `v::...` directly | |
+| `RespectRules::postalCode('JP')` | `v::postalCode('JP')` | |
+| `RespectRules::creditCard()` | `v::creditCard()` | |
+| `RespectRules::iban()` | `v::iban()` | |
 
-### 1.2 Using Validator directly
+### 3.2 Using Validator directly
 
 **Before:**
 
@@ -121,7 +251,7 @@ foreach ($schema as $field => $rule) {
 > }
 > ```
 
-### 1.3 Handling optional / nullable
+### 3.3 Handling optional / nullable
 
 | SV | Respect/Validation 2.x |
 |:--|:--|
@@ -131,7 +261,7 @@ foreach ($schema as $field => $rule) {
 
 `v::optional()` skips `null` and empty string `''`. `v::nullable()` skips `null` but validates `''`.
 
-### 1.4 Replacing when() conditional branching
+### 3.4 Replacing when() conditional branching
 
 `when()` has no native equivalent rule in Respect/Validation 2.x. **Implement it using PHP conditional logic after validation.**
 
@@ -274,7 +404,7 @@ function requireField(array &$result, array $data, string $field): void
 }
 ```
 
-### 1.5 Validation result format changes
+### 3.5 Validation result format changes
 
 SV's `getResult()` returns the following format:
 
@@ -293,9 +423,29 @@ When using Respect/Validation directly, this format does not exist. If you are p
 
 ---
 
-## 2. Client - Migrating TypeScript/JavaScript to Zod
+## 4. Client - Defining validation rules independently
 
-The SV client package receives a JSON Schema output from `SchemaBuilder::toJsonSchema()` and validates form fields against it. Migrating to Zod removes the JSON Schema adapter layer so you define Zod schemas directly.
+When using schemable-validator, the PHP schema is the single source of truth.
+`SchemaBuilder::toJsonSchema()` produces a JSON Schema document, and the client package (or a Zod/Valibot adapter) derives validation rules from it at runtime.
+
+After removal, this automatic synchronisation no longer exists.
+Each validation rule must be maintained in both PHP and client code.
+
+The practical consequence: when a backend developer adds a field or changes a constraint (e.g. raises `minLength` from 1 to 3), the client schema must be updated in a separate commit.
+Without a shared JSON Schema, there is no mechanism to detect this drift automatically.
+
+To manage this:
+
+- Keep server and client validation definitions in the same PR when changing constraints.
+- Consider a CI step that compares a JSON fixture (exported from your PHP tests) with the client schema to catch divergence early.
+
+The sections below show how to rewrite each client-side rule using standalone libraries.
+
+---
+
+## 5. Client - Migrating TypeScript/JavaScript to Zod
+
+Migrating to Zod removes the JSON Schema adapter layer so you define Zod schemas directly.
 
 ```bash
 npm install zod
@@ -303,7 +453,7 @@ npm install zod
 pnpm add zod
 ```
 
-### 2.1 Type mapping quick reference
+### 5.1 Type mapping quick reference
 
 | SV (PHP) | Zod |
 |:--|:--|
@@ -324,7 +474,7 @@ pnpm add zod
 | `SV::string()->optional()` | Make the field itself `.optional()` |
 | `SV::string()->nullable()` | `z.string().nullable()` |
 
-### 2.2 validateObject → Zod safeParse
+### 5.2 validateObject → Zod safeParse
 
 **Before:**
 
@@ -363,7 +513,7 @@ if (result.success) {
 }
 ```
 
-### 2.3 Replacing when() with Zod
+### 5.3 Replacing when() with Zod
 
 #### Pattern A - Using `superRefine`
 
@@ -483,7 +633,7 @@ const schema = z.object({
 })
 ```
 
-### 2.4 Other libraries
+### 5.4 Other libraries
 
 Reference information for cases where you prefer a library other than Zod.
 
