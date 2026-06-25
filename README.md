@@ -9,16 +9,19 @@ Define constraints once with a fluent API, validate server-side with zero extern
 
 ## ✨ Features
 
-- **Server-side validation with no dependencies.**
-  The default engine (`NativeAdapter`) requires nothing beyond PHP 7.4.
-  `$_POST` string values are automatically coerced to the declared types via the built-in Coercion Contract.
+- **Define once, use everywhere.**
+  Server-side validation rules act as the single source of truth.
+  Export them as JSON Schema (draft 2020-12) via `toJson()` and share the same constraints with any frontend — built-in Zod and Valibot adapters included.
+  Rules are defined through a fluent method-chain API.
 
-- **Client-side sync when you need it.**
-  Call `toJson()` to produce a JSON Schema (draft 2020-12) document.
-  Built-in Zod and Valibot adapters convert it into native client schemas.
+- **Pluggable engine and driver architecture.**
+  The built-in engine (`NativeAdapter`) provides a fluent-interface-style API with zero dependencies.
+  Swap in `RespectAdapter` or any custom `BackendAdapter` when you need a different validation engine.
+  Domain-specific logic — phone numbers, postal codes, image constraints, CAPTCHA (reCAPTCHA v3, hCaptcha, Turnstile) — is implemented as injectable drivers and can be replaced independently.
 
-- **Pluggable drivers.**
-  CAPTCHA verification (reCAPTCHA v3, hCaptcha, Cloudflare Turnstile), file upload validation, image constraint checks, and CSRF protection are injected through driver interfaces.
+- **Zero dependencies, framework-agnostic.**
+  Built on plain PHP and TypeScript with no framework coupling.
+  Reduces dependency lock-in and keeps the library easy to remove when your project outgrows it.
 
 ---
 
@@ -101,10 +104,7 @@ SV::object([...])          <- PHP: single source of truth
                      Zod / Valibot / any JS validator
 ```
 
-The validation engine is swappable.
-Pass a `RespectAdapter` or `OpisAdapter` in the config to use a different backend; the public API and the `{value, is_valid, errors}` result shape stay the same.
-
-Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and handled server-side automatically.
+Constraints that cannot be expressed in JSON Schema (file uploads, custom rules) are recorded in `x-unmapped-fields` and validated server-side only.
 
 ---
 
